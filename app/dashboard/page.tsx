@@ -663,7 +663,7 @@ export default function DashboardPage() {
     try {
       await startFocusSession(taskId);
       setNotice("Sesi fokus berhasil dimulai.");
-      await loadDashboardData(true);
+      router.push("/focus");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Gagal memulai fokus.");
     } finally {
