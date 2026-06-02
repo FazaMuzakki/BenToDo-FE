@@ -14,6 +14,7 @@ import {
   startFocusSession,
   updateTask,
 } from "../lib/api";
+import { LOGO_SRC } from "../lib/assets";
 import type { EnergyWeight, Task, TaskStatus, TaskTemplate } from "../lib/api";
 
 const COLOR = {
@@ -716,8 +717,8 @@ export default function DashboardPage() {
               height: "32px",
               display: "inline-block",
               backgroundColor: COLOR.primary,
-              WebkitMask: "url('/Logo BenTodo.png') center / contain no-repeat",
-              mask: "url('/Logo BenTodo.png') center / contain no-repeat",
+              WebkitMask: `url('${LOGO_SRC}') center / contain no-repeat`,
+              mask: `url('${LOGO_SRC}') center / contain no-repeat`,
               flexShrink: 0,
             }}
           />
