@@ -514,9 +514,9 @@ const templates = [
 
 const faqItems = [
   {
-    question: "Apa itu Ben Todo?",
+    question: "Apa itu Bento-Do?",
     answer:
-      "Ben Todo adalah aplikasi produktivitas mahasiswa untuk mengelola bank tugas, memilih prioritas dengan Rule of 3, menjalankan focus session, dan menjaga energi harian agar belajar lebih terarah.",
+      "Bento-do adalah aplikasi produktivitas mahasiswa untuk mengelola bank tugas, memilih prioritas dengan Rule of 3, menjalankan focus session, dan menjaga energi harian agar belajar lebih terarah.",
   },
   {
     question: "Bisa dipakai tanpa login?",
@@ -899,40 +899,48 @@ export default function LandingPage() {
 
         .template-tag {
           display: inline-block;
-          padding: 4px 12px;
-          border-radius: 50px;
-          font-size: 11px;
+          color: ${COLORS.gray[400]};
+          font-family: monospace;
+          font-size: 12px;
           font-weight: 600;
-          letter-spacing: 0.03em;
-          background: ${COLORS.gray[800]};
-          color: ${COLORS.green.primary};
-          border: 1px solid rgba(0, 139, 31, 0.14);
+          letter-spacing: 1px;
+          text-transform: uppercase;
           transition: all 0.25s ease;
         }
 
+        .template-tag::before {
+          content: "[ ";
+        }
+        .template-tag::after {
+          content: " ]";
+        }
+
         .template-card:hover .template-tag {
-          background: #ECFFF0;
-          border-color: rgba(0, 139, 31, 0.26);
+          color: ${COLORS.gray[100]};
         }
 
         /* Section label badge */
         .section-badge {
           display: inline-block;
-          padding: 6px 16px;
-          border-radius: 50px;
-          border: 1px solid rgba(0, 139, 31, 0.18);
-          background: #ECFFF0;
-          color: ${COLORS.green.primary};
-          font-size: 12px;
+          color: ${COLORS.gray[400]};
+          font-family: monospace;
+          font-size: 15px;
           font-weight: 600;
-          letter-spacing: 0.08em;
+          letter-spacing: 1.5px;
           text-transform: uppercase;
           margin-bottom: 20px;
+        }
+        .section-badge::before {
+          content: "[";
+          margin-right: 2px;
+        }
+        .section-badge::after {
+          content: "]";
+          margin-left: 2px;
         }
 
         /* Footer */
         .footer-section {
-          border-top: 1px solid ${COLORS.gray[700]};
           padding: 40px 0;
         }
 
@@ -1006,8 +1014,8 @@ export default function LandingPage() {
                 style={{ width: "36px", height: "auto" }}
                 priority
               />
-              <span style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "-0.02em" }}>
-                Ben Todo
+              <span style={{ fontSize: "18px", fontWeight: 800, letterSpacing: "-0.02em", fontFamily: "var(--font-outfit), sans-serif" }}>
+                Bento-do
               </span>
             </Link>
 
@@ -1089,7 +1097,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="hero-subtitle" style={{ marginTop: "20px" }}>
-                Bento-Do membantu mahasiswa mengelola bank tugas, memilih
+                Bento-do membantu mahasiswa mengelola bank tugas, memilih
                 tiga prioritas utama, menjalankan focus session, dan menerima
                 reminder deadline dalam satu dashboard sederhana.
               </p>
@@ -1248,7 +1256,7 @@ export default function LandingPage() {
                   lineHeight: 1.7,
                 }}
               >
-                Bento-Do membantu mengurangi overload tugas dengan alur sederhana:
+                Bento-do membantu mengurangi overload tugas dengan alur sederhana:
                 simpan semua tugas, pilih prioritas, jaga fokus, dan pantau energi harian.
               </p>
             </div>
@@ -1505,7 +1513,7 @@ export default function LandingPage() {
               }}
             >
               Tentang{" "}
-              <span style={{ color: COLORS.green.primary }}>Ben Todo</span>
+              <span style={{ color: COLORS.green.primary }}>Bento-do</span>
             </h2>
 
             <div
@@ -1542,14 +1550,14 @@ export default function LandingPage() {
                   position: "relative",
                 }}
               >
-                Ben Todo dibuat sebagai aplikasi produktivitas mahasiswa untuk membantu pengguna
+                Bento-do dibuat sebagai aplikasi produktivitas mahasiswa untuk membantu pengguna
                 mengelola tugas kuliah tanpa proses onboarding yang berat. Fokusnya sederhana:
                 semua tugas terkumpul, prioritas terlihat, dan pekerjaan bisa dimulai lebih cepat.
               </p>
               <p
                 style={{
-                  fontSize: "15px",
-                  color: COLORS.gray[400],
+                  fontSize: "16px",
+                  color: COLORS.gray[100],
                   lineHeight: 1.8,
                   marginBottom: "36px",
                   position: "relative",
@@ -1676,7 +1684,7 @@ export default function LandingPage() {
                   lineHeight: 1.7,
                 }}
               >
-                Temukan jawaban untuk pertanyaan umum tentang Ben Todo di bawah ini.
+                Temukan jawaban untuk pertanyaan umum tentang Bento-do di bawah ini.
               </p>
             </div>
 
@@ -1702,45 +1710,111 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════
             FOOTER
         ════════════════════════════════════════ */}
-        <footer className="footer-section">
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "0 32px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "16px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Image
-                src={LOGO_SRC}
-                alt="Ben Todo Logo"
-                width={24}
-                height={24}
-                style={{ width: "24px", height: "auto" }}
-              />
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: COLORS.gray[400],
-                }}
-              >
-                Ben Todo
-              </span>
-            </div>
-            <p
+        <footer className="footer-section" style={{ padding: "80px 32px 40px" }}>
+          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+            {/* Top Border & Header */}
+            <div
               style={{
-                fontSize: "13px",
-                color: COLORS.gray[600],
+                borderBottom: `1px solid ${COLORS.gray[400]}`,
+                paddingBottom: "16px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "60px"
               }}
             >
-              Copyright {new Date().getFullYear()} Ben Todo. All rights reserved.
-            </p>
+              <div style={{ fontSize: "14px", fontFamily: "monospace", letterSpacing: "1px", color: COLORS.gray[400] }}>
+                &copy; {new Date().getFullYear()} Bento-do. All rights reserved.
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                flexWrap: "wrap",
+                gap: "60px"
+              }}
+            >
+              {/* Huge Logo */}
+              <div
+                style={{
+                  fontSize: "clamp(48px, 8vw, 90px)",
+                  fontWeight: 900,
+                  lineHeight: 0.9,
+                  letterSpacing: "-0.05em",
+                  color: COLORS.gray[100],
+                  fontFamily: "var(--font-outfit), sans-serif"
+                }}
+              >
+                Bento-do
+              </div>
+
+              {/* Links Grid */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "clamp(32px, 5vw, 64px)",
+                  flexWrap: "wrap",
+                  marginBottom: "8px"
+                }}
+              >
+                {/* MENU */}
+                <div>
+                  <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: "monospace", letterSpacing: "1px", marginBottom: "20px", color: COLORS.gray[400] }}>
+                    [MENU]
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <Link href="#fitur" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "15px", fontWeight: 500 }}>Fitur</Link>
+                    <Link href="#template" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "15px", fontWeight: 500 }}>Template</Link>
+                    <Link href="#about" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "15px", fontWeight: 500 }}>About</Link>
+                    <Link href="#faq" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "15px", fontWeight: 500 }}>FAQ</Link>
+                  </div>
+                </div>
+
+                {/* ACCOUNT */}
+                <div>
+                  <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: "monospace", letterSpacing: "1px", marginBottom: "20px", color: COLORS.gray[400] }}>
+                    [ACCOUNT]
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <Link href="/login" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "15px", fontWeight: 500 }}>Login</Link>
+                    <Link href="/register" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "15px", fontWeight: 500 }}>Buat Akun</Link>
+                    <button
+                      onClick={handleGuestMode}
+                      disabled={isGuestLoading}
+                      style={{
+                        color: COLORS.gray[400],
+                        textDecoration: "none",
+                        fontSize: "15px",
+                        fontWeight: 500,
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        textAlign: "left"
+                      }}
+                    >
+                      {isGuestLoading ? "Menyiapkan..." : "Guest Mode"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* CONTACT */}
+                <div>
+                  <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: "monospace", letterSpacing: "1px", marginBottom: "20px", color: COLORS.gray[400] }}>
+                    [CONTACT]
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <a href="mailto:bentodo.app@gmail.com" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "15px", fontWeight: 500 }}>
+                      bentodo.app@gmail.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </footer>
       </div>
