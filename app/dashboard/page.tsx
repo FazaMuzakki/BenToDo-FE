@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import {
   applyTemplate,
   clearAuthSession,
-  getAuthToken,
   getDashboardZen,
   getEnergySummary,
   getStoredUser,
   getTasks,
   getTemplates,
+  hasActiveSession,
+  isGuestSession,
   startFocusSession,
   updateTask,
 } from "../lib/api";
@@ -31,6 +32,12 @@ const COLOR = {
   mutedDark: "#666666",
   danger: "#FF6B76",
   dangerSoft: "#FFCDD2",
+};
+
+const GUEST_ENERGY_SUMMARY = {
+  current_energy: 100,
+  max_energy: 100,
+  is_critical_energy: false,
 };
 
 const CARD_STYLE = {
@@ -529,7 +536,7 @@ export default function DashboardPage() {
   });
 
   const loadDashboardData = useCallback(async (silent = false) => {
-    if (!getAuthToken()) {
+    if (!hasActiveSession()) {
       router.replace("/login");
       return;
     }
@@ -537,12 +544,13 @@ export default function DashboardPage() {
     if (!silent) setNotice(null);
 
     try {
+      const guest = isGuestSession();
       const [tasksResult, zenResult, templatesResult, energyResult] =
         await Promise.all([
           getTasks(1, 50),
           getDashboardZen(),
-          getTemplates(),
-          getEnergySummary(),
+          guest ? Promise.resolve({ data: [] }) : getTemplates(),
+          guest ? Promise.resolve({ data: GUEST_ENERGY_SUMMARY }) : getEnergySummary(),
         ]);
 
       setDisplayName(getDisplayName());

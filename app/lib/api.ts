@@ -3,6 +3,8 @@ const API_BASE_URL =
 
 const TOKEN_KEY = "bentodo_token";
 const USER_KEY = "bentodo_user";
+const GUEST_TOKEN_KEY = "bentodo_guest_token";
+const GUEST_SESSION_ID_KEY = "bentodo_guest_session_id";
 
 type ApiResponse<T = Record<string, never>> = T & {
   success: boolean;
@@ -22,6 +24,13 @@ type AuthData = {
   user: AuthUser;
   token: string;
   migrated_tasks_count?: number;
+};
+
+type GuestSessionData = {
+  guest_session_id: string;
+  session_token: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type EnergyWeight = "Ringan" | "Sedang" | "Berat";
@@ -202,13 +211,19 @@ export const authRequest = async <T>(
   options: RequestInit = {},
 ) => {
   const token = getAuthToken();
+  const guestToken = getGuestSessionToken();
 
-  if (!token) {
+  if (!token && !guestToken) {
     throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
   }
 
   const headers = new Headers(options.headers);
-  headers.set("Authorization", `Bearer ${token}`);
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  } else if (guestToken) {
+    headers.set("x-guest-session-token", guestToken);
+  }
 
   return apiRequest<T>(path, {
     ...options,
@@ -216,9 +231,21 @@ export const authRequest = async <T>(
   });
 };
 
+const getGuestMigrationHeaders = () => {
+  const headers = new Headers();
+  const guestToken = getGuestSessionToken();
+
+  if (guestToken) {
+    headers.set("x-guest-session-token", guestToken);
+  }
+
+  return headers;
+};
+
 export const loginUser = (email: string, password: string) => {
   return apiRequest<{ data: AuthData }>("/auth/login", {
     method: "POST",
+    headers: getGuestMigrationHeaders(),
     body: JSON.stringify({ email, password }),
   });
 };
@@ -230,11 +257,18 @@ export const registerUser = (
 ) => {
   return apiRequest<{ data: AuthData }>("/auth/register", {
     method: "POST",
+    headers: getGuestMigrationHeaders(),
     body: JSON.stringify({
       display_name: displayName,
       email,
       password,
     }),
+  });
+};
+
+export const createGuestSession = () => {
+  return apiRequest<{ data: GuestSessionData }>("/guest", {
+    method: "POST",
   });
 };
 
@@ -354,11 +388,37 @@ export const saveAuthSession = (data: AuthData, rememberMe = false) => {
 
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(GUEST_TOKEN_KEY);
+  localStorage.removeItem(GUEST_SESSION_ID_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(GUEST_TOKEN_KEY);
+  sessionStorage.removeItem(GUEST_SESSION_ID_KEY);
 
   storage.setItem(TOKEN_KEY, data.token);
   storage.setItem(USER_KEY, JSON.stringify(data.user));
+};
+
+export const saveGuestSession = (data: GuestSessionData) => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(GUEST_TOKEN_KEY);
+  localStorage.removeItem(GUEST_SESSION_ID_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(GUEST_TOKEN_KEY);
+  sessionStorage.removeItem(GUEST_SESSION_ID_KEY);
+
+  localStorage.setItem(GUEST_TOKEN_KEY, data.session_token);
+  localStorage.setItem(GUEST_SESSION_ID_KEY, data.guest_session_id);
+  localStorage.setItem(
+    USER_KEY,
+    JSON.stringify({
+      id: data.guest_session_id,
+      email: "guest@bentodo.local",
+      display_name: "Guest",
+    } satisfies AuthUser),
+  );
 };
 
 export const getAuthToken = () => {
@@ -367,6 +427,25 @@ export const getAuthToken = () => {
   }
 
   return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+};
+
+export const getGuestSessionToken = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return (
+    localStorage.getItem(GUEST_TOKEN_KEY) ||
+    sessionStorage.getItem(GUEST_TOKEN_KEY)
+  );
+};
+
+export const hasActiveSession = () => {
+  return !!getAuthToken() || !!getGuestSessionToken();
+};
+
+export const isGuestSession = () => {
+  return !getAuthToken() && !!getGuestSessionToken();
 };
 
 export const getStoredUser = () => {
@@ -391,6 +470,10 @@ export const getStoredUser = () => {
 export const clearAuthSession = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(GUEST_TOKEN_KEY);
+  localStorage.removeItem(GUEST_SESSION_ID_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(GUEST_TOKEN_KEY);
+  sessionStorage.removeItem(GUEST_SESSION_ID_KEY);
 };

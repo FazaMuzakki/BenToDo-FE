@@ -3,23 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { LOGO_SRC, PRODUCTIVITY_BG_SRC } from "./lib/assets";
+import { createGuestSession, saveGuestSession } from "./lib/api";
 
 // ─── Color Palette Constants ─────────────────────────────────────────────────
 const COLORS = {
   green: {
-    primary: "#00CA07",
-    dark: "#00700B",
+    primary: "#008B1F",
+    dark: "#007A1B",
     medium: "#009E08",
-    bright: "#00F20D",
+    bright: "#12A63A",
   },
   gray: {
-    900: "#191919",
-    800: "#262626",
-    700: "#333333",
-    600: "#4C4C4D",
-    400: "#98989A",
-    100: "#E6E6E6",
+    900: "#FFFFFF",
+    800: "#F8FAF8",
+    700: "#ECECEC",
+    600: "#D9D9D9",
+    400: "#666666",
+    100: "#1E1E1E",
   },
 };
 
@@ -125,7 +127,7 @@ function WireframeSphere() {
           } else {
             ctx.lineTo(p.x, p.y);
           }
-          ctx.strokeStyle = `rgba(0, 202, 7, ${alpha * 0.5})`;
+          ctx.strokeStyle = `rgba(0, 139, 31, ${alpha * 0.45})`;
         }
         ctx.lineWidth = 0.5;
         ctx.stroke();
@@ -150,7 +152,7 @@ function WireframeSphere() {
           } else {
             ctx.lineTo(p.x, p.y);
           }
-          ctx.strokeStyle = `rgba(0, 202, 7, ${alpha * 0.5})`;
+          ctx.strokeStyle = `rgba(0, 139, 31, ${alpha * 0.45})`;
         }
         ctx.lineWidth = 0.5;
         ctx.stroke();
@@ -176,7 +178,7 @@ function WireframeSphere() {
             ctx.lineTo(p.x, p.y);
           }
         }
-        ctx.strokeStyle = `rgba(0, 202, 7, ${0.08 - ring * 0.02})`;
+        ctx.strokeStyle = `rgba(0, 139, 31, ${0.08 - ring * 0.02})`;
         ctx.lineWidth = 0.6;
         ctx.stroke();
       }
@@ -192,14 +194,14 @@ function WireframeSphere() {
         const alpha = 0.2 + p.scale * 0.6;
         ctx.beginPath();
         ctx.arc(p.x, p.y, particle.size * p.scale, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fillStyle = `rgba(30,30,30,${alpha * 0.25})`;
         ctx.fill();
       });
 
       // Glow in center — green tinted
       const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 1.2);
-      gradient.addColorStop(0, "rgba(0, 202, 7, 0.04)");
-      gradient.addColorStop(0.5, "rgba(0, 202, 7, 0.015)");
+      gradient.addColorStop(0, "rgba(0, 139, 31, 0.04)");
+      gradient.addColorStop(0.5, "rgba(0, 139, 31, 0.015)");
       gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, w, h);
@@ -261,8 +263,8 @@ function StarField() {
             width: `${star.size}px`,
             height: `${star.size}px`,
             borderRadius: "50%",
-            backgroundColor: "white",
-            opacity: star.opacity,
+            backgroundColor: COLORS.green.primary,
+            opacity: star.opacity * 0.35,
             animation: `twinkle ${3 + star.animDelay}s ease-in-out infinite`,
             animationDelay: `${star.animDelay}s`,
           }}
@@ -433,7 +435,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
           background: "none",
           border: "none",
           cursor: "pointer",
-          color: isOpen ? COLORS.green.primary : "#ffffff",
+          color: isOpen ? COLORS.green.primary : COLORS.gray[100],
           fontSize: "16px",
           fontWeight: 600,
           textAlign: "left",
@@ -472,39 +474,39 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 const templates = [
   {
     icon: <CalendarIcon />,
-    title: "Daily Planner",
-    desc: "Atur aktivitas harian dari pagi hingga malam dengan jadwal yang terstruktur dan prioritas yang jelas.",
-    tags: ["Harian", "Prioritas"],
+    title: "Makalah",
+    desc: "Mulai dari topik, referensi, outline, sampai proses tulis dan revisi makalah.",
+    tags: ["Kuliah", "3 Task"],
   },
   {
     icon: <TargetIcon />,
-    title: "Weekly Goals",
-    desc: "Tetapkan target mingguan dan lacak kemajuan Anda. Cocok untuk perencanaan jangka pendek yang efektif.",
-    tags: ["Mingguan", "Target"],
+    title: "Presentasi",
+    desc: "Susun poin utama, buat slide, dan latihan presentasi tanpa memulai dari nol.",
+    tags: ["Kelas", "Ringkas"],
   },
   {
     icon: <RocketIcon />,
-    title: "Project Sprint",
-    desc: "Kelola proyek dengan metode sprint. Bagi tugas besar menjadi tahapan kecil yang terukur.",
-    tags: ["Proyek", "Sprint"],
+    title: "Praktikum",
+    desc: "Pahami modul, kerjakan eksperimen, lalu susun laporan praktikum dengan alur jelas.",
+    tags: ["Laporan", "Terarah"],
   },
   {
     icon: <BookIcon />,
-    title: "Study Schedule",
-    desc: "Template khusus untuk pelajar. Atur jadwal belajar, tugas, dan deadline ujian dengan mudah.",
-    tags: ["Belajar", "Jadwal"],
+    title: "Ujian",
+    desc: "Kumpulkan materi, buat ringkasan, latihan soal, dan review bagian inti sebelum ujian.",
+    tags: ["Belajar", "Fokus"],
   },
   {
     icon: <RepeatIcon />,
-    title: "Habit Tracker",
-    desc: "Bangun kebiasaan positif dengan pelacak harian. Monitor konsistensi dan capai streak terbaik Anda.",
-    tags: ["Kebiasaan", "Harian"],
+    title: "Rule of 3",
+    desc: "Dashboard membantu menahan fokus dengan menampilkan maksimal tiga tugas prioritas.",
+    tags: ["Prioritas", "Anti-overload"],
   },
   {
     icon: <UsersIcon />,
-    title: "Meeting Notes",
-    desc: "Catat hasil rapat, action items, dan keputusan penting. Pastikan follow-up selalu terlaksana.",
-    tags: ["Rapat", "Catatan"],
+    title: "Guest Mode",
+    desc: "Coba aplikasi tanpa login, lalu pindahkan task ke akun saat kamu siap mendaftar.",
+    tags: ["Tanpa Login", "Migrasi"],
   },
 ];
 
@@ -514,45 +516,67 @@ const faqItems = [
   {
     question: "Apa itu Ben Todo?",
     answer:
-      "Ben Todo adalah aplikasi produktivitas yang dirancang untuk membantu Anda mengatur tugas harian, mengelola prioritas, dan melacak tingkat energi Anda. Dengan fitur Focus Timer bawaan, Ben Todo membantu Anda tetap fokus dan produktif sepanjang hari.",
+      "Ben Todo adalah aplikasi produktivitas mahasiswa untuk mengelola bank tugas, memilih prioritas dengan Rule of 3, menjalankan focus session, dan menjaga energi harian agar belajar lebih terarah.",
   },
   {
-    question: "Apakah Ben Todo gratis digunakan?",
+    question: "Bisa dipakai tanpa login?",
     answer:
-      "Ya! Ben Todo dapat digunakan secara gratis. Anda bisa langsung mendaftar dan mulai menggunakan semua fitur dasar tanpa memerlukan kartu kredit.",
+      "Bisa. Guest Mode membuat session sementara agar kamu dapat mencoba dashboard dan task dasar tanpa membuat akun terlebih dahulu.",
   },
   {
-    question: "Bagaimana cara memulai menggunakan Ben Todo?",
+    question: "Kalau nanti daftar akun, task guest hilang?",
     answer:
-      "Sangat mudah! Cukup buat akun gratis dengan email Anda, lalu mulai tambahkan tugas-tugas Anda. Anda bisa mengatur prioritas, menggunakan template yang tersedia, dan memanfaatkan Focus Timer untuk sesi kerja yang lebih produktif.",
+      "Tidak. Saat login atau register, frontend mengirim token guest ke backend sehingga task guest bisa otomatis dipindahkan ke akun user.",
   },
   {
-    question: "Apakah data saya aman?",
+    question: "Apa fungsi Energy System?",
     answer:
-      "Keamanan data Anda adalah prioritas utama kami. Semua data disimpan dengan enkripsi dan kami mengikuti standar keamanan terbaik untuk memastikan informasi Anda tetap aman dan terlindungi.",
+      "Energy System membantu membatasi beban kerja harian. Task ringan, sedang, dan berat memengaruhi energi agar pengguna tidak memaksakan terlalu banyak tugas sekaligus.",
   },
   {
-    question: "Platform apa saja yang didukung?",
+    question: "Bagaimana deadline reminder bekerja?",
     answer:
-      "Ben Todo tersedia di Web Browser, Mobile, dan Desktop. Anda bisa mengakses tugas Anda dari mana saja dan kapan saja dengan sinkronisasi otomatis di semua perangkat.",
+      "Backend membuat notification reminder untuk deadline, lalu mengirim pengingat di aplikasi dan email untuk user terdaftar.",
   },
   {
-    question: "Apakah saya bisa menggunakan template yang tersedia?",
+    question: "Template apa saja yang tersedia?",
     answer:
-      "Tentu saja! Ben Todo menyediakan berbagai template produktivitas seperti Daily Planner, Weekly Goals, Project Sprint, Study Schedule, Habit Tracker, dan Meeting Notes. Anda bisa langsung menggunakan template ini untuk memulai lebih cepat.",
+      "Template resmi saat ini mencakup Makalah, Presentasi, Praktikum, dan Ujian. Masing-masing memecah pekerjaan besar menjadi beberapa task yang lebih mudah dikerjakan.",
   },
 ];
 
 // ─── Main Landing Page ──────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleGuestMode = async () => {
+    setGuestError(null);
+    setIsGuestLoading(true);
+
+    try {
+      const response = await createGuestSession();
+      saveGuestSession(response.data);
+      router.push("/dashboard");
+    } catch (error) {
+      setGuestError(
+        error instanceof Error
+          ? error.message
+          : "Guest mode belum bisa dimulai. Silakan coba lagi.",
+      );
+    } finally {
+      setIsGuestLoading(false);
+    }
+  };
 
   return (
     <>
@@ -591,8 +615,8 @@ export default function LandingPage() {
         }
 
         @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 20px rgba(0, 202, 7, 0.2); }
-          50% { box-shadow: 0 0 35px rgba(0, 202, 7, 0.4); }
+          0%, 100% { box-shadow: 0 0 20px rgba(0, 139, 31, 0.14); }
+          50% { box-shadow: 0 0 32px rgba(0, 139, 31, 0.22); }
         }
 
         @keyframes float {
@@ -612,7 +636,7 @@ export default function LandingPage() {
           background-attachment: fixed;
           background-position: center;
           min-height: 100vh;
-          color: #ffffff;
+          color: ${COLORS.gray[100]};
           overflow-x: hidden;
           position: relative;
         }
@@ -621,7 +645,7 @@ export default function LandingPage() {
           content: "";
           position: fixed;
           inset: 0;
-          background: radial-gradient(ellipse at 50% 0%, rgba(25, 25, 25, 0.7) 0%, rgba(25, 25, 25, 0.85) 50%, rgba(25, 25, 25, 0.95) 100%);
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.97) 55%, rgba(255, 255, 255, 1) 100%);
           pointer-events: none;
           z-index: 0;
         }
@@ -632,7 +656,7 @@ export default function LandingPage() {
         }
 
         .nav-glass {
-          background: rgba(38, 38, 38, 0.7);
+          background: rgba(255, 255, 255, 0.84);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           border: 1px solid ${COLORS.gray[700]};
@@ -641,7 +665,7 @@ export default function LandingPage() {
         }
 
         .nav-glass:hover {
-          background: rgba(51, 51, 51, 0.8);
+          background: rgba(255, 255, 255, 0.96);
           border-color: ${COLORS.gray[600]};
         }
 
@@ -657,8 +681,8 @@ export default function LandingPage() {
         }
 
         .nav-link:hover {
-          color: #ffffff;
-          background: rgba(255, 255, 255, 0.06);
+          color: ${COLORS.gray[100]};
+          background: ${COLORS.gray[800]};
         }
 
         .btn-primary {
@@ -681,7 +705,7 @@ export default function LandingPage() {
         .btn-primary:hover {
           background: ${COLORS.green.bright};
           transform: translateY(-1px);
-          box-shadow: 0 8px 30px rgba(0, 202, 7, 0.3);
+          box-shadow: 0 8px 30px rgba(0, 139, 31, 0.24);
         }
 
         .btn-primary:active {
@@ -692,8 +716,8 @@ export default function LandingPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: rgba(255, 255, 255, 0.08);
-          color: #ffffff;
+          background: #ffffff;
+          color: ${COLORS.gray[100]};
           font-weight: 500;
           font-size: 14px;
           padding: 12px 26px;
@@ -706,9 +730,15 @@ export default function LandingPage() {
         }
 
         .btn-secondary:hover {
-          background: rgba(255, 255, 255, 0.14);
+          background: ${COLORS.gray[800]};
           border-color: ${COLORS.gray[600]};
           transform: translateY(-1px);
+        }
+
+        .btn-secondary:disabled {
+          cursor: not-allowed;
+          opacity: 0.65;
+          transform: none;
         }
 
         .hero-title {
@@ -751,7 +781,7 @@ export default function LandingPage() {
         .btn-hero-primary:hover {
           background: ${COLORS.green.bright};
           transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 12px 40px rgba(0, 202, 7, 0.35);
+          box-shadow: 0 12px 40px rgba(0, 139, 31, 0.26);
         }
 
         .supported-section {
@@ -765,14 +795,14 @@ export default function LandingPage() {
           width: 38px;
           height: 38px;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.08);
+          background: #ffffff;
           border: 1px solid ${COLORS.gray[700]};
           color: ${COLORS.gray[400]};
           transition: all 0.25s ease;
         }
 
         .platform-icon:hover {
-          background: rgba(0, 202, 7, 0.15);
+          background: ${COLORS.gray[800]};
           color: ${COLORS.green.primary};
           border-color: ${COLORS.green.dark};
           transform: translateY(-2px);
@@ -785,7 +815,7 @@ export default function LandingPage() {
         }
 
         .feature-card {
-          background: rgba(38, 38, 38, 0.6);
+          background: rgba(255, 255, 255, 0.92);
           border: 1px solid ${COLORS.gray[700]};
           border-radius: 20px;
           padding: 36px 30px;
@@ -793,6 +823,7 @@ export default function LandingPage() {
           position: relative;
           overflow: hidden;
           backdrop-filter: blur(10px);
+          box-shadow: 0 14px 40px rgba(15, 23, 42, 0.04);
         }
 
         .feature-card::before {
@@ -808,10 +839,10 @@ export default function LandingPage() {
         }
 
         .feature-card:hover {
-          background: rgba(51, 51, 51, 0.7);
+          background: #ffffff;
           border-color: ${COLORS.gray[600]};
           transform: translateY(-4px);
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
         }
 
         .feature-card:hover::before {
@@ -822,7 +853,7 @@ export default function LandingPage() {
           width: 48px;
           height: 48px;
           border-radius: 14px;
-          background: rgba(0, 202, 7, 0.12);
+          background: ${COLORS.gray[800]};
           display: flex;
           align-items: center;
           justify-content: center;
@@ -832,7 +863,7 @@ export default function LandingPage() {
 
         /* Template Section */
         .template-card {
-          background: rgba(38, 38, 38, 0.5);
+          background: rgba(255, 255, 255, 0.92);
           border: 1px solid ${COLORS.gray[700]};
           border-radius: 20px;
           padding: 32px 28px;
@@ -840,13 +871,14 @@ export default function LandingPage() {
           position: relative;
           overflow: hidden;
           backdrop-filter: blur(10px);
+          box-shadow: 0 14px 40px rgba(15, 23, 42, 0.04);
         }
 
         .template-card:hover {
-          background: rgba(51, 51, 51, 0.6);
+          background: #ffffff;
           border-color: ${COLORS.green.dark};
           transform: translateY(-6px);
-          box-shadow: 0 24px 60px rgba(0, 202, 7, 0.08);
+          box-shadow: 0 24px 60px rgba(0, 139, 31, 0.10);
         }
 
         .template-card::after {
@@ -872,15 +904,15 @@ export default function LandingPage() {
           font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.03em;
-          background: rgba(0, 202, 7, 0.1);
+          background: ${COLORS.gray[800]};
           color: ${COLORS.green.primary};
-          border: 1px solid rgba(0, 202, 7, 0.15);
+          border: 1px solid rgba(0, 139, 31, 0.14);
           transition: all 0.25s ease;
         }
 
         .template-card:hover .template-tag {
-          background: rgba(0, 202, 7, 0.18);
-          border-color: rgba(0, 202, 7, 0.3);
+          background: #ECFFF0;
+          border-color: rgba(0, 139, 31, 0.26);
         }
 
         /* Section label badge */
@@ -888,8 +920,8 @@ export default function LandingPage() {
           display: inline-block;
           padding: 6px 16px;
           border-radius: 50px;
-          border: 1px solid rgba(0, 202, 7, 0.25);
-          background: rgba(0, 202, 7, 0.08);
+          border: 1px solid rgba(0, 139, 31, 0.18);
+          background: #ECFFF0;
           color: ${COLORS.green.primary};
           font-size: 12px;
           font-weight: 600;
@@ -937,8 +969,10 @@ export default function LandingPage() {
             zIndex: 50,
             padding: isScrolled ? "14px 0" : "20px 0",
             transition: "all 0.3s ease",
-            background: isScrolled ? `rgba(25, 25, 25, 0.85)` : "transparent",
+            background: isScrolled ? "rgba(255, 255, 255, 0.92)" : "transparent",
             backdropFilter: isScrolled ? "blur(20px)" : "none",
+            borderBottom: isScrolled ? `1px solid ${COLORS.gray[700]}` : "1px solid transparent",
+            boxShadow: isScrolled ? "0 12px 32px rgba(15, 23, 42, 0.06)" : "none",
             animation: "slideDown 0.6s ease-out",
           }}
         >
@@ -961,7 +995,7 @@ export default function LandingPage() {
                 alignItems: "center",
                 gap: "10px",
                 textDecoration: "none",
-                color: "#ffffff",
+                color: COLORS.gray[100],
               }}
             >
               <Image
@@ -1024,7 +1058,7 @@ export default function LandingPage() {
               left: 0,
               right: 0,
               height: "40%",
-              background: `linear-gradient(to top, ${COLORS.gray[900]}, transparent)`,
+              background: `linear-gradient(to top, ${COLORS.gray[900]}, rgba(255, 255, 255, 0))`,
               pointerEvents: "none",
             }}
           />
@@ -1048,15 +1082,16 @@ export default function LandingPage() {
             {/* Left: Text Content */}
             <div style={{ maxWidth: "600px" }}>
               <h1 className="hero-title">
-                Organize Your Day,{" "}
+                Atur Tugas Kuliah,{" "}
                 <br />
-                Achieve Your{" "}
-                <span style={{ color: COLORS.green.primary }}>Best</span>
+                Jaga Fokus dan{" "}
+                <span style={{ color: COLORS.green.primary }}>Energi</span>
               </h1>
 
               <p className="hero-subtitle" style={{ marginTop: "20px" }}>
-                Stay focused, manage your priorities, and track your energy
-                levels — all in one beautifully crafted productivity app.
+                Bento-Do membantu mahasiswa mengelola bank tugas, memilih
+                tiga prioritas utama, menjalankan focus session, dan menerima
+                reminder deadline dalam satu dashboard sederhana.
               </p>
 
               {/* CTA Buttons */}
@@ -1080,7 +1115,7 @@ export default function LandingPage() {
                       width: "24px",
                       height: "24px",
                       borderRadius: "50%",
-                      background: "rgba(0,0,0,0.2)",
+                      background: "rgba(0,0,0,0.12)",
                     }}
                   >
                     <ArrowUpRight />
@@ -1089,9 +1124,31 @@ export default function LandingPage() {
 
                 <Link href="/register" id="hero-register-btn" className="btn-secondary">
                   <PlayIcon />
-                  Get Started Free
+                  Buat Akun
                 </Link>
+                <button
+                  type="button"
+                  id="hero-guest-btn"
+                  className="btn-secondary"
+                  onClick={handleGuestMode}
+                  disabled={isGuestLoading}
+                >
+                  <PlayIcon />
+                  {isGuestLoading ? "Menyiapkan..." : "Guest Mode"}
+                </button>
               </div>
+              {guestError && (
+                <p
+                  style={{
+                    color: "#D62839",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    marginTop: "14px",
+                  }}
+                >
+                  {guestError}
+                </p>
+              )}
             </div>
 
             {/* Right: Supported platforms */}
@@ -1104,7 +1161,7 @@ export default function LandingPage() {
                   letterSpacing: "0.03em",
                 }}
               >
-                Available on:
+                Jalankan lewat:
               </span>
               <div
                 style={{
@@ -1177,8 +1234,8 @@ export default function LandingPage() {
                   lineHeight: 1.2,
                 }}
               >
-                Semua yang kamu butuhkan untuk{" "}
-                <span style={{ color: COLORS.green.primary }}>tetap produktif</span>
+                Fitur inti untuk belajar{" "}
+                <span style={{ color: COLORS.green.primary }}>lebih terarah</span>
               </h2>
               <p
                 style={{
@@ -1191,8 +1248,8 @@ export default function LandingPage() {
                   lineHeight: 1.7,
                 }}
               >
-                Alat canggih yang dirancang untuk membantu Anda fokus pada hal yang paling penting
-                dan mencapai tujuan secara efisien.
+                Bento-Do membantu mengurangi overload tugas dengan alur sederhana:
+                simpan semua tugas, pilih prioritas, jaga fokus, dan pantau energi harian.
               </p>
             </div>
 
@@ -1217,7 +1274,7 @@ export default function LandingPage() {
                     letterSpacing: "-0.01em",
                   }}
                 >
-                  Priority Tasks
+                  Bank Tugas + Rule of 3
                 </h3>
                 <p
                   style={{
@@ -1226,8 +1283,8 @@ export default function LandingPage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  Atur tugas berdasarkan tingkat prioritas. Fokus pada hal berdampak tinggi terlebih dahulu
-                  dan jangan pernah lewatkan apa yang benar-benar penting dalam hari Anda.
+                  Kumpulkan tugas kuliah di satu tempat, lalu tampilkan tiga prioritas utama
+                  agar pekerjaan besar terasa lebih jelas dan tidak menumpuk di kepala.
                 </p>
               </div>
 
@@ -1244,7 +1301,7 @@ export default function LandingPage() {
                     letterSpacing: "-0.01em",
                   }}
                 >
-                  Focus Timer
+                  Focus Session
                 </h3>
                 <p
                   style={{
@@ -1253,8 +1310,8 @@ export default function LandingPage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  Timer Pomodoro bawaan untuk membantu Anda mempertahankan sesi fokus mendalam.
-                  Lacak waktu produktif Anda dan bangun kebiasaan kerja yang lebih baik.
+                  Mulai sesi fokus dari task yang dipilih, lanjutkan sampai selesai,
+                  dan gunakan alur ini untuk membangun kebiasaan belajar yang lebih konsisten.
                 </p>
               </div>
 
@@ -1271,7 +1328,7 @@ export default function LandingPage() {
                     letterSpacing: "-0.01em",
                   }}
                 >
-                  Energy Tracking
+                  Energy System & Reminder
                 </h3>
                 <p
                   style={{
@@ -1280,8 +1337,8 @@ export default function LandingPage() {
                     lineHeight: 1.7,
                   }}
                 >
-                  Pantau tingkat energi Anda sepanjang hari. Jadwalkan tugas berat
-                  saat Anda dalam performa puncak untuk produktivitas maksimal.
+                  Task ringan, sedang, dan berat memengaruhi energi harian. Untuk user terdaftar,
+                  deadline juga bisa dipantau lewat notifikasi aplikasi dan email.
                 </p>
               </div>
             </div>
@@ -1328,8 +1385,8 @@ export default function LandingPage() {
                   lineHeight: 1.2,
                 }}
               >
-                Template siap pakai untuk{" "}
-                <span style={{ color: COLORS.green.primary }}>mulai lebih cepat</span>
+                Template resmi untuk{" "}
+                <span style={{ color: COLORS.green.primary }}>tugas mahasiswa</span>
               </h2>
               <p
                 style={{
@@ -1342,8 +1399,8 @@ export default function LandingPage() {
                   lineHeight: 1.7,
                 }}
               >
-                Pilih dari berbagai template produktivitas yang telah dirancang untuk membantu
-                Anda memulai dengan cepat dan tetap terorganisir.
+                Template disiapkan untuk tugas yang sering muncul di perkuliahan,
+                seperti makalah, presentasi, praktikum, dan persiapan ujian.
               </p>
             </div>
 
@@ -1363,7 +1420,7 @@ export default function LandingPage() {
                       width: "52px",
                       height: "52px",
                       borderRadius: "16px",
-                      background: `linear-gradient(135deg, rgba(0, 202, 7, 0.15), rgba(0, 112, 11, 0.1))`,
+                      background: "linear-gradient(135deg, #ECFFF0, #F8FAF8)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -1453,13 +1510,14 @@ export default function LandingPage() {
 
             <div
               style={{
-                background: `rgba(38, 38, 38, 0.5)`,
+                background: "rgba(255, 255, 255, 0.92)",
                 border: `1px solid ${COLORS.gray[700]}`,
                 borderRadius: "28px",
                 padding: "48px 40px",
                 position: "relative",
                 overflow: "hidden",
                 backdropFilter: "blur(10px)",
+                boxShadow: "0 24px 70px rgba(15, 23, 42, 0.07)",
               }}
             >
               {/* Decorative gradient */}
@@ -1470,7 +1528,7 @@ export default function LandingPage() {
                   left: "-20%",
                   width: "140%",
                   height: "100%",
-                  background: `radial-gradient(ellipse, rgba(0, 202, 7, 0.05) 0%, transparent 60%)`,
+                  background: "radial-gradient(ellipse, rgba(0, 139, 31, 0.06) 0%, transparent 60%)",
                   pointerEvents: "none",
                 }}
               />
@@ -1484,9 +1542,9 @@ export default function LandingPage() {
                   position: "relative",
                 }}
               >
-                Ben Todo lahir dari kebutuhan sederhana: mengelola hari dengan lebih baik.
-                Kami percaya bahwa produktivitas bukan tentang melakukan lebih banyak hal,
-                tapi tentang melakukan hal yang <strong style={{ color: COLORS.green.primary }}>benar-benar penting</strong>.
+                Ben Todo dibuat sebagai aplikasi produktivitas mahasiswa untuk membantu pengguna
+                mengelola tugas kuliah tanpa proses onboarding yang berat. Fokusnya sederhana:
+                semua tugas terkumpul, prioritas terlihat, dan pekerjaan bisa dimulai lebih cepat.
               </p>
               <p
                 style={{
@@ -1497,9 +1555,9 @@ export default function LandingPage() {
                   position: "relative",
                 }}
               >
-                Dengan kombinasi task management, focus timer, dan energy tracking,
-                Ben Todo membantu ribuan pengguna mentransformasi cara mereka bekerja
-                dan mencapai tujuan setiap hari.
+                Di dalamnya ada Guest Mode untuk mencoba tanpa akun, Bank Tugas untuk menyimpan
+                pekerjaan, Rule of 3 untuk menahan fokus, Focus Session untuk mulai mengerjakan,
+                dan Energy System agar beban harian tetap realistis.
               </p>
 
               <div style={{ position: "relative" }}>
@@ -1513,7 +1571,7 @@ export default function LandingPage() {
                       width: "24px",
                       height: "24px",
                       borderRadius: "50%",
-                      background: "rgba(0,0,0,0.2)",
+                      background: "rgba(0,0,0,0.12)",
                     }}
                   >
                     <ArrowUpRight />
@@ -1533,9 +1591,9 @@ export default function LandingPage() {
               }}
             >
               {[
-                { value: "10K+", label: "Pengguna Aktif" },
-                { value: "50K+", label: "Tugas Selesai" },
-                { value: "99%", label: "Uptime" },
+                { value: "3", label: "Task Prioritas" },
+                { value: "4", label: "Template Resmi" },
+                { value: "24h", label: "Reminder Deadline" },
               ].map((stat, i) => (
                 <div key={i} style={{ textAlign: "center" }}>
                   <div
@@ -1625,11 +1683,12 @@ export default function LandingPage() {
             <div className="faq-container">
               <div
                 style={{
-                  background: `rgba(38, 38, 38, 0.4)`,
+                  background: "rgba(255, 255, 255, 0.92)",
                   border: `1px solid ${COLORS.gray[700]}`,
                   borderRadius: "20px",
                   padding: "12px 32px",
                   backdropFilter: "blur(10px)",
+                  boxShadow: "0 18px 48px rgba(15, 23, 42, 0.05)",
                 }}
               >
                 {faqItems.map((item, i) => (
@@ -1680,7 +1739,7 @@ export default function LandingPage() {
                 color: COLORS.gray[600],
               }}
             >
-              © {new Date().getFullYear()} Ben Todo. All rights reserved.
+              Copyright {new Date().getFullYear()} Ben Todo. All rights reserved.
             </p>
           </div>
         </footer>
