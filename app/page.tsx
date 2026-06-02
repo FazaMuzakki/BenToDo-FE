@@ -794,6 +794,7 @@ export default function LandingPage() {
         .section {
           padding: 96px 32px;
           position: relative;
+          scroll-margin-top: 108px;
         }
 
         .section--compact {
@@ -811,9 +812,14 @@ export default function LandingPage() {
         }
 
         .section-heading--center {
+          width: 100%;
+          max-width: 980px;
           margin-left: auto;
           margin-right: auto;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
         .section-heading h2 {
@@ -837,14 +843,27 @@ export default function LandingPage() {
           line-height: 1.75;
         }
 
+        .section-heading--center p {
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .section-heading .eyebrow,
+        .about-card > .eyebrow,
+        .feature-summary > .eyebrow {
+          color: ${COLORS.neutral.muted};
+        }
+
         .section-heading .eyebrow::before,
-        .about-card > .eyebrow::before {
+        .about-card > .eyebrow::before,
+        .feature-summary > .eyebrow::before {
           content: "[ ";
           color: ${COLORS.neutral.muted};
         }
 
         .section-heading .eyebrow::after,
-        .about-card > .eyebrow::after {
+        .about-card > .eyebrow::after,
+        .feature-summary > .eyebrow::after {
           content: " ]";
           color: ${COLORS.neutral.muted};
         }
