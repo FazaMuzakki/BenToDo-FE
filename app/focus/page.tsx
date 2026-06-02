@@ -9,12 +9,20 @@ import {
   getTasks,
   getEnergySummary,
   updateTask,
+  hasActiveSession,
+  isGuestSession,
   type ActiveFocusSession,
   type Task,
   type EnergySummary
 } from "../lib/api";
 
 type PopupType = "task" | "timer" | "energy" | null;
+
+const GUEST_ENERGY_SUMMARY: EnergySummary = {
+  current_energy: 100,
+  max_energy: 100,
+  is_critical_energy: false,
+};
 
 export default function FocusTimerPage() {
   const router = useRouter();
@@ -43,11 +51,22 @@ export default function FocusTimerPage() {
   useEffect(() => {
     // Initial load - check for active focus session & data
     const loadData = async () => {
+      if (!hasActiveSession()) {
+        router.replace("/login");
+        return;
+      }
+
       try {
+        const guest = isGuestSession();
         const [sessionRes, tasksRes, energyRes] = await Promise.all([
-          getActiveFocusSession(),
+          guest
+            ? Promise.resolve({
+                active_session: null,
+                auto_stopped_session: null,
+              })
+            : getActiveFocusSession(),
           getTasks(1, 10),
-          getEnergySummary()
+          guest ? Promise.resolve({ data: GUEST_ENERGY_SUMMARY }) : getEnergySummary()
         ]);
 
         if (sessionRes.active_session) {
