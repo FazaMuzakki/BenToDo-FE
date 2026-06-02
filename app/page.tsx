@@ -28,7 +28,6 @@ const COLORS = {
 };
 
 const navLinks = [
-  { href: "#guide", label: "Panduan" },
   { href: "#fitur", label: "Fitur" },
   { href: "#template", label: "Template" },
   { href: "#about", label: "About" },
@@ -148,9 +147,9 @@ const pixelDots = Array.from({ length: 9 }).flatMap((_, ring) => {
     return {
       x: Math.cos(rad) * radius,
       y: Math.sin(rad) * radius,
-      size: 3 + (ring % 3),
-      shade: ring % 2 === 0 ? COLORS.accent.lilac : COLORS.green.primary,
-      opacity: ring % 2 === 0 ? 0.46 : 0.34,
+      size: ring % 4 === 0 ? 2.6 : 1.8,
+      shade: ring % 3 === 0 ? COLORS.green.primary : "#7D8581",
+      opacity: ring % 3 === 0 ? 0.28 : 0.18,
       delay: `${(point % 12) * 0.12}s`,
     };
   });
@@ -170,6 +169,60 @@ const ArrowUpRight = () => (
   >
     <line x1="7" y1="17" x2="17" y2="7" />
     <polyline points="7 7 17 7 17 17" />
+  </svg>
+);
+
+const GlobeIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M2 12h20" />
+    <path d="M12 2a15.3 15.3 0 0 1 0 20" />
+    <path d="M12 2a15.3 15.3 0 0 0 0 20" />
+  </svg>
+);
+
+const PhoneIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="7" y="2" width="10" height="20" rx="2" />
+    <path d="M11 18h2" />
+  </svg>
+);
+
+const MonitorIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="4" width="18" height="13" rx="2" />
+    <path d="M8 21h8" />
+    <path d="M12 17v4" />
   </svg>
 );
 
@@ -209,6 +262,12 @@ function LogoMark({ size = 36 }: { size?: number }) {
 function PixelOrbitBackground() {
   return (
     <div className="pixel-orbit" aria-hidden="true">
+      <div className="pixel-orbit__globe">
+        <span className="globe-arc globe-arc--one" />
+        <span className="globe-arc globe-arc--two" />
+        <span className="globe-arc globe-arc--three" />
+        <span className="globe-arc globe-arc--four" />
+      </div>
       <div className="pixel-orbit__rings" />
       <div className="pixel-orbit__dots">
         {pixelDots.map((dot, index) => (
@@ -290,7 +349,7 @@ export default function LandingPage() {
         @keyframes heroRise {
           from {
             opacity: 0;
-            transform: translateY(24px);
+            transform: translateY(18px);
           }
           to {
             opacity: 1;
@@ -330,8 +389,9 @@ export default function LandingPage() {
           min-height: 100vh;
           color: ${COLORS.neutral.ink};
           background:
-            radial-gradient(circle at 12% 18%, rgba(0, 139, 31, 0.05), transparent 25%),
-            radial-gradient(circle at 82% 16%, rgba(201, 184, 255, 0.22), transparent 28%),
+            radial-gradient(circle at 15% 20%, rgba(0, 139, 31, 0.04), transparent 28%),
+            radial-gradient(circle at 82% 22%, rgba(0, 139, 31, 0.035), transparent 30%),
+            radial-gradient(circle at 92% 12%, rgba(120, 120, 120, 0.035), transparent 22%),
             linear-gradient(180deg, #ffffff 0%, #fbfcfb 52%, #ffffff 100%);
           overflow-x: hidden;
           position: relative;
@@ -344,12 +404,12 @@ export default function LandingPage() {
           pointer-events: none;
           z-index: 0;
           background-image:
-            radial-gradient(circle, rgba(0, 139, 31, 0.18) 1px, transparent 1.5px),
-            radial-gradient(circle, rgba(201, 184, 255, 0.16) 1px, transparent 1.5px);
-          background-size: 88px 88px, 28px 28px;
-          background-position: 18px 22px, 6px 10px;
-          mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.08) 35%, rgba(0, 0, 0, 0.5));
-          opacity: 0.42;
+            radial-gradient(circle, rgba(0, 139, 31, 0.24) 1px, transparent 1.6px),
+            radial-gradient(circle, rgba(30, 30, 30, 0.12) 1px, transparent 1.6px);
+          background-size: 142px 142px, 210px 210px;
+          background-position: 24px 38px, 82px 14px;
+          mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.12) 38%, rgba(0, 0, 0, 0.42));
+          opacity: 0.24;
         }
 
         .landing-page > * {
@@ -359,18 +419,18 @@ export default function LandingPage() {
 
         .site-header {
           position: fixed;
-          top: 0;
+          top: 22px;
           left: 0;
           right: 0;
           z-index: 50;
-          background: ${COLORS.neutral.surface};
-          border-bottom: 1px solid ${COLORS.neutral.softLine};
-          box-shadow: 0 10px 35px rgba(15, 23, 42, 0.04);
+          background: transparent;
+          border-bottom: none;
+          box-shadow: none;
         }
 
         .site-header__inner {
           max-width: 1200px;
-          height: 76px;
+          height: 58px;
           margin: 0 auto;
           padding: 0 32px;
           display: grid;
@@ -400,6 +460,7 @@ export default function LandingPage() {
           border: 1px solid ${COLORS.neutral.softLine};
           border-radius: 999px;
           background: #ffffff;
+          box-shadow: 0 14px 42px rgba(15, 23, 42, 0.06);
         }
 
         .nav-menu a {
@@ -497,7 +558,7 @@ export default function LandingPage() {
 
         .hero {
           min-height: 100vh;
-          padding: 148px 32px 72px;
+          padding: 118px 32px 70px;
           display: flex;
           align-items: center;
         }
@@ -506,10 +567,16 @@ export default function LandingPage() {
           width: 100%;
           max-width: 1200px;
           margin: 0 auto;
-          display: grid;
-          grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
-          align-items: center;
-          gap: clamp(32px, 7vw, 96px);
+          min-height: calc(100vh - 190px);
+          position: relative;
+          display: block;
+        }
+
+        .hero__content {
+          max-width: 660px;
+          position: relative;
+          z-index: 2;
+          padding-top: clamp(18px, 4vw, 46px);
         }
 
         .eyebrow {
@@ -522,14 +589,14 @@ export default function LandingPage() {
         }
 
         .hero h1 {
-          max-width: 640px;
-          margin-top: 20px;
+          max-width: 720px;
+          margin-top: 18px;
           font-family: var(--font-outfit), sans-serif;
-          font-size: clamp(48px, 7vw, 92px);
-          line-height: 0.93;
-          letter-spacing: -0.055em;
+          font-size: clamp(48px, 5.1vw, 78px);
+          line-height: 1.02;
+          letter-spacing: -0.05em;
           font-weight: 900;
-          animation: heroRise 700ms ease both;
+          animation: heroRise 860ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         .hero h1 span {
@@ -538,11 +605,11 @@ export default function LandingPage() {
 
         .hero__copy {
           max-width: 560px;
-          margin-top: 28px;
+          margin-top: 26px;
           color: ${COLORS.neutral.muted};
-          font-size: clamp(16px, 1.4vw, 20px);
+          font-size: clamp(16px, 1.28vw, 19px);
           line-height: 1.75;
-          animation: heroRise 700ms ease 120ms both;
+          animation: heroRise 860ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
         }
 
         .hero__actions {
@@ -551,7 +618,7 @@ export default function LandingPage() {
           align-items: center;
           gap: 14px;
           margin-top: 36px;
-          animation: heroRise 700ms ease 220ms both;
+          animation: heroRise 860ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
         }
 
         .guest-error {
@@ -562,29 +629,92 @@ export default function LandingPage() {
         }
 
         .hero__visual {
-          min-height: 520px;
-          position: relative;
+          width: min(690px, 58vw);
+          aspect-ratio: 1;
+          position: absolute;
+          top: 48%;
+          right: -18px;
+          transform: translateY(-50%);
           display: flex;
           align-items: center;
           justify-content: center;
+          pointer-events: none;
+          z-index: 1;
+          will-change: transform;
         }
 
         .pixel-orbit {
-          width: min(560px, 100%);
+          width: 100%;
           aspect-ratio: 1;
           position: relative;
+          opacity: 0.72;
+          contain: layout paint;
+          transform: translateZ(0);
+        }
+
+        .pixel-orbit__globe {
+          position: absolute;
+          inset: 12%;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 50% 50%, rgba(0, 139, 31, 0.085), transparent 62%),
+            repeating-radial-gradient(ellipse at center, transparent 0 24px, rgba(0, 139, 31, 0.105) 25px, transparent 26px),
+            repeating-conic-gradient(from -12deg, rgba(0, 139, 31, 0.12) 0deg 0.75deg, transparent 0.75deg 13deg);
+          border: 1px solid rgba(0, 139, 31, 0.12);
+          box-shadow:
+            inset 0 0 70px rgba(0, 139, 31, 0.06),
+            0 0 0 1px rgba(0, 139, 31, 0.025);
+          opacity: 0.74;
+          animation: orbitDrift 84s linear infinite;
+          will-change: transform;
+        }
+
+        .pixel-orbit__globe::before,
+        .pixel-orbit__globe::after,
+        .globe-arc {
+          content: "";
+          position: absolute;
+          inset: 4%;
+          border: 1px solid rgba(0, 139, 31, 0.11);
+          border-radius: 50%;
+        }
+
+        .pixel-orbit__globe::before {
+          transform: scaleX(0.54);
+        }
+
+        .pixel-orbit__globe::after {
+          transform: scaleX(0.28);
+        }
+
+        .globe-arc--one {
+          transform: rotate(58deg) scaleX(0.34);
+        }
+
+        .globe-arc--two {
+          transform: rotate(-58deg) scaleX(0.34);
+        }
+
+        .globe-arc--three {
+          transform: rotate(82deg) scaleX(0.18);
+        }
+
+        .globe-arc--four {
+          transform: rotate(-82deg) scaleX(0.18);
         }
 
         .pixel-orbit::before {
           content: "";
           position: absolute;
-          inset: 8%;
+          inset: 3%;
           border-radius: 50%;
           background:
-            radial-gradient(circle, rgba(0, 139, 31, 0.06), transparent 58%),
-            repeating-radial-gradient(circle, transparent 0 18px, rgba(0, 139, 31, 0.08) 19px, transparent 20px);
+            radial-gradient(circle, rgba(0, 139, 31, 0.035), transparent 60%),
+            repeating-radial-gradient(circle, transparent 0 28px, rgba(0, 139, 31, 0.045) 29px, transparent 30px);
           filter: blur(0.2px);
-          animation: orbitDrift 26s linear infinite;
+          animation: orbitDrift 110s linear infinite;
+          mask-image: radial-gradient(circle, #000 0 74%, transparent 82%);
+          will-change: transform;
         }
 
         .pixel-orbit__rings {
@@ -593,16 +723,17 @@ export default function LandingPage() {
           border-radius: 50%;
           border: 1px solid rgba(0, 139, 31, 0.08);
           box-shadow:
-            0 0 0 36px rgba(0, 139, 31, 0.025),
-            0 0 0 72px rgba(201, 184, 255, 0.035),
-            0 0 0 118px rgba(0, 139, 31, 0.018);
+            0 0 0 42px rgba(0, 139, 31, 0.018),
+            0 0 0 88px rgba(30, 30, 30, 0.016),
+            0 0 0 146px rgba(0, 139, 31, 0.012);
         }
 
         .pixel-orbit__dots {
           position: absolute;
           left: 50%;
           top: 50%;
-          animation: orbitDrift 32s linear infinite reverse;
+          animation: orbitDrift 120s linear infinite reverse;
+          will-change: transform;
         }
 
         .pixel-orbit__dots span {
@@ -610,34 +741,54 @@ export default function LandingPage() {
           left: 0;
           top: 0;
           display: block;
-          border-radius: 2px;
-          animation: dotGlow 2.4s ease-in-out infinite;
+          border-radius: 50%;
+          animation: dotGlow 5.6s ease-in-out infinite;
+          will-change: opacity;
         }
 
         @keyframes dotGlow {
           0%,
           100% {
-            filter: saturate(0.9);
+            opacity: 0.18;
           }
           50% {
-            filter: saturate(1.8);
+            opacity: 0.46;
           }
+        }
+
+        .hero .eyebrow {
+          display: none;
         }
 
         .hero__note {
           position: absolute;
           right: 0;
-          bottom: 32px;
-          max-width: 280px;
-          padding: 18px 0 0;
-          border-top: 1px solid ${COLORS.neutral.line};
+          bottom: 38px;
+          max-width: 250px;
           color: ${COLORS.neutral.muted};
-          font-size: 13px;
-          line-height: 1.65;
+          font-size: 14px;
+          font-weight: 700;
+          text-align: center;
         }
 
-        .hero__note strong {
-          color: ${COLORS.neutral.ink};
+        .hero__channels {
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 12px;
+        }
+
+        .hero__channels span {
+          width: 38px;
+          height: 38px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid ${COLORS.neutral.softLine};
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.88);
+          color: ${COLORS.neutral.muted};
+          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
         }
 
         .section {
@@ -1058,12 +1209,16 @@ export default function LandingPage() {
         }
 
         .reveal {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 0;
+          transform: translateY(18px);
+          transition:
+            opacity 760ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .reveal.is-visible {
-          animation: heroRise 700ms ease both;
+          opacity: 1;
+          transform: translateY(0);
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1092,7 +1247,19 @@ export default function LandingPage() {
           }
 
           .hero__visual {
+            width: min(520px, 100%);
             min-height: 360px;
+            position: relative;
+            top: auto;
+            right: auto;
+            transform: none;
+            margin: 28px auto 0;
+          }
+
+          .hero__note {
+            right: 50%;
+            bottom: 8px;
+            transform: translateX(50%);
           }
 
           .feature-summary {
@@ -1200,13 +1367,15 @@ export default function LandingPage() {
         <main>
           <section className="hero">
             <div className="hero__inner">
-              <div>
+              <div className="hero__content">
                 <div className="eyebrow">Student task dashboard</div>
                 <h1>
-                  Atur tugas kuliah, jaga fokus dan <span>energi</span>.
+                  Atur Tugas Kuliah,<br />
+                  Jaga Fokus dan<br />
+                  <span>Energi</span>
                 </h1>
                 <p className="hero__copy">
-                  Bento-Do membantu mahasiswa mengelola bank tugas, memilih tiga prioritas utama,
+                  Bento-do membantu mahasiswa mengelola bank tugas, memilih tiga prioritas utama,
                   menjalankan focus session, dan menerima reminder deadline dalam satu dashboard
                   sederhana.
                 </p>
@@ -1236,8 +1405,12 @@ export default function LandingPage() {
               <div className="hero__visual">
                 <PixelOrbitBackground />
                 <div className="hero__note">
-                  <strong>Rule of 3:</strong> dashboard menahan fokus ke tiga tugas terpenting,
-                  bukan memaksa semua pekerjaan terlihat sama mendesaknya.
+                  <span>Jalankan lewat:</span>
+                  <div className="hero__channels" aria-hidden="true">
+                    <span><GlobeIcon /></span>
+                    <span><PhoneIcon /></span>
+                    <span><MonitorIcon /></span>
+                  </div>
                 </div>
               </div>
             </div>
