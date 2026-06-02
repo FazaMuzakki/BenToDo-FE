@@ -541,7 +541,7 @@ export default function DashboardPage() {
 
   const loadDashboardData = useCallback(async (silent = false) => {
     if (!getAuthToken()) {
-      router.replace("/");
+      router.replace("/login");
       return;
     }
 
@@ -639,7 +639,7 @@ export default function DashboardPage() {
 
   const handleSignOut = () => {
     clearAuthSession();
-    router.push("/");
+    router.push("/login");
   };
 
   const handleToggleTaskStatus = async (task: ViewTask, checked: boolean) => {

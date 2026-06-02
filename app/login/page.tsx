@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { registerUser, saveAuthSession } from "../lib/api";
+import { loginUser, saveAuthSession } from "../lib/api";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -65,67 +65,27 @@ const SpinnerIcon = () => (
   </svg>
 );
 
-// ─── Shared: Input style helper ────────────────────────────────────────────────
-const inputBaseStyle: React.CSSProperties = {
-  width: "100%",
-  height: "48px",
-  borderRadius: "8px",
-  border: "1px solid #d1d5db",
-  padding: "0 16px",
-  fontSize: "14px",
-  color: "#111827",
-  backgroundColor: "#ffffff",
-  outline: "none",
-  transition: "border-color 0.15s, box-shadow 0.15s",
-  fontFamily: "inherit",
-};
-
-const inputWithIconStyle: React.CSSProperties = {
-  ...inputBaseStyle,
-  paddingRight: "44px",
-};
-
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function RegisterPage() {
+export default function SignInPage() {
   const router = useRouter();
-  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = "#16a34a";
-    e.target.style.boxShadow = "0 0 0 3px rgba(22,163,74,0.12)";
-  };
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = "#d1d5db";
-    e.target.style.boxShadow = "none";
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Password dan konfirmasi password tidak cocok.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password minimal 6 karakter.");
-      return;
-    }
-
     setIsLoading(true);
+
     try {
-      const data = await registerUser(displayName, email, password);
+      const data = await loginUser(email, password);
 
       if (data.data?.token) {
-        saveAuthSession(data.data);
+        saveAuthSession(data.data, rememberMe);
       }
 
       router.push("/dashboard");
@@ -133,7 +93,7 @@ export default function RegisterPage() {
       setError(
         error instanceof Error
           ? error.message
-          : "Tidak dapat terhubung ke server. Silakan coba lagi.",
+          : "Unable to connect to server. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -144,7 +104,7 @@ export default function RegisterPage() {
     <main className="min-h-screen flex flex-col md:flex-row">
 
       {/* ══════════════════════════════════════
-          LEFT PANEL — sama dengan Sign In
+          LEFT PANEL
       ══════════════════════════════════════ */}
       <div
         className="relative flex flex-col md:w-[47%] flex-shrink-0 min-h-[320px] md:min-h-screen"
@@ -163,8 +123,9 @@ export default function RegisterPage() {
           </Link>
         </div>
 
-        {/* Center Branding */}
+        {/* Center Branding — semua konten dikumpulkan rapat di tengah */}
         <div className="flex flex-col items-center justify-center flex-1 px-8 text-white text-center">
+
           {/* Logo */}
           <div style={{ marginBottom: "20px" }}>
             <Image
@@ -199,6 +160,7 @@ export default function RegisterPage() {
           >
             Plan your tasks today and achieve your best productivity with Ben Todo.
           </p>
+
           {/* Divider */}
           <div
             style={{
@@ -211,18 +173,21 @@ export default function RegisterPage() {
 
           {/* Feature Icons */}
           <div className="flex items-start justify-center" style={{ gap: "36px" }}>
+            {/* Focus Timer */}
             <div className="flex flex-col items-center" style={{ gap: "10px" }}>
               <div style={{ color: "#ffffff" }}><FocusTimerIcon /></div>
               <span style={{ fontSize: "12px", fontWeight: 500, color: "#ffffff", lineHeight: 1 }}>
                 Focus Timer
               </span>
             </div>
+            {/* Priority Task */}
             <div className="flex flex-col items-center" style={{ gap: "10px" }}>
               <div style={{ color: "#ffffff" }}><PriorityTaskIcon /></div>
               <span style={{ fontSize: "12px", fontWeight: 500, color: "#ffffff", lineHeight: 1 }}>
                 Priority Task
               </span>
             </div>
+            {/* Energy Level — highlighted */}
             <div className="flex flex-col items-center" style={{ gap: "10px" }}>
               <div style={{ color: "#ffffff" }}><EnergyLevelIcon /></div>
               <span style={{ fontSize: "12px", fontWeight: 600, color: "#ffffff", lineHeight: 1 }}>
@@ -230,13 +195,19 @@ export default function RegisterPage() {
               </span>
             </div>
           </div>
+
         </div>
       </div>
 
+
       {/* ══════════════════════════════════════
-          RIGHT PANEL — Sign Up Form
+          RIGHT PANEL
       ══════════════════════════════════════ */}
       <div className="flex flex-1 items-center justify-center bg-white px-8 py-14 md:py-0">
+        {/*
+          Container: lebar tetap 360px agar proporsional seperti referensi.
+          Padding kiri-kanan 0 karena sudah dihandle parent.
+        */}
         <div style={{ width: "100%", maxWidth: "360px" }}>
 
           {/* ── Heading ── */}
@@ -245,10 +216,10 @@ export default function RegisterPage() {
               className="font-bold text-gray-900 leading-tight"
               style={{ fontSize: "22px", marginBottom: "8px" }}
             >
-              Sign Up
+              Welcome to Ben To Do
             </h2>
             <p className="text-gray-500" style={{ fontSize: "14px", fontWeight: 400 }}>
-              Create Account to get more features
+              Enter your email and password to Sign in
             </p>
           </div>
 
@@ -265,29 +236,6 @@ export default function RegisterPage() {
 
           {/* ── Form ── */}
           <form onSubmit={handleSubmit} noValidate>
-
-            {/* Username */}
-            <div style={{ marginBottom: "16px" }}>
-              <label
-                htmlFor="username"
-                className="block text-gray-800"
-                style={{ fontSize: "14px", fontWeight: 500, marginBottom: "6px" }}
-              >
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                autoComplete="name"
-                required
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter your Username"
-                style={inputBaseStyle}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-              />
-            </div>
 
             {/* Email */}
             <div style={{ marginBottom: "16px" }}>
@@ -306,14 +254,32 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your Email"
-                style={inputBaseStyle}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
+                style={{
+                  width: "100%",
+                  height: "48px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  padding: "0 16px",
+                  fontSize: "14px",
+                  color: "#111827",
+                  backgroundColor: "#ffffff",
+                  outline: "none",
+                  transition: "border-color 0.15s, box-shadow 0.15s",
+                  fontFamily: "inherit",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "#16a34a";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(22,163,74,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "#d1d5db";
+                  e.target.style.boxShadow = "none";
+                }}
               />
             </div>
 
             {/* Password */}
-            <div style={{ marginBottom: "16px" }}>
+            <div style={{ marginBottom: "12px" }}>
               <label
                 htmlFor="password"
                 className="block text-gray-800"
@@ -325,25 +291,52 @@ export default function RegisterPage() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your Password"
-                  style={inputWithIconStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    padding: "0 44px 0 16px",
+                    fontSize: "14px",
+                    color: "#111827",
+                    backgroundColor: "#ffffff",
+                    outline: "none",
+                    transition: "border-color 0.15s, box-shadow 0.15s",
+                    fontFamily: "inherit",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#16a34a";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(22,163,74,0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                    e.target.style.boxShadow = "none";
+                  }}
                 />
                 <button
                   type="button"
-                  id="toggle-password"
+                  id="toggle-password-visibility"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword((p) => !p)}
                   style={{
-                    position: "absolute", top: 0, right: 0, bottom: 0,
-                    width: "44px", display: "flex", alignItems: "center",
-                    justifyContent: "center", color: "#9ca3af",
-                    background: "none", border: "none", cursor: "pointer",
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: "44px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#9ca3af",
+                    cursor: "pointer",
+                    background: "none",
+                    border: "none",
+                    outline: "none",
                   }}
                 >
                   {showPassword ? <EyeIcon /> : <EyeOffIcon />}
@@ -351,48 +344,52 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Confirm Password */}
-            <div style={{ marginBottom: "24px" }}>
+            {/* Remember me + Forgot Password */}
+            <div
+              className="flex items-center justify-between"
+              style={{ marginBottom: "20px" }}
+            >
               <label
-                htmlFor="confirm-password"
-                className="block text-gray-800"
-                style={{ fontSize: "14px", fontWeight: 500, marginBottom: "6px" }}
+                className="flex items-center cursor-pointer select-none"
+                style={{ gap: "8px" }}
               >
-                Confirm Password
-              </label>
-              <div style={{ position: "relative" }}>
                 <input
-                  id="confirm-password"
-                  type={showConfirm ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Enter your Password"
-                  style={inputWithIconStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                />
-                <button
-                  type="button"
-                  id="toggle-confirm-password"
-                  aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
-                  onClick={() => setShowConfirm((p) => !p)}
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   style={{
-                    position: "absolute", top: 0, right: 0, bottom: 0,
-                    width: "44px", display: "flex", alignItems: "center",
-                    justifyContent: "center", color: "#9ca3af",
-                    background: "none", border: "none", cursor: "pointer",
+                    width: "15px",
+                    height: "15px",
+                    borderRadius: "3px",
+                    accentColor: "#16a34a",
+                    cursor: "pointer",
+                    flexShrink: 0,
                   }}
-                >
-                  {showConfirm ? <EyeIcon /> : <EyeOffIcon />}
-                </button>
-              </div>
+                />
+                <span style={{ fontSize: "13px", color: "#374151", fontWeight: 400 }}>
+                  Remember me
+                </span>
+              </label>
+
+              <Link
+                href="/forgot-password"
+                id="forgot-password-link"
+                style={{
+                  fontSize: "13px",
+                  color: "#111827",
+                  fontWeight: 400,
+                  textDecoration: "underline",
+                  textUnderlineOffset: "2px",
+                }}
+              >
+                Forgot Password?
+              </Link>
             </div>
 
-            {/* Sign Up Button */}
+            {/* Sign In Button */}
             <button
-              id="sign-up-button"
+              id="sign-in-button"
               type="submit"
               disabled={isLoading}
               style={{
@@ -430,23 +427,23 @@ export default function RegisterPage() {
               {isLoading ? (
                 <>
                   <SpinnerIcon />
-                  <span>Creating account…</span>
+                  <span>Signing in…</span>
                 </>
               ) : (
-                "Sign Up"
+                "Sign In"
               )}
             </button>
           </form>
 
-          {/* Sign In link */}
+          {/* Register link */}
           <p
             className="text-center"
             style={{ marginTop: "18px", fontSize: "13px", color: "#6b7280", fontWeight: 400 }}
           >
-            Have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
-              href="/login"
-              id="sign-in-link"
+              href="/register"
+              id="register-link"
               style={{
                 color: "#111827",
                 fontWeight: 500,
@@ -454,7 +451,7 @@ export default function RegisterPage() {
                 textUnderlineOffset: "2px",
               }}
             >
-              Sign In
+              Register
             </Link>
           </p>
 

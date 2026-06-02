@@ -269,7 +269,7 @@ export default function ResetPasswordPage() {
 
               {/* Sign In Button */}
               <Link
-                href="/"
+                href="/login"
                 style={{
                   display: "flex",
                   width: "100%",
