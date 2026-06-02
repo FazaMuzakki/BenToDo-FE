@@ -76,6 +76,7 @@ jobs:
       - name: Build with Next.js
         env:
           NEXT_PUBLIC_API_BASE_URL: https://api.216.146.26.2.sslip.io/api/v1
+          NEXT_PUBLIC_BASE_PATH: /BenToDo-FE
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

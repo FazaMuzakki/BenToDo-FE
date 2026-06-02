@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { LOGO_SRC, PRODUCTIVITY_BG_SRC } from "./lib/assets";
 
 // ─── Color Palette Constants ─────────────────────────────────────────────────
 const COLORS = {
@@ -606,7 +607,7 @@ export default function LandingPage() {
 
         .landing-page {
           background-color: ${COLORS.gray[900]};
-          background-image: url('/productivity-bg.png');
+          background-image: url('${PRODUCTIVITY_BG_SRC}');
           background-size: cover;
           background-attachment: fixed;
           background-position: center;
@@ -964,7 +965,7 @@ export default function LandingPage() {
               }}
             >
               <Image
-                src="/Logo BenTodo.png"
+                src={LOGO_SRC}
                 alt="Ben Todo Logo"
                 width={36}
                 height={36}
@@ -1657,7 +1658,7 @@ export default function LandingPage() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <Image
-                src="/Logo BenTodo.png"
+                src={LOGO_SRC}
                 alt="Ben Todo Logo"
                 width={24}
                 height={24}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { forgotPassword } from "../lib/api";
+import { LOGO_SRC } from "../lib/assets";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,7 @@ export default function ForgotPasswordPage() {
           {/* Logo */}
           <div style={{ marginBottom: "20px" }}>
             <Image
-              src="/Logo BenTodo.png"
+              src={LOGO_SRC}
               alt="Ben To Do Logo"
               width={110}
               height={110}
