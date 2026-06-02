@@ -1,294 +1,192 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LOGO_SRC, PRODUCTIVITY_BG_SRC } from "./lib/assets";
+import { LOGO_SRC } from "./lib/assets";
 import { createGuestSession, saveGuestSession } from "./lib/api";
 
-// ─── Color Palette Constants ─────────────────────────────────────────────────
 const COLORS = {
   green: {
     primary: "#008B1F",
     dark: "#007A1B",
-    medium: "#009E08",
     bright: "#12A63A",
+    soft: "#ECFFF0",
   },
-  gray: {
-    900: "#FFFFFF",
-    800: "#F8FAF8",
-    700: "#ECECEC",
-    600: "#D9D9D9",
-    400: "#666666",
-    100: "#1E1E1E",
+  neutral: {
+    ink: "#202124",
+    muted: "#666666",
+    line: "#D9D9D9",
+    softLine: "#ECECEC",
+    surface: "#FFFFFF",
+    wash: "#F8FAF8",
+  },
+  accent: {
+    mint: "#BFEBDD",
+    lilac: "#C9B8FF",
   },
 };
 
-// ─── Animated Wireframe Sphere (Canvas) ─────────────────────────────────────
+const navLinks = [
+  { href: "#guide", label: "Panduan" },
+  { href: "#fitur", label: "Fitur" },
+  { href: "#template", label: "Template" },
+  { href: "#about", label: "About" },
+  { href: "#faq", label: "FAQ" },
+];
 
-function WireframeSphere() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const guideSteps = [
+  {
+    label: "01",
+    title: "Masuk atau pakai Guest Mode",
+    desc: "Coba alur dasar tanpa akun, lalu pindahkan task saat login atau register.",
+  },
+  {
+    label: "02",
+    title: "Kumpulkan bank tugas",
+    desc: "Masukkan tugas kuliah, deadline, dan bobot energi agar semua terlihat jelas.",
+  },
+  {
+    label: "03",
+    title: "Pilih tiga prioritas",
+    desc: "Dashboard membantu kamu fokus ke pekerjaan yang paling dekat dan penting.",
+  },
+  {
+    label: "04",
+    title: "Kerjakan dengan ritme",
+    desc: "Gunakan focus session, cek energi, dan biarkan reminder deadline menjaga jadwal.",
+  },
+];
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+const featureRows = [
+  {
+    key: "bank",
+    title: "Bank tugas dan Rule of 3",
+    desc: "Semua tugas kuliah disimpan dalam satu workspace, lalu dashboard menahan fokus ke tiga prioritas utama agar pengguna tidak kewalahan.",
+  },
+  {
+    key: "focus",
+    title: "Focus session",
+    desc: "Task bisa langsung dibawa ke mode fokus. Alurnya membantu pengguna mulai mengerjakan, bukan hanya mencatat.",
+  },
+  {
+    key: "energy",
+    title: "Energy system",
+    desc: "Bobot ringan, sedang, dan berat membuat beban harian terasa lebih realistis dan tidak sekadar daftar tugas panjang.",
+  },
+  {
+    key: "reminder",
+    title: "Deadline reminder",
+    desc: "Untuk user terdaftar, sistem menyiapkan notifikasi aplikasi dan email agar deadline penting tidak terlewat.",
+  },
+];
 
-    let animationId: number;
-    let time = 0;
+const templates = [
+  {
+    title: "Makalah",
+    desc: "Topik, referensi, outline, penulisan, dan revisi.",
+    meta: "3 task",
+  },
+  {
+    title: "Presentasi",
+    desc: "Poin utama, struktur slide, dan latihan penyampaian.",
+    meta: "3 task",
+  },
+  {
+    title: "Praktikum",
+    desc: "Modul, eksperimen, catatan hasil, dan laporan.",
+    meta: "3 task",
+  },
+  {
+    title: "Ujian",
+    desc: "Materi inti, ringkasan, latihan soal, dan review.",
+    meta: "4 task",
+  },
+];
 
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+const faqItems = [
+  {
+    question: "Apa itu Bento-Do?",
+    answer:
+      "Bento-Do adalah aplikasi produktivitas mahasiswa untuk mengelola bank tugas, memilih prioritas dengan Rule of 3, menjalankan focus session, dan menjaga energi harian agar belajar lebih terarah.",
+  },
+  {
+    question: "Bisa dipakai tanpa login?",
+    answer:
+      "Bisa. Guest Mode membuat session sementara agar kamu dapat mencoba dashboard dan task dasar tanpa membuat akun terlebih dahulu.",
+  },
+  {
+    question: "Kalau nanti daftar akun, task guest hilang?",
+    answer:
+      "Tidak. Saat login atau register, frontend mengirim token guest ke backend sehingga task guest bisa dipindahkan ke akun user.",
+  },
+  {
+    question: "Apa fungsi Energy System?",
+    answer:
+      "Energy System membantu membatasi beban kerja harian. Task ringan, sedang, dan berat memengaruhi energi agar pengguna tidak memaksakan terlalu banyak tugas sekaligus.",
+  },
+  {
+    question: "Bagaimana deadline reminder bekerja?",
+    answer:
+      "Backend membuat notification reminder untuk deadline, lalu mengirim pengingat di aplikasi dan email untuk user terdaftar.",
+  },
+];
+
+const pixelDots = Array.from({ length: 9 }).flatMap((_, ring) => {
+  const radius = 58 + ring * 30;
+  const count = 40 + ring * 4;
+
+  return Array.from({ length: count }).flatMap((__, point) => {
+    const angle = (point / count) * 360;
+    const gap = (point + ring * 3) % 11 === 0 || (point + ring) % 17 === 0;
+    const onMainArc = angle > 200 || angle < 92;
+    const onTraceArc = angle > 120 && angle < 178 && ring > 4;
+
+    if (gap || (!onMainArc && !onTraceArc)) return [];
+
+    const rad = (angle * Math.PI) / 180;
+    return {
+      x: Math.cos(rad) * radius,
+      y: Math.sin(rad) * radius,
+      size: 3 + (ring % 3),
+      shade: ring % 2 === 0 ? COLORS.accent.lilac : COLORS.green.primary,
+      opacity: ring % 2 === 0 ? 0.46 : 0.34,
+      delay: `${(point % 12) * 0.12}s`,
     };
-
-    resize();
-    window.addEventListener("resize", resize);
-
-    // Sphere parameters
-    const numLat = 18;
-    const numLon = 24;
-    const numParticles = 120;
-
-    // Generate random particles on sphere surface
-    const particles = Array.from({ length: numParticles }, () => ({
-      theta: Math.random() * Math.PI,
-      phi: Math.random() * Math.PI * 2,
-      size: Math.random() * 1.5 + 0.5,
-      speed: (Math.random() - 0.5) * 0.003,
-    }));
-
-    const project = (
-      x: number,
-      y: number,
-      z: number,
-      cx: number,
-      cy: number,
-      radius: number
-    ) => {
-      const perspective = 600;
-      const scale = perspective / (perspective + z);
-      return {
-        x: cx + x * scale * radius,
-        y: cy + y * scale * radius,
-        scale,
-        z,
-      };
-    };
-
-    const draw = () => {
-      const w = canvas.getBoundingClientRect().width;
-      const h = canvas.getBoundingClientRect().height;
-      ctx.clearRect(0, 0, w, h);
-
-      const cx = w * 0.55;
-      const cy = h * 0.42;
-      const radius = Math.min(w, h) * 0.32;
-
-      const rotY = time * 0.15;
-      const rotX = 0.3;
-
-      const cosRY = Math.cos(rotY);
-      const sinRY = Math.sin(rotY);
-      const cosRX = Math.cos(rotX);
-      const sinRX = Math.sin(rotX);
-
-      const rotate = (x: number, y: number, z: number) => {
-        // Rotate around Y
-        let x1 = x * cosRY - z * sinRY;
-        const z1 = x * sinRY + z * cosRY;
-        // Rotate around X
-        const y1 = y * cosRX - z1 * sinRX;
-        const z2 = y * sinRX + z1 * cosRX;
-        return { x: x1, y: y1, z: z2 };
-      };
-
-      // Draw latitude lines
-      for (let i = 1; i < numLat; i++) {
-        const theta = (i / numLat) * Math.PI;
-        ctx.beginPath();
-        let first = true;
-        for (let j = 0; j <= 64; j++) {
-          const phi = (j / 64) * Math.PI * 2;
-          const sx = Math.sin(theta) * Math.cos(phi);
-          const sy = Math.cos(theta);
-          const sz = Math.sin(theta) * Math.sin(phi);
-          const r = rotate(sx, sy, sz);
-          const p = project(r.x, r.y, r.z, cx, cy, radius);
-          const alpha = 0.06 + p.scale * 0.15;
-          if (first) {
-            ctx.moveTo(p.x, p.y);
-            first = false;
-          } else {
-            ctx.lineTo(p.x, p.y);
-          }
-          ctx.strokeStyle = `rgba(0, 139, 31, ${alpha * 0.45})`;
-        }
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      }
-
-      // Draw longitude lines
-      for (let j = 0; j < numLon; j++) {
-        const phi = (j / numLon) * Math.PI * 2;
-        ctx.beginPath();
-        let first = true;
-        for (let i = 0; i <= 64; i++) {
-          const theta = (i / 64) * Math.PI;
-          const sx = Math.sin(theta) * Math.cos(phi);
-          const sy = Math.cos(theta);
-          const sz = Math.sin(theta) * Math.sin(phi);
-          const r = rotate(sx, sy, sz);
-          const p = project(r.x, r.y, r.z, cx, cy, radius);
-          const alpha = 0.06 + p.scale * 0.15;
-          if (first) {
-            ctx.moveTo(p.x, p.y);
-            first = false;
-          } else {
-            ctx.lineTo(p.x, p.y);
-          }
-          ctx.strokeStyle = `rgba(0, 139, 31, ${alpha * 0.45})`;
-        }
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      }
-
-      // Draw spiral rings
-      for (let ring = 0; ring < 3; ring++) {
-        const ringRadius = 1.15 + ring * 0.2;
-        const tilt = 0.5 + ring * 0.3;
-        ctx.beginPath();
-        let first = true;
-        for (let k = 0; k <= 128; k++) {
-          const angle = (k / 128) * Math.PI * 2;
-          const sx = ringRadius * Math.cos(angle);
-          const sy = ringRadius * Math.sin(angle) * Math.sin(tilt);
-          const sz = ringRadius * Math.sin(angle) * Math.cos(tilt);
-          const r = rotate(sx, sy, sz);
-          const p = project(r.x, r.y, r.z, cx, cy, radius);
-          if (first) {
-            ctx.moveTo(p.x, p.y);
-            first = false;
-          } else {
-            ctx.lineTo(p.x, p.y);
-          }
-        }
-        ctx.strokeStyle = `rgba(0, 139, 31, ${0.08 - ring * 0.02})`;
-        ctx.lineWidth = 0.6;
-        ctx.stroke();
-      }
-
-      // Draw particles / dots
-      particles.forEach((particle) => {
-        particle.phi += particle.speed;
-        const sx = Math.sin(particle.theta) * Math.cos(particle.phi);
-        const sy = Math.cos(particle.theta);
-        const sz = Math.sin(particle.theta) * Math.sin(particle.phi);
-        const r = rotate(sx, sy, sz);
-        const p = project(r.x, r.y, r.z, cx, cy, radius);
-        const alpha = 0.2 + p.scale * 0.6;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, particle.size * p.scale, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(30,30,30,${alpha * 0.25})`;
-        ctx.fill();
-      });
-
-      // Glow in center — green tinted
-      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 1.2);
-      gradient.addColorStop(0, "rgba(0, 139, 31, 0.04)");
-      gradient.addColorStop(0.5, "rgba(0, 139, 31, 0.015)");
-      gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, w, h);
-
-      time += 0.008;
-      animationId = requestAnimationFrame(draw);
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-      }}
-    />
-  );
-}
-
-// ─── Star Field Background ─────────────────────────────────────────────────
-
-function StarField() {
-  const [mounted, setMounted] = useState(false);
-  const stars = useRef<Array<{ x: number; y: number; size: number; opacity: number; animDelay: number }>>([]);
-
-  useEffect(() => {
-    stars.current = Array.from({ length: 80 }, () => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 1.5 + 0.5,
-      opacity: Math.random() * 0.5 + 0.1,
-      animDelay: Math.random() * 5,
-    }));
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-      {stars.current.map((star, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            left: `${star.x}%`,
-            top: `${star.y}%`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            borderRadius: "50%",
-            backgroundColor: COLORS.green.primary,
-            opacity: star.opacity * 0.35,
-            animation: `twinkle ${3 + star.animDelay}s ease-in-out infinite`,
-            animationDelay: `${star.animDelay}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Arrow Icon ──────────────────────────────────────────────────────────────
+  });
+});
 
 const ArrowUpRight = () => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
     width="14"
     height="14"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2.5"
+    strokeWidth="2.4"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <line x1="7" y1="17" x2="17" y2="7" />
     <polyline points="7 7 17 7 17 17" />
+  </svg>
+);
+
+const ChevronDownIcon = ({ isOpen }: { isOpen: boolean }) => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+    aria-hidden="true"
+  >
+    <polyline points="6 9 12 15 18 9" />
   </svg>
 );
 
@@ -303,293 +201,66 @@ function LogoMark({ size = 36 }: { size?: number }) {
         backgroundColor: COLORS.green.primary,
         WebkitMask: `url('${LOGO_SRC}') center / contain no-repeat`,
         mask: `url('${LOGO_SRC}') center / contain no-repeat`,
-        flex: "0 0 auto",
       }}
     />
   );
 }
 
-const PlayIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    stroke="none"
-  >
-    <polygon points="5 3 19 12 5 21 5 3" />
-  </svg>
-);
-
-// ─── Feature Icons ───────────────────────────────────────────────────────────
-
-const CheckCircleIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-);
-
-const ClockIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
-);
-
-const BoltIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
-// ─── Template Icons ──────────────────────────────────────────────────────────
-
-const CalendarIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-    <line x1="16" y1="2" x2="16" y2="6" />
-    <line x1="8" y1="2" x2="8" y2="6" />
-    <line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-
-const TargetIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="6" />
-    <circle cx="12" cy="12" r="2" />
-  </svg>
-);
-
-const RocketIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-  </svg>
-);
-
-const BookIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-  </svg>
-);
-
-const RepeatIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="17 1 21 5 17 9" />
-    <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-    <polyline points="7 23 3 19 7 15" />
-    <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-  </svg>
-);
-
-const UsersIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
-// ─── Chevron Icon for FAQ ────────────────────────────────────────────────────
-
-const ChevronDownIcon = ({ isOpen }: { isOpen: boolean }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    style={{
-      transition: "transform 0.3s ease",
-      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-    }}
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
-// ─── FAQ Accordion Item ──────────────────────────────────────────────────────
-
-function FAQItem({ question, answer }: { question: string; answer: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-
+function PixelOrbitBackground() {
   return (
-    <div
-      style={{
-        borderBottom: `1px solid ${COLORS.gray[700]}`,
-        overflow: "hidden",
-      }}
-    >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "22px 0",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: isOpen ? COLORS.green.primary : COLORS.gray[100],
-          fontSize: "16px",
-          fontWeight: 600,
-          textAlign: "left",
-          transition: "color 0.3s ease",
-          fontFamily: "inherit",
-        }}
-      >
-        {question}
-        <ChevronDownIcon isOpen={isOpen} />
-      </button>
-      <div
-        style={{
-          maxHeight: isOpen ? "300px" : "0",
-          opacity: isOpen ? 1 : 0,
-          transition: "max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease",
-          paddingBottom: isOpen ? "20px" : "0",
-          overflow: "hidden",
-        }}
-      >
-        <p
-          style={{
-            fontSize: "14px",
-            color: COLORS.gray[400],
-            lineHeight: 1.8,
-          }}
-        >
-          {answer}
-        </p>
+    <div className="pixel-orbit" aria-hidden="true">
+      <div className="pixel-orbit__rings" />
+      <div className="pixel-orbit__dots">
+        {pixelDots.map((dot, index) => (
+          <span
+            key={`${dot.x}-${dot.y}-${index}`}
+            style={{
+              width: `${dot.size}px`,
+              height: `${dot.size}px`,
+              backgroundColor: dot.shade,
+              opacity: dot.opacity,
+              transform: `translate(${dot.x}px, ${dot.y}px)`,
+              animationDelay: dot.delay,
+            }}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-// ─── Template Data ───────────────────────────────────────────────────────────
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
 
-const templates = [
-  {
-    icon: <CalendarIcon />,
-    title: "Makalah",
-    desc: "Mulai dari topik, referensi, outline, sampai proses tulis dan revisi makalah.",
-    tags: ["Kuliah", "3 Task"],
-  },
-  {
-    icon: <TargetIcon />,
-    title: "Presentasi",
-    desc: "Susun poin utama, buat slide, dan latihan presentasi tanpa memulai dari nol.",
-    tags: ["Kelas", "Ringkas"],
-  },
-  {
-    icon: <RocketIcon />,
-    title: "Praktikum",
-    desc: "Pahami modul, kerjakan eksperimen, lalu susun laporan praktikum dengan alur jelas.",
-    tags: ["Laporan", "Terarah"],
-  },
-  {
-    icon: <BookIcon />,
-    title: "Ujian",
-    desc: "Kumpulkan materi, buat ringkasan, latihan soal, dan review bagian inti sebelum ujian.",
-    tags: ["Belajar", "Fokus"],
-  },
-  {
-    icon: <RepeatIcon />,
-    title: "Rule of 3",
-    desc: "Dashboard membantu menahan fokus dengan menampilkan maksimal tiga tugas prioritas.",
-    tags: ["Prioritas", "Anti-overload"],
-  },
-  {
-    icon: <UsersIcon />,
-    title: "Guest Mode",
-    desc: "Coba aplikasi tanpa login, lalu pindahkan task ke akun saat kamu siap mendaftar.",
-    tags: ["Tanpa Login", "Migrasi"],
-  },
-];
-
-// ─── FAQ Data ────────────────────────────────────────────────────────────────
-
-const faqItems = [
-  {
-    question: "Apa itu Bento-Do?",
-    answer:
-      "Bento-do adalah aplikasi produktivitas mahasiswa untuk mengelola bank tugas, memilih prioritas dengan Rule of 3, menjalankan focus session, dan menjaga energi harian agar belajar lebih terarah.",
-  },
-  {
-    question: "Bisa dipakai tanpa login?",
-    answer:
-      "Bisa. Guest Mode membuat session sementara agar kamu dapat mencoba dashboard dan task dasar tanpa membuat akun terlebih dahulu.",
-  },
-  {
-    question: "Kalau nanti daftar akun, task guest hilang?",
-    answer:
-      "Tidak. Saat login atau register, frontend mengirim token guest ke backend sehingga task guest bisa otomatis dipindahkan ke akun user.",
-  },
-  {
-    question: "Apa fungsi Energy System?",
-    answer:
-      "Energy System membantu membatasi beban kerja harian. Task ringan, sedang, dan berat memengaruhi energi agar pengguna tidak memaksakan terlalu banyak tugas sekaligus.",
-  },
-  {
-    question: "Bagaimana deadline reminder bekerja?",
-    answer:
-      "Backend membuat notification reminder untuk deadline, lalu mengirim pengingat di aplikasi dan email untuk user terdaftar.",
-  },
-  {
-    question: "Template apa saja yang tersedia?",
-    answer:
-      "Template resmi saat ini mencakup Makalah, Presentasi, Praktikum, dan Ujian. Masing-masing memecah pekerjaan besar menjadi beberapa task yang lebih mudah dikerjakan.",
-  },
-];
-
-// ─── Main Landing Page ──────────────────────────────────────────────────────
+  return (
+    <div className="faq-item">
+      <button type="button" onClick={() => setIsOpen((open) => !open)}>
+        <span>{question}</span>
+        <ChevronDownIcon isOpen={isOpen} />
+      </button>
+      <div className={isOpen ? "faq-answer faq-answer--open" : "faq-answer"}>
+        <p>{answer}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const router = useRouter();
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [guestError, setGuestError] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const revealItems = document.querySelectorAll(".scroll-reveal");
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           entry.target.classList.toggle("is-visible", entry.isIntersecting);
         });
       },
-      {
-        threshold: 0.18,
-        rootMargin: "0px 0px -10% 0px",
-      },
+      { threshold: 0.16 },
     );
 
-    revealItems.forEach((item) => observer.observe(item));
+    document.querySelectorAll(".reveal").forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
   }, []);
@@ -615,17 +286,11 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* ── Inline Styles for Animations ── */}
       <style>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.1; }
-          50% { opacity: 0.8; }
-        }
-
-        @keyframes fadeInUp {
+        @keyframes heroRise {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(24px);
           }
           to {
             opacity: 1;
@@ -633,45 +298,41 @@ export default function LandingPage() {
           }
         }
 
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        @keyframes orbitDrift {
+          0% {
+            transform: translate3d(0, 0, 0) rotate(0deg);
+          }
+          100% {
+            transform: translate3d(0, 0, 0) rotate(360deg);
+          }
         }
 
-        @keyframes slideDown {
+        @keyframes pixelPulse {
+          0%,
+          100% {
+            transform: translate(var(--tx, 0), var(--ty, 0)) scale(0.9);
+          }
+          50% {
+            transform: translate(var(--tx, 0), var(--ty, 0)) scale(1.22);
+          }
+        }
+
+        @keyframes lineSweep {
           from {
-            opacity: 0;
-            transform: translateY(-20px);
+            transform: translateX(-100%);
           }
           to {
-            opacity: 1;
-            transform: translateY(0);
+            transform: translateX(100%);
           }
-        }
-
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 20px rgba(0, 139, 31, 0.14); }
-          50% { box-shadow: 0 0 32px rgba(0, 139, 31, 0.22); }
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
         }
 
         .landing-page {
-          background-color: ${COLORS.gray[900]};
-          background-image: url('${PRODUCTIVITY_BG_SRC}');
-          background-size: cover;
-          background-attachment: scroll;
-          background-position: center;
           min-height: 100vh;
-          color: ${COLORS.gray[100]};
+          color: ${COLORS.neutral.ink};
+          background:
+            radial-gradient(circle at 12% 18%, rgba(0, 139, 31, 0.05), transparent 25%),
+            radial-gradient(circle at 82% 16%, rgba(201, 184, 255, 0.22), transparent 28%),
+            linear-gradient(180deg, #ffffff 0%, #fbfcfb 52%, #ffffff 100%);
           overflow-x: hidden;
           position: relative;
         }
@@ -680,9 +341,15 @@ export default function LandingPage() {
           content: "";
           position: fixed;
           inset: 0;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.97) 55%, rgba(255, 255, 255, 1) 100%);
           pointer-events: none;
           z-index: 0;
+          background-image:
+            radial-gradient(circle, rgba(0, 139, 31, 0.18) 1px, transparent 1.5px),
+            radial-gradient(circle, rgba(201, 184, 255, 0.16) 1px, transparent 1.5px);
+          background-size: 88px 88px, 28px 28px;
+          background-position: 18px 22px, 6px 10px;
+          mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.08) 35%, rgba(0, 0, 0, 0.5));
+          opacity: 0.42;
         }
 
         .landing-page > * {
@@ -690,111 +357,126 @@ export default function LandingPage() {
           z-index: 1;
         }
 
-        .nav-glass {
-          background: #ffffff;
-          backdrop-filter: none;
-          -webkit-backdrop-filter: none;
-          border: 1px solid ${COLORS.gray[700]};
-          border-radius: 50px;
-          box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
-          transition: all 0.3s ease;
+        .site-header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 50;
+          background: ${COLORS.neutral.surface};
+          border-bottom: 1px solid ${COLORS.neutral.softLine};
+          box-shadow: 0 10px 35px rgba(15, 23, 42, 0.04);
         }
 
-        .nav-glass:hover {
-          background: #ffffff;
-          border-color: ${COLORS.gray[600]};
+        .site-header__inner {
+          max-width: 1200px;
+          height: 76px;
+          margin: 0 auto;
+          padding: 0 32px;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          gap: 24px;
         }
 
-        .nav-link {
-          color: ${COLORS.gray[400]};
-          font-size: 13.5px;
-          font-weight: 500;
-          padding: 8px 18px;
-          border-radius: 50px;
-          transition: all 0.25s ease;
-          text-decoration: none;
-          letter-spacing: 0.01em;
-        }
-
-        .nav-link:hover {
-          color: ${COLORS.gray[100]};
-          background: ${COLORS.gray[800]};
-        }
-
-        .btn-primary {
+        .brand {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          background: ${COLORS.green.primary};
-          color: #ffffff;
+          gap: 10px;
+          width: fit-content;
+          color: ${COLORS.neutral.ink};
+          text-decoration: none;
+          font-family: var(--font-outfit), sans-serif;
+          font-size: 18px;
+          font-weight: 900;
+          letter-spacing: -0.02em;
+        }
+
+        .nav-menu {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 6px;
+          border: 1px solid ${COLORS.neutral.softLine};
+          border-radius: 999px;
+          background: #ffffff;
+        }
+
+        .nav-menu a {
+          color: ${COLORS.neutral.muted};
+          text-decoration: none;
+          font-size: 13px;
           font-weight: 600;
-          font-size: 14px;
-          padding: 10px 22px;
-          border-radius: 50px;
-          border: none;
-          cursor: pointer;
-          text-decoration: none;
-          transition: all 0.25s ease;
-          letter-spacing: 0.01em;
+          padding: 8px 14px;
+          border-radius: 999px;
+          transition: color 180ms ease, background 180ms ease;
         }
 
-        .btn-primary:hover {
-          background: ${COLORS.green.bright};
-          transform: translateY(-1px);
-          box-shadow: 0 8px 30px rgba(0, 139, 31, 0.24);
-        }
-
-        .btn-primary:active {
-          transform: translateY(0);
-        }
-
-        .btn-nav-login {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
+        .nav-menu a:hover {
           color: ${COLORS.green.primary};
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid rgba(0, 139, 31, 0.28);
-          border-radius: 50px;
-          font-size: 14px;
-          font-weight: 700;
-          padding: 10px 22px;
-          text-decoration: none;
-          transition: all 0.25s ease;
-        }
-
-        .btn-nav-login:hover {
-          background: ${COLORS.gray[800]};
-          border-color: ${COLORS.green.primary};
-          transform: translateY(-1px);
+          background: ${COLORS.green.soft};
         }
 
         .nav-actions {
           display: flex;
+          justify-content: flex-end;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
+        }
+
+        .nav-login,
+        .nav-signup,
+        .btn-primary,
+        .btn-secondary,
+        .btn-text {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          border-radius: 999px;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 700;
+          transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+        }
+
+        .nav-login {
+          color: ${COLORS.green.primary};
+          border: 1px solid rgba(0, 139, 31, 0.22);
+          padding: 10px 20px;
+          background: ${COLORS.neutral.surface};
+        }
+
+        .nav-login:hover {
+          transform: translateY(-1px);
+          border-color: ${COLORS.green.primary};
+        }
+
+        .nav-signup,
+        .btn-primary {
+          color: #ffffff;
+          border: 1px solid ${COLORS.green.primary};
+          padding: 11px 22px;
+          background: ${COLORS.green.primary};
+          box-shadow: 0 12px 28px rgba(0, 139, 31, 0.16);
+        }
+
+        .nav-signup:hover,
+        .btn-primary:hover {
+          background: ${COLORS.green.dark};
+          transform: translateY(-1px);
         }
 
         .btn-secondary {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
+          color: ${COLORS.neutral.ink};
+          border: 1px solid ${COLORS.neutral.line};
+          padding: 13px 24px;
           background: #ffffff;
-          color: ${COLORS.gray[100]};
-          font-weight: 500;
-          font-size: 14px;
-          padding: 12px 26px;
-          border-radius: 50px;
-          border: 1px solid ${COLORS.gray[700]};
-          cursor: pointer;
-          text-decoration: none;
-          transition: all 0.25s ease;
-          backdrop-filter: blur(10px);
         }
 
         .btn-secondary:hover {
-          background: ${COLORS.gray[800]};
-          border-color: ${COLORS.gray[600]};
+          border-color: ${COLORS.green.primary};
+          color: ${COLORS.green.primary};
           transform: translateY(-1px);
         }
 
@@ -804,1119 +486,936 @@ export default function LandingPage() {
           transform: none;
         }
 
-        .hero-title {
-          font-size: clamp(36px, 5vw, 64px);
-          font-weight: 700;
-          line-height: 1.08;
-          letter-spacing: -0.03em;
-          animation: fadeInUp 0.9s ease-out 0.3s both;
+        .btn-text {
+          color: ${COLORS.neutral.muted};
+          padding: 12px 8px;
         }
 
-        .hero-subtitle {
-          font-size: clamp(14px, 1.5vw, 16px);
-          color: ${COLORS.gray[400]};
-          line-height: 1.7;
-          max-width: 420px;
-          animation: fadeInUp 0.9s ease-out 0.5s both;
+        .btn-text:hover {
+          color: ${COLORS.green.primary};
         }
 
-        .hero-buttons {
-          animation: fadeInUp 0.9s ease-out 0.7s both;
-        }
-
-        .btn-hero-primary {
-          display: inline-flex;
+        .hero {
+          min-height: 100vh;
+          padding: 148px 32px 72px;
+          display: flex;
           align-items: center;
-          gap: 10px;
-          background: ${COLORS.green.primary};
-          color: #ffffff;
-          font-weight: 600;
-          font-size: 15px;
-          padding: 14px 28px;
-          border-radius: 50px;
-          border: none;
-          cursor: pointer;
-          text-decoration: none;
-          transition: all 0.3s ease;
-          animation: pulseGlow 3s ease-in-out infinite;
         }
 
-        .btn-hero-primary:hover {
-          background: ${COLORS.green.bright};
-          transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 12px 40px rgba(0, 139, 31, 0.26);
+        .hero__inner {
+          width: 100%;
+          max-width: 1200px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+          align-items: center;
+          gap: clamp(32px, 7vw, 96px);
         }
 
-        .supported-section {
-          animation: fadeInUp 0.9s ease-out 0.9s both;
+        .eyebrow {
+          color: ${COLORS.green.primary};
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
         }
 
-        .hero-orbit {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          overflow: hidden;
-          opacity: 0.88;
+        .hero h1 {
+          max-width: 640px;
+          margin-top: 20px;
+          font-family: var(--font-outfit), sans-serif;
+          font-size: clamp(48px, 7vw, 92px);
+          line-height: 0.93;
+          letter-spacing: -0.055em;
+          font-weight: 900;
+          animation: heroRise 700ms ease both;
         }
 
-        .hero-orbit::before {
+        .hero h1 span {
+          color: ${COLORS.green.primary};
+        }
+
+        .hero__copy {
+          max-width: 560px;
+          margin-top: 28px;
+          color: ${COLORS.neutral.muted};
+          font-size: clamp(16px, 1.4vw, 20px);
+          line-height: 1.75;
+          animation: heroRise 700ms ease 120ms both;
+        }
+
+        .hero__actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 14px;
+          margin-top: 36px;
+          animation: heroRise 700ms ease 220ms both;
+        }
+
+        .guest-error {
+          margin-top: 14px;
+          color: #d62839;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .hero__visual {
+          min-height: 520px;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .pixel-orbit {
+          width: min(560px, 100%);
+          aspect-ratio: 1;
+          position: relative;
+        }
+
+        .pixel-orbit::before {
           content: "";
           position: absolute;
-          width: min(58vw, 680px);
-          aspect-ratio: 1;
-          right: 7vw;
-          top: 12vh;
+          inset: 8%;
           border-radius: 50%;
           background:
-            repeating-radial-gradient(circle, rgba(0, 139, 31, 0.10) 0 1px, transparent 1px 30px),
-            radial-gradient(circle, rgba(0, 139, 31, 0.06), transparent 66%);
+            radial-gradient(circle, rgba(0, 139, 31, 0.06), transparent 58%),
+            repeating-radial-gradient(circle, transparent 0 18px, rgba(0, 139, 31, 0.08) 19px, transparent 20px);
+          filter: blur(0.2px);
+          animation: orbitDrift 26s linear infinite;
         }
 
-        .hero-orbit::after {
-          content: "";
+        .pixel-orbit__rings {
           position: absolute;
-          width: min(48vw, 560px);
-          aspect-ratio: 1;
-          right: 9vw;
-          top: 17vh;
+          inset: 14%;
           border-radius: 50%;
-          background-image:
-            radial-gradient(circle, rgba(0, 139, 31, 0.42) 2px, transparent 2px),
-            radial-gradient(circle, rgba(201, 184, 255, 0.52) 2px, transparent 2px);
-          background-size: 34px 34px, 46px 46px;
-          background-position: 0 0, 18px 12px;
-          mask-image: radial-gradient(circle at 62% 50%, transparent 0 28%, black 29% 72%, transparent 73%);
+          border: 1px solid rgba(0, 139, 31, 0.08);
+          box-shadow:
+            0 0 0 36px rgba(0, 139, 31, 0.025),
+            0 0 0 72px rgba(201, 184, 255, 0.035),
+            0 0 0 118px rgba(0, 139, 31, 0.018);
         }
 
-        .platform-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 1px solid ${COLORS.gray[700]};
-          color: ${COLORS.gray[400]};
-          transition: all 0.25s ease;
-        }
-
-        .platform-icon:hover {
-          background: ${COLORS.gray[800]};
-          color: ${COLORS.green.primary};
-          border-color: ${COLORS.green.dark};
-          transform: translateY(-2px);
-        }
-
-        /* Features / Fitur Section */
-        .features-section {
-          padding: 100px 0 80px;
-          position: relative;
-        }
-
-        .feature-card {
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid ${COLORS.gray[700]};
-          border-radius: 20px;
-          padding: 36px 30px;
-          transition: all 0.35s ease;
-          position: relative;
-          overflow: hidden;
-          backdrop-filter: blur(10px);
-          box-shadow: 0 14px 40px rgba(15, 23, 42, 0.04);
-        }
-
-        .feature-card::before {
-          content: "";
+        .pixel-orbit__dots {
           position: absolute;
+          left: 50%;
+          top: 50%;
+          animation: orbitDrift 32s linear infinite reverse;
+        }
+
+        .pixel-orbit__dots span {
+          position: absolute;
+          left: 0;
           top: 0;
-          left: 0;
+          display: block;
+          border-radius: 2px;
+          animation: dotGlow 2.4s ease-in-out infinite;
+        }
+
+        @keyframes dotGlow {
+          0%,
+          100% {
+            filter: saturate(0.9);
+          }
+          50% {
+            filter: saturate(1.8);
+          }
+        }
+
+        .hero__note {
+          position: absolute;
           right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, ${COLORS.green.primary}, transparent);
-          opacity: 0;
-          transition: opacity 0.35s ease;
+          bottom: 32px;
+          max-width: 280px;
+          padding: 18px 0 0;
+          border-top: 1px solid ${COLORS.neutral.line};
+          color: ${COLORS.neutral.muted};
+          font-size: 13px;
+          line-height: 1.65;
         }
 
-        .feature-card:hover {
-          background: #ffffff;
-          border-color: ${COLORS.gray[600]};
-          transform: translateY(-4px);
-          box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+        .hero__note strong {
+          color: ${COLORS.neutral.ink};
         }
 
-        .feature-card:hover::before {
-          opacity: 1;
+        .section {
+          padding: 96px 32px;
+          position: relative;
         }
 
-        .feature-icon-box {
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          background: ${COLORS.gray[800]};
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .section--compact {
+          padding-top: 72px;
+        }
+
+        .section__inner {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .section-heading {
+          max-width: 760px;
+          margin-bottom: 48px;
+        }
+
+        .section-heading--center {
+          margin-left: auto;
+          margin-right: auto;
+          text-align: center;
+        }
+
+        .section-heading h2 {
+          margin-top: 14px;
+          font-family: var(--font-outfit), sans-serif;
+          font-size: clamp(34px, 5vw, 64px);
+          line-height: 0.98;
+          letter-spacing: -0.045em;
+          font-weight: 900;
+        }
+
+        .section-heading h2 span {
           color: ${COLORS.green.primary};
-          margin-bottom: 20px;
         }
 
-        /* Template Section */
-        .template-card {
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid ${COLORS.gray[700]};
-          border-radius: 20px;
-          padding: 32px 28px;
-          transition: all 0.35s ease;
+        .section-heading p {
+          max-width: 620px;
+          margin-top: 18px;
+          color: ${COLORS.neutral.muted};
+          font-size: 16px;
+          line-height: 1.75;
+        }
+
+        .section-heading .eyebrow::before,
+        .about-card > .eyebrow::before {
+          content: "[ ";
+          color: ${COLORS.neutral.muted};
+        }
+
+        .section-heading .eyebrow::after,
+        .about-card > .eyebrow::after {
+          content: " ]";
+          color: ${COLORS.neutral.muted};
+        }
+
+        .guide-flow {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          border-top: 1px solid ${COLORS.neutral.line};
+          border-bottom: 1px solid ${COLORS.neutral.line};
+        }
+
+        .guide-step {
+          min-height: 220px;
+          padding: 28px 28px 34px;
+          border-right: 1px solid ${COLORS.neutral.softLine};
           position: relative;
           overflow: hidden;
-          backdrop-filter: blur(10px);
-          box-shadow: 0 14px 40px rgba(15, 23, 42, 0.04);
         }
 
-        .template-card:hover {
-          background: #ffffff;
-          border-color: ${COLORS.green.dark};
-          transform: translateY(-6px);
-          box-shadow: 0 24px 60px rgba(0, 139, 31, 0.10);
+        .guide-step:last-child {
+          border-right: none;
         }
 
-        .template-card::after {
+        .guide-step::before {
           content: "";
           position: absolute;
-          bottom: 0;
           left: 0;
-          right: 0;
+          top: 0;
+          width: 100%;
           height: 2px;
-          background: linear-gradient(90deg, ${COLORS.green.dark}, ${COLORS.green.primary}, ${COLORS.green.bright});
-          opacity: 0;
-          transition: opacity 0.35s ease;
+          background: ${COLORS.green.primary};
+          transform: translateX(-100%);
+          transition: transform 420ms ease;
         }
 
-        .template-card:hover::after {
+        .guide-step:hover::before {
+          transform: translateX(0);
+        }
+
+        .guide-step span {
+          display: block;
+          color: ${COLORS.green.primary};
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+        }
+
+        .guide-step h3 {
+          margin-top: 34px;
+          color: ${COLORS.neutral.ink};
+          font-size: 20px;
+          line-height: 1.3;
+        }
+
+        .guide-step p {
+          margin-top: 12px;
+          color: ${COLORS.neutral.muted};
+          font-size: 14px;
+          line-height: 1.7;
+        }
+
+        .feature-flow {
+          display: grid;
+          grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
+          gap: clamp(36px, 7vw, 96px);
+          align-items: start;
+        }
+
+        .feature-summary {
+          position: sticky;
+          top: 116px;
+        }
+
+        .feature-summary .metric {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 10px;
+          margin-top: 36px;
+          padding-top: 24px;
+          border-top: 1px solid ${COLORS.neutral.line};
+        }
+
+        .metric strong {
+          color: ${COLORS.green.primary};
+          font-family: var(--font-outfit), sans-serif;
+          font-size: 54px;
+          line-height: 1;
+        }
+
+        .metric span {
+          color: ${COLORS.neutral.muted};
+          font-size: 14px;
+          line-height: 1.4;
+        }
+
+        .feature-list {
+          border-top: 1px solid ${COLORS.neutral.line};
+        }
+
+        .feature-row {
+          display: grid;
+          grid-template-columns: 96px 1fr;
+          gap: 26px;
+          padding: 34px 0;
+          border-bottom: 1px solid ${COLORS.neutral.softLine};
+        }
+
+        .feature-row__key {
+          color: ${COLORS.neutral.muted};
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+
+        .feature-row h3 {
+          font-size: clamp(22px, 2vw, 32px);
+          line-height: 1.15;
+          letter-spacing: -0.02em;
+        }
+
+        .feature-row p {
+          max-width: 620px;
+          margin-top: 12px;
+          color: ${COLORS.neutral.muted};
+          font-size: 15px;
+          line-height: 1.75;
+        }
+
+        .template-panel {
+          border: 1px solid ${COLORS.neutral.line};
+          border-radius: 8px;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.86);
+          box-shadow: 0 26px 80px rgba(15, 23, 42, 0.05);
+        }
+
+        .template-row {
+          display: grid;
+          grid-template-columns: 1.1fr 1.7fr 120px;
+          align-items: center;
+          gap: 28px;
+          padding: 28px 34px;
+          border-bottom: 1px solid ${COLORS.neutral.softLine};
+        }
+
+        .template-row:last-child {
+          border-bottom: none;
+        }
+
+        .template-row h3 {
+          font-size: 22px;
+          letter-spacing: -0.02em;
+        }
+
+        .template-row p {
+          color: ${COLORS.neutral.muted};
+          font-size: 15px;
+          line-height: 1.65;
+        }
+
+        .template-row span {
+          justify-self: end;
+          color: ${COLORS.green.primary};
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .about-card {
+          max-width: 760px;
+          margin: 0 auto;
+          text-align: center;
+        }
+
+        .about-card h2 {
+          margin-top: 14px;
+          font-family: var(--font-outfit), sans-serif;
+          font-size: clamp(34px, 4.4vw, 54px);
+          line-height: 1;
+          letter-spacing: -0.045em;
+          font-weight: 900;
+        }
+
+        .about-card h2 span {
+          color: ${COLORS.green.primary};
+        }
+
+        .about-card__panel {
+          margin-top: 32px;
+          padding: clamp(28px, 4vw, 48px);
+          border: 1px solid ${COLORS.neutral.softLine};
+          border-radius: 24px;
+          background: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 28px 90px rgba(15, 23, 42, 0.06);
+        }
+
+        .about-card__panel p {
+          max-width: 620px;
+          margin: 0 auto;
+          color: ${COLORS.neutral.ink};
+          font-size: 16px;
+          line-height: 1.8;
+        }
+
+        .about-card__panel p + p {
+          margin-top: 22px;
+        }
+
+        .about-card__panel .btn-primary {
+          margin-top: 34px;
+        }
+
+        .about-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          max-width: 560px;
+          margin: 34px auto 0;
+          gap: 24px;
+        }
+
+        .about-stats div {
+          text-align: center;
+        }
+
+        .about-stats strong {
+          display: block;
+          color: ${COLORS.green.primary};
+          font-family: var(--font-outfit), sans-serif;
+          font-size: 42px;
+          line-height: 1;
+        }
+
+        .about-stats span {
+          display: block;
+          margin-top: 8px;
+          color: ${COLORS.neutral.muted};
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        .faq-container {
+          max-width: 820px;
+          margin: 0 auto;
+          border-top: 1px solid ${COLORS.neutral.line};
+        }
+
+        .faq-item {
+          border-bottom: 1px solid ${COLORS.neutral.line};
+        }
+
+        .faq-item button {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+          padding: 24px 0;
+          color: ${COLORS.neutral.ink};
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          font-family: inherit;
+          font-size: 18px;
+          font-weight: 800;
+        }
+
+        .faq-item svg {
+          flex: 0 0 auto;
+          color: ${COLORS.green.primary};
+          transition: transform 220ms ease;
+        }
+
+        .faq-answer {
+          max-height: 0;
+          opacity: 0;
+          overflow: hidden;
+          transition: max-height 320ms ease, opacity 240ms ease;
+        }
+
+        .faq-answer--open {
+          max-height: 260px;
           opacity: 1;
         }
 
-        .template-tag {
-          display: inline-block;
-          color: ${COLORS.gray[400]};
-          font-family: monospace;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          transition: all 0.25s ease;
-        }
-
-        .template-tag::before {
-          content: "[ ";
-        }
-        .template-tag::after {
-          content: " ]";
-        }
-
-        .template-card:hover .template-tag {
-          color: ${COLORS.gray[100]};
-        }
-
-        /* Section label badge */
-        .section-badge {
-          display: inline-block;
-          color: ${COLORS.gray[400]};
-          font-family: monospace;
+        .faq-answer p {
+          max-width: 720px;
+          padding: 0 0 24px;
+          color: ${COLORS.neutral.muted};
           font-size: 15px;
-          font-weight: 600;
-          letter-spacing: 1.5px;
+          line-height: 1.75;
+        }
+
+        .footer {
+          padding: 52px 32px 46px;
+          border-top: 1px solid ${COLORS.neutral.line};
+          background: #ffffff;
+        }
+
+        .footer__inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(120px, auto));
+          gap: clamp(28px, 6vw, 84px);
+          align-items: start;
+        }
+
+        .footer__brand {
+          display: grid;
+          gap: 14px;
+        }
+
+        .footer__brand strong {
+          font-family: var(--font-outfit), sans-serif;
+          font-size: clamp(42px, 6vw, 76px);
+          line-height: 1;
+          letter-spacing: -0.04em;
+        }
+
+        .footer__brand p {
+          color: ${COLORS.neutral.muted};
+          font-size: 13px;
+        }
+
+        .footer__group {
+          display: grid;
+          gap: 14px;
+        }
+
+        .footer__group span {
+          color: ${COLORS.neutral.muted};
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
-          margin-bottom: 20px;
-        }
-        .section-badge::before {
-          content: "[ ";
-          margin-right: 4px;
-        }
-        .section-badge::after {
-          content: " ]";
-          margin-left: 4px;
         }
 
-        /* Footer */
-        .footer-section {
-          padding: 40px 0;
+        .footer__group a,
+        .footer__group button {
+          color: ${COLORS.neutral.muted};
+          background: none;
+          border: none;
+          padding: 0;
+          text-decoration: none;
+          font-family: inherit;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          text-align: left;
         }
 
-        .scroll-reveal {
+        .footer__group a:hover,
+        .footer__group button:hover {
+          color: ${COLORS.green.primary};
+        }
+
+        .reveal {
           opacity: 1;
           transform: translateY(0);
         }
 
-        .scroll-reveal.is-visible {
-          animation: fadeInUp 0.65s ease both;
+        .reveal.is-visible {
+          animation: heroRise 700ms ease both;
         }
 
-        /* FAQ Section */
-        .faq-container {
-          max-width: 700px;
-          margin: 0 auto;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .nav-desktop {
-            display: none !important;
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
           }
-          .template-grid {
-            grid-template-columns: 1fr !important;
+        }
+
+        @media (max-width: 980px) {
+          .site-header__inner {
+            grid-template-columns: 1fr auto;
+          }
+
+          .nav-menu {
+            display: none;
+          }
+
+          .hero__inner,
+          .feature-flow {
+            grid-template-columns: 1fr;
+          }
+
+          .hero__visual {
+            min-height: 360px;
+          }
+
+          .feature-summary {
+            position: static;
+          }
+
+          .guide-flow {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .guide-step:nth-child(2) {
+            border-right: none;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .site-header__inner {
+            height: auto;
+            padding: 14px 20px;
+          }
+
+          .brand {
+            font-size: 16px;
+          }
+
+          .nav-actions {
+            gap: 6px;
+          }
+
+          .nav-login,
+          .nav-signup {
+            padding: 9px 13px;
+            font-size: 12px;
+          }
+
+          .hero,
+          .section {
+            padding-left: 20px;
+            padding-right: 20px;
+          }
+
+          .hero {
+            padding-top: 124px;
+          }
+
+          .guide-flow,
+          .about-stats,
+          .template-row {
+            grid-template-columns: 1fr;
+          }
+
+          .guide-step {
+            border-right: none;
+            border-bottom: 1px solid ${COLORS.neutral.softLine};
+          }
+
+          .template-row span {
+            justify-self: start;
+          }
+
+          .feature-row {
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
+
+          .footer__inner {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        @media (max-width: 540px) {
+          .footer__inner {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
 
       <div className="landing-page">
-        {/* ════════════════════════════════════════
-            HEADER / NAVIGATION
-        ════════════════════════════════════════ */}
-        <header
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 50,
-            padding: isScrolled ? "14px 0" : "20px 0",
-            transition: "all 0.3s ease",
-            background: "rgba(255, 255, 255, 0.94)",
-            backdropFilter: "blur(20px)",
-            borderBottom: `1px solid ${COLORS.gray[700]}`,
-            boxShadow: isScrolled ? "0 12px 32px rgba(15, 23, 42, 0.06)" : "0 8px 28px rgba(15, 23, 42, 0.035)",
-            animation: "slideDown 0.6s ease-out",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "0 32px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            {/* Logo */}
-            <Link
-              href="/"
-              id="landing-logo"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                textDecoration: "none",
-                color: COLORS.gray[100],
-              }}
-            >
+        <header className="site-header">
+          <div className="site-header__inner">
+            <Link href="/" className="brand" id="landing-logo">
               <LogoMark />
-              <span style={{ fontSize: "18px", fontWeight: 800, letterSpacing: "-0.02em", fontFamily: "var(--font-outfit), sans-serif" }}>
-                Bento-Do
-              </span>
+              <span>Bento-Do</span>
             </Link>
 
-            {/* Center Nav */}
-            <nav
-              className="nav-glass nav-desktop"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "2px",
-                padding: "5px 6px",
-              }}
-            >
-              <a href="#fitur" className="nav-link">Fitur</a>
-              <a href="#template" className="nav-link">Template</a>
-              <a href="#about" className="nav-link">About</a>
-              <a href="#faq" className="nav-link">FAQ</a>
+            <nav className="nav-menu" aria-label="Landing navigation">
+              {navLinks.map((item) => (
+                <a key={item.href} href={item.href}>
+                  {item.label}
+                </a>
+              ))}
             </nav>
 
             <div className="nav-actions">
-              <Link href="/login" id="landing-login-btn" className="btn-nav-login">
+              <Link href="/login" className="nav-login" id="landing-login-btn">
                 Login
               </Link>
-              <Link href="/register" id="landing-signup-btn" className="btn-primary">
+              <Link href="/register" className="nav-signup" id="landing-signup-btn">
                 Sign Up
               </Link>
             </div>
           </div>
         </header>
 
-        {/* ════════════════════════════════════════
-            HERO SECTION
-        ════════════════════════════════════════ */}
-        <section
-          style={{
-            position: "relative",
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            paddingTop: "130px",
-            paddingBottom: "72px",
-          }}
-        >
-          <div className="hero-orbit" aria-hidden="true" />
+        <main>
+          <section className="hero">
+            <div className="hero__inner">
+              <div>
+                <div className="eyebrow">Student task dashboard</div>
+                <h1>
+                  Atur tugas kuliah, jaga fokus dan <span>energi</span>.
+                </h1>
+                <p className="hero__copy">
+                  Bento-Do membantu mahasiswa mengelola bank tugas, memilih tiga prioritas utama,
+                  menjalankan focus session, dan menerima reminder deadline dalam satu dashboard
+                  sederhana.
+                </p>
 
-          {/* Gradient overlay at bottom */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: "40%",
-              background: `linear-gradient(to top, ${COLORS.gray[900]}, rgba(255, 255, 255, 0))`,
-              pointerEvents: "none",
-            }}
-          />
-
-          {/* Hero Content */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 10,
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "0 32px",
-              width: "100%",
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "40px",
-            }}
-          >
-            {/* Left: Text Content */}
-            <div style={{ maxWidth: "600px" }}>
-              <h1 className="hero-title">
-                Atur Tugas Kuliah,{" "}
-                <br />
-                Jaga Fokus dan{" "}
-                <span style={{ color: COLORS.green.primary }}>Energi</span>
-              </h1>
-
-              <p className="hero-subtitle" style={{ marginTop: "20px" }}>
-                Bento-do membantu mahasiswa mengelola bank tugas, memilih
-                tiga prioritas utama, menjalankan focus session, dan menerima
-                reminder deadline dalam satu dashboard sederhana.
-              </p>
-
-              {/* CTA Buttons */}
-              <div
-                className="hero-buttons"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
-                  marginTop: "36px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <Link href="#fitur" id="hero-get-started-btn" className="btn-hero-primary">
-                  Get Started
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      background: "rgba(0,0,0,0.12)",
-                    }}
-                  >
+                <div className="hero__actions">
+                  <Link href="#guide" className="btn-primary" id="hero-get-started-btn">
+                    Get Started
                     <ArrowUpRight />
-                  </span>
-                </Link>
+                  </Link>
+                  <button
+                    type="button"
+                    id="hero-guest-btn"
+                    className="btn-secondary"
+                    onClick={handleGuestMode}
+                    disabled={isGuestLoading}
+                  >
+                    {isGuestLoading ? "Menyiapkan..." : "Guest Mode"}
+                  </button>
+                  <Link href="#template" className="btn-text">
+                    Lihat Template
+                  </Link>
+                </div>
 
-                <Link href="/register" id="hero-register-btn" className="btn-secondary">
-                  <PlayIcon />
-                  Buat Akun
-                </Link>
-                <button
-                  type="button"
-                  id="hero-guest-btn"
-                  className="btn-secondary"
-                  onClick={handleGuestMode}
-                  disabled={isGuestLoading}
-                >
-                  <PlayIcon />
-                  {isGuestLoading ? "Menyiapkan..." : "Guest Mode"}
-                </button>
+                {guestError && <p className="guest-error">{guestError}</p>}
               </div>
-              {guestError && (
-                <p
-                  style={{
-                    color: "#D62839",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    marginTop: "14px",
-                  }}
-                >
-                  {guestError}
-                </p>
-              )}
-            </div>
 
-            {/* Right: Supported platforms */}
-            <div className="supported-section" style={{ textAlign: "right" }}>
-              <span
-                style={{
-                  fontSize: "13px",
-                  color: COLORS.gray[400],
-                  fontWeight: 500,
-                  letterSpacing: "0.03em",
-                }}
-              >
-                Jalankan lewat:
-              </span>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginTop: "10px",
-                }}
-              >
-                {/* Web */}
-                <div className="platform-icon" title="Web Browser">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="2" y1="12" x2="22" y2="12" />
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                  </svg>
-                </div>
-                {/* Mobile */}
-                <div className="platform-icon" title="Mobile">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                    <line x1="12" y1="18" x2="12.01" y2="18" />
-                  </svg>
-                </div>
-                {/* Desktop */}
-                <div className="platform-icon" title="Desktop">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                    <line x1="8" y1="21" x2="16" y2="21" />
-                    <line x1="12" y1="17" x2="12" y2="21" />
-                  </svg>
+              <div className="hero__visual">
+                <PixelOrbitBackground />
+                <div className="hero__note">
+                  <strong>Rule of 3:</strong> dashboard menahan fokus ke tiga tugas terpenting,
+                  bukan memaksa semua pekerjaan terlihat sama mendesaknya.
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ════════════════════════════════════════
-            FITUR SECTION
-        ════════════════════════════════════════ */}
-        <section id="fitur" className="features-section">
-          {/* Subtle separator */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "200px",
-              height: "1px",
-              background: `linear-gradient(90deg, transparent, ${COLORS.green.primary}, transparent)`,
-            }}
-          />
-
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "0 32px",
-            }}
-          >
-            {/* Section Header */}
-            <div className="scroll-reveal" style={{ textAlign: "center", marginBottom: "60px" }}>
-              <span className="section-badge">Fitur</span>
-              <h2
-                style={{
-                  fontSize: "clamp(28px, 3.5vw, 42px)",
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.2,
-                }}
-              >
-                Fitur inti untuk belajar{" "}
-                <span style={{ color: COLORS.green.primary }}>lebih terarah</span>
-              </h2>
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: COLORS.gray[400],
-                  marginTop: "14px",
-                  maxWidth: "500px",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  lineHeight: 1.7,
-                }}
-              >
-                Bento-do membantu mengurangi overload tugas dengan alur sederhana:
-                simpan semua tugas, pilih prioritas, jaga fokus, dan pantau energi harian.
-              </p>
-            </div>
-
-            {/* Feature Cards */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                gap: "24px",
-              }}
-            >
-              {/* Card 1: Priority Tasks */}
-              <div className="feature-card scroll-reveal">
-                <div className="feature-icon-box">
-                  <CheckCircleIcon />
-                </div>
-                <h3
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    marginBottom: "10px",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Bank Tugas + Rule of 3
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: COLORS.gray[400],
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Kumpulkan tugas kuliah di satu tempat, lalu tampilkan tiga prioritas utama
-                  agar pekerjaan besar terasa lebih jelas dan tidak menumpuk di kepala.
+          <section id="guide" className="section section--compact">
+            <div className="section__inner">
+              <div className="section-heading section-heading--center reveal">
+                <div className="eyebrow">Cara pakai</div>
+                <h2>
+                  Mulai dari kosong sampai <span>siap fokus</span>.
+                </h2>
+                <p>
+                  Alurnya dibuat pendek supaya pengguna baru bisa mencoba aplikasi tanpa membaca
+                  dokumentasi panjang.
                 </p>
               </div>
 
-              {/* Card 2: Focus Timer */}
-              <div className="feature-card scroll-reveal">
-                <div className="feature-icon-box">
-                  <ClockIcon />
-                </div>
-                <h3
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    marginBottom: "10px",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Focus Session
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: COLORS.gray[400],
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Mulai sesi fokus dari task yang dipilih, lanjutkan sampai selesai,
-                  dan gunakan alur ini untuk membangun kebiasaan belajar yang lebih konsisten.
-                </p>
-              </div>
-
-              {/* Card 3: Energy Level */}
-              <div className="feature-card scroll-reveal">
-                <div className="feature-icon-box">
-                  <BoltIcon />
-                </div>
-                <h3
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    marginBottom: "10px",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Energy System & Reminder
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: COLORS.gray[400],
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Task ringan, sedang, dan berat memengaruhi energi harian. Untuk user terdaftar,
-                  deadline juga bisa dipantau lewat notifikasi aplikasi dan email.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════
-            TEMPLATE SECTION
-        ════════════════════════════════════════ */}
-        <section
-          id="template"
-          style={{
-            padding: "80px 0 100px",
-            position: "relative",
-          }}
-        >
-          {/* Top separator */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "300px",
-              height: "1px",
-              background: `linear-gradient(90deg, transparent, ${COLORS.gray[600]}, transparent)`,
-            }}
-          />
-
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "0 32px",
-            }}
-          >
-            <div className="scroll-reveal" style={{ textAlign: "center", marginBottom: "60px" }}>
-              <span className="section-badge">Template</span>
-              <h2
-                style={{
-                  fontSize: "clamp(28px, 3.5vw, 42px)",
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.2,
-                }}
-              >
-                Template resmi untuk{" "}
-                <span style={{ color: COLORS.green.primary }}>tugas mahasiswa</span>
-              </h2>
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: COLORS.gray[400],
-                  marginTop: "14px",
-                  maxWidth: "520px",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  lineHeight: 1.7,
-                }}
-              >
-                Template disiapkan untuk tugas yang sering muncul di perkuliahan,
-                seperti makalah, presentasi, praktikum, dan persiapan ujian.
-              </p>
-            </div>
-
-            {/* Template Cards Grid */}
-            <div
-              className="template-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                gap: "24px",
-              }}
-            >
-              {templates.map((tmpl, i) => (
-                <div key={i} className="template-card scroll-reveal">
-                  <div
-                    style={{
-                      width: "52px",
-                      height: "52px",
-                      borderRadius: "16px",
-                      background: "linear-gradient(135deg, #ECFFF0, #F8FAF8)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: COLORS.green.primary,
-                      marginBottom: "20px",
-                    }}
-                  >
-                    {tmpl.icon}
-                  </div>
-                  <h3
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: 600,
-                      marginBottom: "10px",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    {tmpl.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: COLORS.gray[400],
-                      lineHeight: 1.7,
-                      marginBottom: "18px",
-                    }}
-                  >
-                    {tmpl.desc}
-                  </p>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    {tmpl.tags.map((tag, j) => (
-                      <span key={j} className="template-tag">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════
-            ABOUT SECTION
-        ════════════════════════════════════════ */}
-        <section
-          id="about"
-          style={{
-            padding: "80px 0",
-            position: "relative",
-          }}
-        >
-          {/* Top separator */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "300px",
-              height: "1px",
-              background: `linear-gradient(90deg, transparent, ${COLORS.gray[600]}, transparent)`,
-            }}
-          />
-
-          <div
-            className="scroll-reveal"
-            style={{
-              maxWidth: "800px",
-              margin: "0 auto",
-              padding: "0 32px",
-              textAlign: "center",
-            }}
-          >
-            <span className="section-badge">About</span>
-            <h2
-              style={{
-                fontSize: "clamp(28px, 3.5vw, 42px)",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.2,
-                marginBottom: "24px",
-              }}
-            >
-              Tentang{" "}
-              <span style={{ color: COLORS.green.primary }}>Bento-do</span>
-            </h2>
-
-            <div
-              style={{
-                background: "rgba(255, 255, 255, 0.92)",
-                border: `1px solid ${COLORS.gray[700]}`,
-                borderRadius: "28px",
-                padding: "48px 40px",
-                position: "relative",
-                overflow: "hidden",
-                backdropFilter: "blur(10px)",
-                boxShadow: "0 24px 70px rgba(15, 23, 42, 0.07)",
-              }}
-            >
-              {/* Decorative gradient */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "-50%",
-                  left: "-20%",
-                  width: "140%",
-                  height: "100%",
-                  background: "radial-gradient(ellipse, rgba(0, 139, 31, 0.06) 0%, transparent 60%)",
-                  pointerEvents: "none",
-                }}
-              />
-
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: COLORS.gray[100],
-                  lineHeight: 1.8,
-                  marginBottom: "20px",
-                  position: "relative",
-                }}
-              >
-                Bento-do dibuat sebagai aplikasi produktivitas mahasiswa untuk membantu pengguna
-                mengelola tugas kuliah tanpa proses onboarding yang berat. Fokusnya sederhana:
-                semua tugas terkumpul, prioritas terlihat, dan pekerjaan bisa dimulai lebih cepat.
-              </p>
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: COLORS.gray[100],
-                  lineHeight: 1.8,
-                  marginBottom: "36px",
-                  position: "relative",
-                }}
-              >
-                Di dalamnya ada Guest Mode untuk mencoba tanpa akun, Bank Tugas untuk menyimpan
-                pekerjaan, Rule of 3 untuk menahan fokus, Focus Session untuk mulai mengerjakan,
-                dan Energy System agar beban harian tetap realistis.
-              </p>
-
-              <div style={{ position: "relative" }}>
-                <Link href="/register" id="cta-register-btn" className="btn-hero-primary">
-                  Buat Akun Gratis
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      background: "rgba(0,0,0,0.12)",
-                    }}
-                  >
-                    <ArrowUpRight />
-                  </span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: "60px",
-                marginTop: "48px",
-                flexWrap: "wrap",
-              }}
-            >
-              {[
-                { value: "3", label: "Task Prioritas" },
-                { value: "4", label: "Template Resmi" },
-                { value: "24h", label: "Reminder Deadline" },
-              ].map((stat, i) => (
-                <div key={i} style={{ textAlign: "center" }}>
-                  <div
-                    style={{
-                      fontSize: "32px",
-                      fontWeight: 700,
-                      color: COLORS.green.primary,
-                      letterSpacing: "-0.02em",
-                    }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: COLORS.gray[400],
-                      marginTop: "4px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════
-            FAQ SECTION
-        ════════════════════════════════════════ */}
-        <section
-          id="faq"
-          style={{
-            padding: "80px 0 100px",
-            position: "relative",
-          }}
-        >
-          {/* Top separator */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "300px",
-              height: "1px",
-              background: `linear-gradient(90deg, transparent, ${COLORS.gray[600]}, transparent)`,
-            }}
-          />
-
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "0 32px",
-            }}
-          >
-              <div className="scroll-reveal" style={{ textAlign: "center", marginBottom: "60px" }}>
-              <span className="section-badge">FAQ</span>
-              <h2
-                style={{
-                  fontSize: "clamp(28px, 3.5vw, 42px)",
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.2,
-                }}
-              >
-                Pertanyaan yang{" "}
-                <span style={{ color: COLORS.green.primary }}>sering ditanyakan</span>
-              </h2>
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: COLORS.gray[400],
-                  marginTop: "14px",
-                  maxWidth: "450px",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  lineHeight: 1.7,
-                }}
-              >
-                Temukan jawaban untuk pertanyaan umum tentang Bento-do di bawah ini.
-              </p>
-            </div>
-
-            <div className="faq-container scroll-reveal">
-              <div
-                style={{
-                  background: "rgba(255, 255, 255, 0.92)",
-                  border: `1px solid ${COLORS.gray[700]}`,
-                  borderRadius: "20px",
-                  padding: "12px 32px",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 18px 48px rgba(15, 23, 42, 0.05)",
-                }}
-              >
-                {faqItems.map((item, i) => (
-                  <FAQItem key={i} question={item.question} answer={item.answer} />
+              <div className="guide-flow reveal">
+                {guideSteps.map((step) => (
+                  <article key={step.label} className="guide-step">
+                    <span>{step.label}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.desc}</p>
+                  </article>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ════════════════════════════════════════
-            FOOTER
-        ════════════════════════════════════════ */}
-        <footer className="footer-section" style={{ padding: "56px 32px 36px" }}>
-          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-            {/* Top Border & Header */}
-            <div
-              style={{
-                borderBottom: `1px solid ${COLORS.gray[400]}`,
-                paddingBottom: "16px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "34px"
-              }}
-            >
-              <div style={{ fontSize: "14px", fontFamily: "monospace", letterSpacing: "1px", color: COLORS.gray[400] }}>
-                &copy; {new Date().getFullYear()} Bento-Do. All rights reserved.
+          <section id="fitur" className="section">
+            <div className="section__inner feature-flow">
+              <div className="feature-summary reveal">
+                <div className="eyebrow">Fitur inti</div>
+                <div className="section-heading" style={{ marginBottom: 0 }}>
+                  <h2>
+                    Dibuat untuk ritme belajar yang <span>lebih manusiawi</span>.
+                  </h2>
+                  <p>
+                    Fokusnya bukan menambah banyak panel, tapi membuat tugas besar terasa bisa
+                    dimulai dan dikendalikan.
+                  </p>
+                </div>
+                <div className="metric">
+                  <strong>3</strong>
+                  <span>prioritas utama<br />di dashboard</span>
+                </div>
+              </div>
+
+              <div className="feature-list reveal">
+                {featureRows.map((feature) => (
+                  <article key={feature.key} className="feature-row">
+                    <div className="feature-row__key">{feature.key}</div>
+                    <div>
+                      <h3>{feature.title}</h3>
+                      <p>{feature.desc}</p>
+                    </div>
+                  </article>
+                ))}
               </div>
             </div>
+          </section>
 
-            {/* Main Content */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-end",
-                flexWrap: "wrap",
-                gap: "40px"
-              }}
-            >
-              {/* Huge Logo */}
-              <div
-                style={{
-                  fontSize: "clamp(44px, 6.6vw, 74px)",
-                  fontWeight: 900,
-                  lineHeight: 0.95,
-                  letterSpacing: "-0.05em",
-                  color: COLORS.gray[100],
-                  fontFamily: "var(--font-outfit), sans-serif"
-                }}
-              >
-                Bento-Do
+          <section id="template" className="section">
+            <div className="section__inner">
+              <div className="section-heading reveal">
+                <div className="eyebrow">Template</div>
+                <h2>
+                  Template tugas yang sering muncul di <span>perkuliahan</span>.
+                </h2>
+                <p>
+                  Bukan kumpulan card dekoratif, melainkan daftar awal yang bisa dipakai untuk
+                  memecah pekerjaan akademik jadi langkah yang lebih kecil.
+                </p>
               </div>
 
-              {/* Links Grid */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "clamp(28px, 4vw, 52px)",
-                  flexWrap: "wrap",
-                  marginBottom: "8px"
-                }}
-              >
-                {/* MENU */}
-                <div>
-                  <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: "monospace", letterSpacing: "1px", marginBottom: "14px", color: COLORS.gray[400] }}>
-                    [MENU]
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <Link href="#fitur" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Fitur</Link>
-                    <Link href="#template" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Template</Link>
-                    <Link href="#about" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>About</Link>
-                    <Link href="#faq" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>FAQ</Link>
-                  </div>
+              <div className="template-panel reveal">
+                {templates.map((template) => (
+                  <article key={template.title} className="template-row">
+                    <h3>{template.title}</h3>
+                    <p>{template.desc}</p>
+                    <span>{template.meta}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section id="about" className="section">
+            <div className="section__inner">
+              <div className="about-card reveal">
+                <div className="eyebrow">About</div>
+                <h2>
+                  Tentang <span>Bento-Do</span>
+                </h2>
+
+                <div className="about-card__panel">
+                  <p>
+                    Bento-Do dibuat sebagai aplikasi produktivitas mahasiswa untuk membantu
+                    pengguna mengelola tugas kuliah tanpa proses onboarding yang berat. Fokusnya
+                    sederhana: semua tugas terkumpul, prioritas terlihat, dan pekerjaan bisa
+                    dimulai lebih cepat.
+                  </p>
+                  <p>
+                    Di dalamnya ada Guest Mode untuk mencoba tanpa akun, Bank Tugas untuk
+                    menyimpan pekerjaan, Rule of 3 untuk menahan fokus, Focus Session untuk mulai
+                    mengerjakan, dan Energy System agar beban harian tetap realistis.
+                  </p>
+
+                  <Link href="/register" className="btn-primary">
+                    Buat Akun Gratis
+                    <ArrowUpRight />
+                  </Link>
                 </div>
 
-                {/* ACCOUNT */}
-                <div>
-                  <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: "monospace", letterSpacing: "1px", marginBottom: "14px", color: COLORS.gray[400] }}>
-                    [ACCOUNT]
+                <div className="about-stats">
+                  <div>
+                    <strong>3</strong>
+                    <span>Task Prioritas</span>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <Link href="/login" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Login</Link>
-                    <Link href="/register" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Sign Up</Link>
-                    <button
-                      onClick={handleGuestMode}
-                      disabled={isGuestLoading}
-                      style={{
-                        color: COLORS.gray[400],
-                        textDecoration: "none",
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                        textAlign: "left"
-                      }}
-                    >
-                      {isGuestLoading ? "Menyiapkan..." : "Guest Mode"}
-                    </button>
+                  <div>
+                    <strong>4</strong>
+                    <span>Template Resmi</span>
                   </div>
-                </div>
-
-                {/* CONTACT */}
-                <div>
-                  <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: "monospace", letterSpacing: "1px", marginBottom: "14px", color: COLORS.gray[400] }}>
-                    [CONTACT]
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <a href="mailto:bentodo.app@gmail.com" style={{ color: COLORS.gray[400], textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>
-                      bentodo.app@gmail.com
-                    </a>
+                  <div>
+                    <strong>24h</strong>
+                    <span>Reminder Deadline</span>
                   </div>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section id="faq" className="section">
+            <div className="section__inner">
+              <div className="section-heading section-heading--center reveal">
+                <div className="eyebrow">FAQ</div>
+                <h2>
+                  Pertanyaan yang <span>sering ditanyakan</span>.
+                </h2>
+              </div>
+
+              <div className="faq-container reveal">
+                {faqItems.map((item) => (
+                  <FAQItem key={item.question} question={item.question} answer={item.answer} />
+                ))}
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <footer className="footer">
+          <div className="footer__inner">
+            <div className="footer__brand">
+              <p>Copyright {new Date().getFullYear()} Bento-Do. All rights reserved.</p>
+              <strong>Bento-Do</strong>
+            </div>
+
+            <div className="footer__group">
+              <span>[Menu]</span>
+              <a href="#guide">Panduan</a>
+              <a href="#fitur">Fitur</a>
+              <a href="#template">Template</a>
+              <a href="#faq">FAQ</a>
+            </div>
+
+            <div className="footer__group">
+              <span>[Account]</span>
+              <Link href="/login">Login</Link>
+              <Link href="/register">Sign Up</Link>
+              <button type="button" onClick={handleGuestMode} disabled={isGuestLoading}>
+                {isGuestLoading ? "Menyiapkan..." : "Guest Mode"}
+              </button>
+            </div>
+
+            <div className="footer__group">
+              <span>[Contact]</span>
+              <a href="mailto:bentodo.app@gmail.com">bentodo.app@gmail.com</a>
             </div>
           </div>
         </footer>
