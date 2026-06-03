@@ -572,7 +572,7 @@ export default function DashboardPage() {
   const [templatesList, setTemplatesList] = useState<ViewCard[]>(templatesData);
   const [apiTasks, setApiTasks] = useState<Task[]>([]);
   const [displayName, setDisplayName] = useState("User");
-  const [energyPercent, setEnergyPercent] = useState(0);
+  const [energyData, setEnergyData] = useState({ current: 0, max: 240, percent: 0, isCritical: false });
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [deadlineStats, setDeadlineStats] = useState({ upcoming: 0, overdue: 0 });
@@ -629,12 +629,12 @@ export default function DashboardPage() {
             new Date(task.deadline).getTime() < currentTime;
         }).length,
       });
-      setEnergyPercent(
-        Math.round(
-          (energyResult.data.current_energy / energyResult.data.max_energy) *
-            100,
-        ),
-      );
+      setEnergyData({
+        current: energyResult.data.current_energy,
+        max: energyResult.data.max_energy,
+        percent: Math.round((energyResult.data.current_energy / energyResult.data.max_energy) * 100),
+        isCritical: energyResult.data.is_critical_energy,
+      });
 
       if (zenResult.hidden_message) {
         setNotice(zenResult.hidden_message);
@@ -1178,15 +1178,15 @@ export default function DashboardPage() {
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Energy</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
                     <BatteryIcon />
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{energyPercent}%</span>
+                    <span style={{ fontSize: "24px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{energyData.percent}%</span>
+                    <span style={{ fontSize: "12px", color: COLOR.muted, fontWeight: 500, marginLeft: "auto" }}>{energyData.current} / {energyData.max} mins</span>
                   </div>
-                  {/* Progress bar */}
-                  <div style={{ width: "100%", height: "6px", backgroundColor: "#E1E1E1", borderRadius: "999px", marginBottom: "7px" }}>
-                    <div style={{ width: `${Math.min(energyPercent, 100)}%`, height: "100%", backgroundColor: COLOR.primary, borderRadius: "999px", transition: "width 0.5s" }} />
+                  <div style={{ width: "100%", height: "8px", backgroundColor: "#E8E8E8", borderRadius: "999px", overflow: "hidden", marginBottom: "8px" }}>
+                    <div style={{ width: `${energyData.percent}%`, height: "100%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary, borderRadius: "999px", transition: "width 0.3s ease, background-color 0.3s ease" }} />
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: COLOR.primary, fontWeight: 600 }}>
-                    <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: COLOR.primary, display: "inline-block" }} />
-                    Ready for do Task
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: energyData.isCritical ? COLOR.danger : COLOR.primary, fontWeight: 600 }}>
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary }} />
+                    {energyData.current === 0 ? "Depleted" : energyData.isCritical ? "Critical Energy" : "Ready for do Task"}
                   </div>
                 </div>
               </div>
@@ -1207,7 +1207,7 @@ export default function DashboardPage() {
                 <div className="hover-card" style={{ ...CARD_STYLE, width: "100%", minHeight: "230px", padding: "24px clamp(18px, 2.2vw, 32px)", boxSizing: "border-box", gridColumn: "1" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
                     <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Priority Task</span>
-                    <span style={{ fontSize: "12px", color: COLOR.mutedDark, cursor: "pointer", lineHeight: 1 }}>View all</span>
+                    <span onClick={() => setActiveMenu("task")} style={{ fontSize: "12px", color: COLOR.mutedDark, cursor: "pointer", lineHeight: 1 }}>View all</span>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -1387,6 +1387,13 @@ export default function DashboardPage() {
                           return (
                             <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
                               <div
+                                onClick={() => {
+                                  if (hasDot) {
+                                    const formatted = formatDate(dateObj.toISOString());
+                                    setSearchTask(searchTask === formatted ? "" : formatted);
+                                    document.getElementById("recent-tasks-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                  }
+                                }}
                                 style={{
                                   width: "19px",
                                   height: "19px",
@@ -1417,7 +1424,7 @@ export default function DashboardPage() {
               </div>
 
               {/* ── Recent Tasks Table ── */}
-              <div style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "hidden" }}>
+              <div id="recent-tasks-section" style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "hidden" }}>
                 <div style={{ height: "78px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 30px" }}>
                   <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Recent Tasks</span>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -1561,21 +1568,38 @@ export default function DashboardPage() {
                                 void handleStartFocus(task.id);
                               }}
                               style={{
-                                width: "91px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "4px",
+                                width: "100px",
                                 height: "30px",
-                                padding: 0,
-                                borderRadius: "7px",
-                                border: `1px solid ${COLOR.border}`,
-                                backgroundColor: COLOR.surface,
+                                padding: "0",
+                                borderRadius: "6px",
+                                border: `1px solid ${COLOR.primary}`,
+                                backgroundColor: COLOR.primaryPale,
                                 fontSize: "11px",
                                 fontWeight: 600,
-                                color: COLOR.text,
+                                color: COLOR.primary,
                                 cursor: "pointer",
                                 fontFamily: "inherit",
                                 whiteSpace: "nowrap",
+                                transition: "all 0.15s"
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isActionLoading) {
+                                  e.currentTarget.style.backgroundColor = COLOR.primary;
+                                  e.currentTarget.style.color = "#ffffff";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isActionLoading) {
+                                  e.currentTarget.style.backgroundColor = COLOR.primaryPale;
+                                  e.currentTarget.style.color = COLOR.primary;
+                                }
                               }}
                             >
-                              Mulai Fokus
+                              <PlayIcon /> Mulai Fokus
                             </button>
                           </div>
                         </td>
