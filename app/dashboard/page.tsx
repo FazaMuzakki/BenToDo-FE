@@ -586,6 +586,10 @@ export default function DashboardPage() {
   const [addTaskTitle, setAddTaskTitle] = useState("");
   const [addTaskEnergy, setAddTaskEnergy] = useState<EnergyWeight>("Ringan");
   const [addTaskDeadline, setAddTaskDeadline] = useState("");
+  const [addTaskDesc, setAddTaskDesc] = useState("");
+  const [addTaskSubtasks, setAddTaskSubtasks] = useState<{ text: string; done: boolean }[]>([]);
+  const [newSubtaskText, setNewSubtaskText] = useState("");
+  const [localTaskMeta, setLocalTaskMeta] = useState<Record<string, { description: string; subtasks: { text: string; done: boolean }[] }>>({});
 
   const [newTemplate, setNewTemplate] = useState({
     title: "",
@@ -728,11 +732,11 @@ export default function DashboardPage() {
     try {
       await startFocusSession(taskId);
       setNotice("Sesi fokus berhasil dimulai.");
-      router.push("/focus");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Gagal memulai fokus.");
     } finally {
       setIsActionLoading(false);
+      router.push("/focus");
     }
   };
 
@@ -768,16 +772,29 @@ export default function DashboardPage() {
     }
     setIsActionLoading(true);
     try {
-      await createTask({
+      const result = await createTask({
         title: addTaskTitle,
         energy_weight: addTaskEnergy,
         deadline: addTaskDeadline || null,
       });
+      // Store description and subtasks locally
+      if (result?.data?.id) {
+        setLocalTaskMeta(prev => ({
+          ...prev,
+          [result.data.id]: {
+            description: addTaskDesc,
+            subtasks: addTaskSubtasks,
+          },
+        }));
+      }
       setNotice("Tugas berhasil ditambahkan.");
       setIsAddTaskModalOpen(false);
       setAddTaskTitle("");
       setAddTaskEnergy("Ringan");
       setAddTaskDeadline("");
+      setAddTaskDesc("");
+      setAddTaskSubtasks([]);
+      setNewSubtaskText("");
       await loadDashboardData(true);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Gagal menambahkan tugas.");
@@ -1143,9 +1160,9 @@ export default function DashboardPage() {
                 }}
               >
                 {/* Task Completed */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Task Completed</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Task Completed</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <CheckSquareIcon />
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{completedCount}</span>
                     <TrendBadge value="+10%" up />
@@ -1154,9 +1171,9 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Upcoming Deadlines */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Upcoming Deadlines</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Upcoming Deadlines</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <ClockAlertIcon />
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{upcomingDeadlineCount}</span>
                     <TrendBadge value="+10%" up />
@@ -1165,9 +1182,9 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Overdue Task */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Overdue Task</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Overdue Task</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <AlertTriangleIcon />
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{overdueCount}</span>
                     <TrendBadge value="-10%" up={false} />
@@ -1176,19 +1193,21 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Energy */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Energy</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Energy</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <BatteryIcon />
                     <span style={{ fontSize: "24px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{energyData.percent}%</span>
                     <span style={{ fontSize: "12px", color: COLOR.muted, fontWeight: 500, marginLeft: "auto" }}>{energyData.current} / {energyData.max} mins</span>
                   </div>
-                  <div style={{ width: "100%", height: "8px", backgroundColor: "#E8E8E8", borderRadius: "999px", overflow: "hidden", marginBottom: "8px" }}>
-                    <div style={{ width: `${energyData.percent}%`, height: "100%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary, borderRadius: "999px", transition: "width 0.3s ease, background-color 0.3s ease" }} />
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: energyData.isCritical ? COLOR.danger : COLOR.primary, fontWeight: 600 }}>
-                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary }} />
-                    {energyData.current === 0 ? "Depleted" : energyData.isCritical ? "Critical Energy" : "Ready for do Task"}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ width: "100%", height: "8px", backgroundColor: "#E8E8E8", borderRadius: "999px", overflow: "hidden" }}>
+                      <div style={{ width: `${energyData.percent}%`, height: "100%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary, borderRadius: "999px", transition: "width 0.3s ease, background-color 0.3s ease" }} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: energyData.isCritical ? COLOR.danger : COLOR.primary, fontWeight: 600 }}>
+                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary }} />
+                      {energyData.current === 0 ? "Depleted" : energyData.isCritical ? "Critical Energy" : "Ready for do Task"}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1571,16 +1590,14 @@ export default function DashboardPage() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                gap: "4px",
-                                width: "100px",
-                                height: "30px",
-                                padding: "0",
-                                borderRadius: "6px",
-                                border: `1px solid ${COLOR.primary}`,
-                                backgroundColor: COLOR.primaryPale,
-                                fontSize: "11px",
+                                padding: "6px 16px",
+                                minWidth: "110px",
+                                borderRadius: "8px",
+                                border: "1px solid #d1d5db",
+                                backgroundColor: "#ffffff",
+                                fontSize: "12px",
                                 fontWeight: 600,
-                                color: COLOR.primary,
+                                color: "#111827",
                                 cursor: "pointer",
                                 fontFamily: "inherit",
                                 whiteSpace: "nowrap",
@@ -1588,18 +1605,16 @@ export default function DashboardPage() {
                               }}
                               onMouseEnter={(e) => {
                                 if (!isActionLoading) {
-                                  e.currentTarget.style.backgroundColor = COLOR.primary;
-                                  e.currentTarget.style.color = "#ffffff";
+                                  e.currentTarget.style.backgroundColor = "#f9fafb";
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (!isActionLoading) {
-                                  e.currentTarget.style.backgroundColor = COLOR.primaryPale;
-                                  e.currentTarget.style.color = COLOR.primary;
+                                  e.currentTarget.style.backgroundColor = "#ffffff";
                                 }
                               }}
                             >
-                              <PlayIcon /> Mulai Fokus
+                              Mulai Fokus
                             </button>
                           </div>
                         </td>
@@ -1744,261 +1759,131 @@ export default function DashboardPage() {
               if (!v) return "—";
               return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(v));
             };
+            const meta = localTaskMeta[task.id];
+            const taskDescription = meta?.description || "";
+            const taskSubtasks = meta?.subtasks || [];
+            const doneSubtaskCount = taskSubtasks.filter(s => s.done).length;
             return (
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                {/* Back Button + Actions */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <button
-                    onClick={() => setSelectedTaskId(null)}
-                    style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#111827", fontSize: "14px", fontWeight: 500, fontFamily: "inherit" }}
-                  >
-                    <ArrowLeftIcon /> Kembali ke Task
+              <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: "32px" }}>
+                {/* Header / Modal-like top bar */}
+                <div style={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: 0 }}>Task Detail</h2>
+                  <button onClick={() => setSelectedTaskId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => setNotice("Fitur edit task perlu endpoint backend tambahan.")}
-                      style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", backgroundColor: "#ffffff", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#374151", fontFamily: "inherit", transition: "all 0.15s" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                      Edit Tugas
-                    </button>
-                    <button
-                      onClick={() => setNotice("Fitur hapus task perlu endpoint backend tambahan.")}
-                      style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "8px", border: "1px solid #fecaca", backgroundColor: "#fef2f2", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "#DC2626", fontFamily: "inherit", transition: "all 0.15s" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fee2e2"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                      Hapus
-                    </button>
-                  </div>
                 </div>
 
-                {/* Breadcrumb */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.muted }}>
-                  <span style={{ cursor: "pointer" }} onClick={() => setSelectedTaskId(null)}>Tugas Saya</span>
-                  <span>&gt;</span>
-                  <span style={{ color: COLOR.text, fontWeight: 500 }}>Detail Tugas</span>
-                </div>
-
-                {/* Task Header Card */}
-                <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0", padding: "28px 32px", display: "flex", alignItems: "center", gap: "20px" }}>
-                  <div style={{ width: "56px", height: "56px", borderRadius: "50%", backgroundColor: energyColor + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontSize: "22px", fontWeight: 700, color: energyColor }}>A</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-                      <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", margin: 0 }}>{task.title}</h2>
-                      <span style={{ fontSize: "10px", fontWeight: 700, color: "#ffffff", backgroundColor: energyColor, padding: "3px 10px", borderRadius: "999px", letterSpacing: "0.04em", textTransform: "uppercase" }}>{energyLevel}</span>
-                    </div>
-                    <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>
-                      {task.source_template ? `Tugas dari template ${task.source_template}` : "Ditambahkan oleh Anda"}
-                      {task.source_template ? " • Template" : " • Manual"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Main Content: 2-column layout */}
-                <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "24px", alignItems: "start" }}>
+                {/* Body 2 columns */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: "500px" }}>
                   {/* Left Column */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                    {/* Informasi Tugas */}
-                    <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0", padding: "28px 32px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "28px" }}>
-                        <div style={{ width: "4px", height: "20px", borderRadius: "2px", backgroundColor: COLOR.primary }} />
-                        <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: 0 }}>Informasi Tugas</h3>
+                  <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
+                    
+                    {/* Title */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Title
                       </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "28px 40px" }}>
-                        {/* Beban Energi */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "8px", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={energyColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Beban Energi</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: energyColor }} />
-                              <span style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>{task.energy_weight}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Tenggat Waktu */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "8px", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <CalendarSmIcon />
-                          </div>
-                          <div>
-                            <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Tenggat Waktu</div>
-                            <span style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>{task.deadline ? fmtDateTime(task.deadline) : "Tidak ada"}</span>
-                          </div>
-                        </div>
-
-                        {/* Status */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "8px", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={statusColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Status Saat Ini</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: statusColor }} />
-                              <span style={{ fontSize: "14px", fontWeight: 600, color: statusColor }}>{statusLabel}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Dibuat Pada */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "8px", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Dibuat Pada</div>
-                            <span style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>{fmtDateTime(task.created_at)}</span>
-                          </div>
-                        </div>
-
-                        {/* Terakhir Diperbarui */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", gridColumn: "1 / -1" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "8px", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Terakhir Diperbarui</div>
-                            <span style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>{fmtDateTime(task.updated_at)}</span>
-                          </div>
-                        </div>
+                      <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "20px", fontWeight: 700, color: "#111827" }}>
+                        {task.title}
                       </div>
                     </div>
 
-                    {/* Global Task ID */}
-                    <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0", padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
-                      <div>
-                        <div style={{ fontSize: "10px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Global Task Identifier</div>
-                        <code style={{ fontSize: "13px", color: "#374151", fontFamily: "monospace", wordBreak: "break-all" }}>{task.id}</code>
+                    {/* Description */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Description
                       </div>
-                      <button
-                        onClick={() => {
-                          void navigator.clipboard.writeText(task.id);
-                          setTaskDetailCopied(true);
-                          setTimeout(() => setTaskDetailCopied(false), 2000);
-                        }}
-                        style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "8px", border: "none", backgroundColor: "#111827", color: "#ffffff", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", whiteSpace: "nowrap" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#1f2937"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#111827"; }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                        {taskDetailCopied ? "Tersalin!" : "Salin ID Tugas"}
-                      </button>
+                      <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", color: "#4b5563", minHeight: "100px", whiteSpace: "pre-wrap" }}>
+                        {taskDescription || "No description provided."}
+                      </div>
                     </div>
+
+                    {/* Subtasks */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                          Subtasks
+                        </div>
+                        <div style={{ backgroundColor: "#f3f4f6", padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, color: "#4b5563" }}>
+                          {doneSubtaskCount}/{taskSubtasks.length} Done
+                        </div>
+                      </div>
+
+                      <div style={{ borderRadius: "8px", border: "1px solid #e5e7eb", padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                        {taskSubtasks.map((st, idx) => (
+                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <div style={{ width: "20px", height: "20px", borderRadius: "4px", backgroundColor: st.done ? "#6366f1" : "#ffffff", border: st.done ? "none" : "1px solid #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => {
+                              const newSubs = [...taskSubtasks];
+                              newSubs[idx] = { ...newSubs[idx], done: !newSubs[idx].done };
+                              setLocalTaskMeta(prev => ({...prev, [task.id]: { description: taskDescription, subtasks: newSubs }}));
+                            }}>
+                              {st.done && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                            </div>
+                            <span style={{ fontSize: "14px", color: st.done ? "#9ca3af" : "#4b5563", textDecoration: st.done ? "line-through" : "none" }}>{st.text}</span>
+                          </div>
+                        ))}
+                        
+                        <button style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#6366f1", fontSize: "14px", fontWeight: 600, padding: 0, marginTop: "8px" }} onClick={() => setNotice("Adding subtasks after creation needs backend support.")}>
+                          <span style={{ fontSize: "18px", fontWeight: 400 }}>+</span> Add subtask
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
 
                   {/* Right Column */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                    {/* Riwayat Aktivitas */}
-                    <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0", padding: "28px 24px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}>
-                        <div style={{ width: "4px", height: "20px", borderRadius: "2px", backgroundColor: "#6366f1" }} />
-                        <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: 0 }}>Riwayat Aktivitas</h3>
-                      </div>
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0px", position: "relative" }}>
-                        {/* Timeline line */}
-                        <div style={{ position: "absolute", left: "11px", top: "24px", bottom: "24px", width: "2px", backgroundColor: "#e5e7eb" }} />
-
-                        {/* Status: Created */}
-                        <div style={{ display: "flex", gap: "16px", position: "relative", paddingBottom: "28px" }}>
-                          <div style={{ width: "24px", height: "24px", borderRadius: "50%", backgroundColor: statusColor + "20", border: `2px solid ${statusColor}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>
-                            <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: statusColor }} />
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                              <span style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>Status: {statusLabel}</span>
-                              <span style={{ fontSize: "10px", fontWeight: 600, color: statusColor, backgroundColor: statusColor + "15", padding: "2px 8px", borderRadius: "999px", textTransform: "uppercase" }}>Aktif</span>
-                            </div>
-                            <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 4px", lineHeight: 1.5 }}>
-                              {task.status === "done" ? "Tugas telah diselesaikan." : task.status === "in_progress" ? "Tugas sedang dikerjakan." : "Tugas telah dibuat dan menunggu untuk dikerjakan."}
-                            </p>
-                            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#9ca3af" }}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                              {fmtDateTime(task.updated_at)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* In Progress */}
-                        <div style={{ display: "flex", gap: "16px", position: "relative", paddingBottom: "28px", opacity: task.status === "in_progress" || task.status === "done" ? 1 : 0.4 }}>
-                          <div style={{ width: "24px", height: "24px", borderRadius: "50%", backgroundColor: task.status === "in_progress" || task.status === "done" ? "#3B82F620" : "#f3f4f6", border: `2px solid ${task.status === "in_progress" || task.status === "done" ? "#3B82F6" : "#d1d5db"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>
-                            <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: task.status === "in_progress" || task.status === "done" ? "#3B82F6" : "#d1d5db" }} />
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: "13px", fontWeight: 600, color: task.status === "in_progress" || task.status === "done" ? "#111827" : "#9ca3af" }}>In Progress</span>
-                            <p style={{ fontSize: "12px", color: "#9ca3af", margin: "4px 0 0", lineHeight: 1.5 }}>
-                              {task.status === "in_progress" || task.status === "done" ? "Tugas sedang/telah dikerjakan." : "Belum dimulai."}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Done */}
-                        <div style={{ display: "flex", gap: "16px", position: "relative", opacity: task.status === "done" ? 1 : 0.4 }}>
-                          <div style={{ width: "24px", height: "24px", borderRadius: "50%", backgroundColor: task.status === "done" ? COLOR.primary + "20" : "#f3f4f6", border: `2px solid ${task.status === "done" ? COLOR.primary : "#d1d5db"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1 }}>
-                            {task.status === "done" ? (
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COLOR.primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                            ) : (
-                              <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#d1d5db" }} />
-                            )}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: "13px", fontWeight: 600, color: task.status === "done" ? "#111827" : "#9ca3af" }}>Tugas Selesai</span>
-                            <p style={{ fontSize: "12px", color: "#9ca3af", margin: "4px 0 0", lineHeight: 1.5 }}>
-                              {task.status === "done" && task.completed_at ? fmtDateTime(task.completed_at) : "—"}
-                            </p>
-                          </div>
-                        </div>
+                  <div style={{ borderLeft: "1px solid #e5e7eb", padding: "32px 24px", display: "flex", flexDirection: "column", gap: "32px" }}>
+                    
+                    {/* Priority */}
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>PRIORITY</div>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: energyLevel === "HIGH" ? "#16a34a" : energyLevel === "MEDIUM" ? "#f59e0b" : "#6b7280", color: "#ffffff", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                        {energyLevel === "HIGH" ? "High Priority" : energyLevel === "MEDIUM" ? "Medium Priority" : "Low Priority"}
                       </div>
                     </div>
 
-                    {/* Tips Produktivitas */}
-                    <div style={{ backgroundColor: "#f0fdf4", borderRadius: "12px", border: "1px solid #bbf7d0", padding: "20px 24px" }}>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: COLOR.primary, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>Tips Produktivitas</div>
-                      <p style={{ fontSize: "13px", color: "#374151", lineHeight: 1.6, margin: 0 }}>
-                        {task.energy_weight === "Berat"
-                          ? "Tugas berat membutuhkan fokus penuh. Gunakan Focus Timer dan kerjakan saat energi Anda masih tinggi di pagi hari."
-                          : task.energy_weight === "Sedang"
-                            ? "Tugas sedang cocok dikerjakan setelah menyelesaikan tugas ringan. Bagi waktu menjadi sesi 25 menit dengan jeda singkat."
-                            : "Tugas ringan dapat dikerjakan kapan saja. Selesaikan yang cepat terlebih dahulu untuk membangun momentum produktivitas."}
-                      </p>
+                    {/* Due Date */}
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>DUE DATE</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: task.deadline && new Date(task.deadline) < new Date() ? "#dc2626" : "#4b5563" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        {task.deadline ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(task.deadline)) : "No due date"}
+                        {task.deadline && new Date(task.deadline) < new Date() && " (Overdue)"}
+                      </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      <button
-                        onClick={() => { void handleStartFocus(task.id); }}
-                        style={{ width: "100%", height: "44px", borderRadius: "10px", backgroundColor: COLOR.primary, color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.primaryHover; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = COLOR.primary; }}
-                      >
-                        <PlayIcon /> Mulai Fokus
+                    {/* Task Level */}
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>TASK LEVEL</div>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: 700, color: "#16a34a" }}>
+                        {task.energy_weight}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+                    </div>
+
+                    <hr style={{ border: "none", borderTop: "1px solid #e5e7eb", margin: 0 }} />
+
+                    {/* Created */}
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+                      Created {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(task.created_at))}
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
+                      <button onClick={() => setNotice("Fitur edit task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: "13px", fontWeight: 600, padding: 0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-3.25-1.95"/></svg>
+                        Update Task
                       </button>
-                      <button
-                        onClick={() => {
-                          void handleToggleTaskStatus(
-                            mapTaskToViewTask(task),
-                            task.status !== "done"
-                          );
-                        }}
-                        disabled={isActionLoading}
-                        style={{ width: "100%", height: "44px", borderRadius: "10px", backgroundColor: "#ffffff", color: "#111827", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb", cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
-                      >
-                        {task.status === "done" ? "Tandai Belum Selesai" : "Tandai Selesai"}
+                      <button onClick={() => setNotice("Fitur hapus task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: "13px", fontWeight: 600, padding: 0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        Delete Task
                       </button>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -2454,8 +2339,8 @@ export default function DashboardPage() {
             }}>
               <div style={{
                 backgroundColor: "#ffffff", borderRadius: "12px",
-                width: "100%", maxWidth: "600px", padding: "32px",
-                position: "relative",
+                width: "100%", maxWidth: "640px", padding: "32px",
+                position: "relative", maxHeight: "90vh", overflowY: "auto",
               }}>
                 <button
                   onClick={() => setIsAddTaskModalOpen(false)}
@@ -2472,9 +2357,10 @@ export default function DashboardPage() {
                 </button>
 
                 <h2 style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 8px", color: COLOR.text }}>Add Task</h2>
-                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 32px" }}>Buat tugas baru yang sesuai dengan keperluanmu.</p>
+                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 28px" }}>Buat tugas baru yang sesuai dengan keperluanmu.</p>
 
-                <div style={{ marginBottom: "24px" }}>
+                {/* Nama Tugas */}
+                <div style={{ marginBottom: "20px" }}>
                   <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>Nama Tugas</label>
                   <input
                     type="text"
@@ -2489,7 +2375,88 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                <div style={{ marginBottom: "24px" }}>
+                {/* Deskripsi */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>Deskripsi (Opsional)</label>
+                  <textarea
+                    value={addTaskDesc}
+                    onChange={(e) => setAddTaskDesc(e.target.value)}
+                    placeholder="Jelaskan detail tugas Anda..."
+                    rows={3}
+                    style={{
+                      width: "100%", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
+                      padding: "12px 16px", fontSize: "14px", color: COLOR.text, outline: "none",
+                      boxSizing: "border-box", fontFamily: "inherit", resize: "vertical", minHeight: "80px"
+                    }}
+                  />
+                </div>
+
+                {/* Subtasks */}
+                <div style={{ marginBottom: "20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: 600, color: COLOR.text }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+                      Subtasks
+                    </label>
+                    {addTaskSubtasks.length > 0 && (
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: COLOR.muted }}>{addTaskSubtasks.length} item</span>
+                    )}
+                  </div>
+                  {addTaskSubtasks.length > 0 && (
+                    <div style={{ border: `1px solid ${COLOR.border}`, borderRadius: "8px", overflow: "hidden", marginBottom: "10px" }}>
+                      {addTaskSubtasks.map((sub, idx) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 16px", borderBottom: idx < addTaskSubtasks.length - 1 ? `1px solid ${COLOR.borderSoft}` : "none" }}>
+                          <span style={{ flex: 1, fontSize: "14px", color: COLOR.text }}>{sub.text}</span>
+                          <button
+                            onClick={() => setAddTaskSubtasks(prev => prev.filter((_, i) => i !== idx))}
+                            style={{ ...buttonReset, color: "#9ca3af", padding: "2px", display: "flex" }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input
+                      type="text"
+                      value={newSubtaskText}
+                      onChange={(e) => setNewSubtaskText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newSubtaskText.trim()) {
+                          setAddTaskSubtasks(prev => [...prev, { text: newSubtaskText.trim(), done: false }]);
+                          setNewSubtaskText("");
+                        }
+                      }}
+                      placeholder="Tulis subtask dan tekan Enter..."
+                      style={{
+                        flex: 1, height: "40px", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
+                        padding: "0 14px", fontSize: "13px", color: COLOR.text, outline: "none",
+                        boxSizing: "border-box", fontFamily: "inherit"
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        if (newSubtaskText.trim()) {
+                          setAddTaskSubtasks(prev => [...prev, { text: newSubtaskText.trim(), done: false }]);
+                          setNewSubtaskText("");
+                        }
+                      }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "4px",
+                        padding: "0 14px", height: "40px", borderRadius: "8px",
+                        border: "none", backgroundColor: COLOR.primaryPale, color: COLOR.primary,
+                        fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span> Add subtask
+                    </button>
+                  </div>
+                </div>
+
+                {/* Beban Energi */}
+                <div style={{ marginBottom: "20px" }}>
                   <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>Beban Energi</label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
                     {[
@@ -2518,7 +2485,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: "32px" }}>
+                {/* Deadline */}
+                <div style={{ marginBottom: "28px" }}>
                   <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>Deadline (Opsional)</label>
                   <input
                     type="date"
@@ -2532,6 +2500,7 @@ export default function DashboardPage() {
                   />
                 </div>
 
+                {/* Submit */}
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button
                     onClick={() => void handleCreateTask()}
