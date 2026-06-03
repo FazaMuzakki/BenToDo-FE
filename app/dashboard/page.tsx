@@ -14,6 +14,7 @@ import {
   isGuestSession,
   startFocusSession,
   updateTask,
+  createTask,
 } from "../lib/api";
 import { LOGO_SRC } from "../lib/assets";
 import type { EnergyWeight, Task, TaskStatus, TaskTemplate } from "../lib/api";
@@ -525,6 +526,11 @@ export default function DashboardPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [deadlineStats, setDeadlineStats] = useState({ upcoming: 0, overdue: 0 });
 
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+  const [addTaskTitle, setAddTaskTitle] = useState("");
+  const [addTaskEnergy, setAddTaskEnergy] = useState<EnergyWeight>("Ringan");
+  const [addTaskDeadline, setAddTaskDeadline] = useState("");
+
   const [newTemplate, setNewTemplate] = useState({
     title: "",
     desc: "",
@@ -657,7 +663,10 @@ export default function DashboardPage() {
   };
 
   const handleStartFocus = async (taskId?: string) => {
-    if (!taskId) return;
+    if (!taskId) {
+      router.push("/focus");
+      return;
+    }
 
     setIsActionLoading(true);
     try {
@@ -691,6 +700,31 @@ export default function DashboardPage() {
       await loadDashboardData(true);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Gagal menerapkan template.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleCreateTask = async () => {
+    if (!addTaskTitle.trim()) {
+      setNotice("Nama tugas tidak boleh kosong.");
+      return;
+    }
+    setIsActionLoading(true);
+    try {
+      await createTask({
+        title: addTaskTitle,
+        energy_weight: addTaskEnergy,
+        deadline: addTaskDeadline || null,
+      });
+      setNotice("Tugas berhasil ditambahkan.");
+      setIsAddTaskModalOpen(false);
+      setAddTaskTitle("");
+      setAddTaskEnergy("Ringan");
+      setAddTaskDeadline("");
+      await loadDashboardData(true);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Gagal menambahkan tugas.");
     } finally {
       setIsActionLoading(false);
     }
@@ -1008,8 +1042,11 @@ export default function DashboardPage() {
                   onClick={() => {
                     if (activeMenu === "dashboard") {
                       void handleStartFocus(priorityTaskItems[0]?.id);
+                    } else if (activeMenu === "task") {
+                      setIsAddTaskModalOpen(true);
+                    } else if (activeMenu === "template") {
+                      setTemplateView("create");
                     }
-                    if (activeMenu === "template") setTemplateView("create");
                   }}
                   style={{
                     display: "flex",
@@ -1030,8 +1067,8 @@ export default function DashboardPage() {
                     transition: "background-color 0.15s",
                   }}
                 >
-                  {activeMenu === "dashboard" ? <PlayIcon /> : <span style={{ fontSize: "16px", fontWeight: "bold", lineHeight: 1 }}>+</span>}
-                  {activeMenu === "dashboard" ? "Start Focus Timer" : "Template Baru"}
+                  {activeMenu === "dashboard" ? <PlayIcon /> : activeMenu === "task" ? <PlayIcon /> : <span style={{ fontSize: "16px", fontWeight: "bold", lineHeight: 1 }}>+</span>}
+                  {activeMenu === "dashboard" ? "Start Focus Timer" : activeMenu === "task" ? "Add Task" : "Template Baru"}
                 </button>
               </div>
             </div>
@@ -2035,6 +2072,112 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* ── Add Task Modal ── */}
+          {isAddTaskModalOpen && (
+            <div style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 100, padding: "20px"
+            }}>
+              <div style={{
+                backgroundColor: "#ffffff", borderRadius: "12px",
+                width: "100%", maxWidth: "600px", padding: "32px",
+                position: "relative",
+              }}>
+                <button
+                  onClick={() => setIsAddTaskModalOpen(false)}
+                  style={{
+                    position: "absolute", top: "24px", right: "24px",
+                    background: "none", border: "none", cursor: "pointer",
+                    color: COLOR.text, padding: "4px"
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+
+                <h2 style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 8px", color: COLOR.text }}>Add Task</h2>
+                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 32px" }}>Buat tugas baru yang sesuai dengan keperluanmu.</p>
+
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>Nama Tugas</label>
+                  <input
+                    type="text"
+                    value={addTaskTitle}
+                    onChange={(e) => setAddTaskTitle(e.target.value)}
+                    placeholder="Contoh : Membuat Power Point"
+                    style={{
+                      width: "100%", height: "48px", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
+                      padding: "0 16px", fontSize: "14px", color: COLOR.text, outline: "none",
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>Beban Energi</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+                    {[
+                      { id: "Ringan", label: "Ringan", desc: "Tugas ringan", color: "#16a34a" },
+                      { id: "Sedang", label: "Sedang", desc: "Tugas sedang", color: "#f59e0b" },
+                      { id: "Berat", label: "Berat", desc: "Tugas berat", color: "#ef4444" },
+                    ].map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => setAddTaskEnergy(item.id as EnergyWeight)}
+                        style={{
+                          border: `1px solid ${addTaskEnergy === item.id ? COLOR.primary : COLOR.border}`,
+                          borderRadius: "8px", padding: "16px", cursor: "pointer",
+                          backgroundColor: addTaskEnergy === item.id ? COLOR.primaryPale : "#ffffff",
+                          display: "flex", alignItems: "center", gap: "12px",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <div style={{ width: "16px", height: "16px", borderRadius: "50%", backgroundColor: item.color }} />
+                        <div>
+                          <div style={{ fontSize: "14px", fontWeight: 700, color: COLOR.text }}>{item.label}</div>
+                          <div style={{ fontSize: "12px", color: COLOR.mutedDark }}>{item.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "32px" }}>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>Deadline (Opsional)</label>
+                  <input
+                    type="date"
+                    value={addTaskDeadline}
+                    onChange={(e) => setAddTaskDeadline(e.target.value)}
+                    style={{
+                      width: "100%", height: "48px", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
+                      padding: "0 16px", fontSize: "14px", color: COLOR.text, outline: "none",
+                      boxSizing: "border-box", fontFamily: "inherit"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={() => void handleCreateTask()}
+                    disabled={isActionLoading}
+                    style={{
+                      height: "44px", padding: "0 32px", borderRadius: "8px",
+                      backgroundColor: COLOR.primary, color: "#ffffff",
+                      fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer",
+                      opacity: isActionLoading ? 0.7 : 1, transition: "opacity 0.2s"
+                    }}
+                  >
+                    {isActionLoading ? "Menyimpan..." : "Buat Task"}
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

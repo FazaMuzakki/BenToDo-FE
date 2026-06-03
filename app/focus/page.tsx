@@ -275,12 +275,6 @@ export default function FocusTimerPage() {
         </Link>
 
         <div className="flex gap-4">
-          <button className="px-6 py-2 rounded-lg bg-[#0F8C2A] text-white font-medium hover:bg-[#0c7322] transition">
-            Login
-          </button>
-          <button className="px-6 py-2 rounded-lg border border-white/20 text-white font-medium hover:bg-white/5 transition">
-            Sign Up
-          </button>
         </div>
       </header>
 
