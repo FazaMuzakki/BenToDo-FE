@@ -131,29 +131,7 @@ const faqItems = [
   },
 ];
 
-const pixelDots = Array.from({ length: 9 }).flatMap((_, ring) => {
-  const radius = 58 + ring * 30;
-  const count = 40 + ring * 4;
 
-  return Array.from({ length: count }).flatMap((__, point) => {
-    const angle = (point / count) * 360;
-    const gap = (point + ring * 3) % 11 === 0 || (point + ring) % 17 === 0;
-    const onMainArc = angle > 200 || angle < 92;
-    const onTraceArc = angle > 120 && angle < 178 && ring > 4;
-
-    if (gap || (!onMainArc && !onTraceArc)) return [];
-
-    const rad = (angle * Math.PI) / 180;
-    return {
-      x: Math.cos(rad) * radius,
-      y: Math.sin(rad) * radius,
-      size: ring % 4 === 0 ? 2.6 : 1.8,
-      shade: ring % 3 === 0 ? COLORS.green.primary : "#7D8581",
-      opacity: ring % 3 === 0 ? 0.28 : 0.18,
-      delay: `${(point % 12) * 0.12}s`,
-    };
-  });
-});
 
 const ArrowUpRight = () => (
   <svg
@@ -259,30 +237,24 @@ function LogoMark({ size = 36 }: { size?: number }) {
   );
 }
 
-function PixelOrbitBackground() {
+function AbstractBentoBackground() {
   return (
-    <div className="pixel-orbit" aria-hidden="true">
-      <div className="pixel-orbit__globe">
-        <span className="globe-arc globe-arc--one" />
-        <span className="globe-arc globe-arc--two" />
-        <span className="globe-arc globe-arc--three" />
-        <span className="globe-arc globe-arc--four" />
+    <div className="abstract-bento" aria-hidden="true">
+      <div className="ab-cell ab-cell--1">
+        <div className="ab-bar" />
+        <div className="ab-bar ab-bar--short" />
+        <div className="ab-task">
+          <div className="ab-task-check" />
+          <div className="ab-bar ab-bar--shorter" style={{ marginBottom: 0 }} />
+        </div>
       </div>
-      <div className="pixel-orbit__rings" />
-      <div className="pixel-orbit__dots">
-        {pixelDots.map((dot, index) => (
-          <span
-            key={`${dot.x}-${dot.y}-${index}`}
-            style={{
-              width: `${dot.size}px`,
-              height: `${dot.size}px`,
-              backgroundColor: dot.shade,
-              opacity: dot.opacity,
-              transform: `translate(${dot.x}px, ${dot.y}px)`,
-              animationDelay: dot.delay,
-            }}
-          />
-        ))}
+      <div className="ab-cell ab-cell--2">
+        <div className="ab-circle" />
+      </div>
+      <div className="ab-cell ab-cell--3">
+        <div className="ab-bar" />
+        <div className="ab-bar" />
+        <div className="ab-bar ab-bar--short" />
       </div>
     </div>
   );
@@ -346,6 +318,24 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
+        .landing-page {
+          --color-ink: #202124;
+          --color-muted: #666666;
+          --color-line: #D9D9D9;
+          --color-softLine: #ECECEC;
+          --color-surface: #FFFFFF;
+          --color-surface-rgb: 255, 255, 255;
+          --color-wash: #F8FAF8;
+          --color-bg-base: #FFFFFF;
+          --color-bg-grad-1: rgba(0, 139, 31, 0.04);
+          --color-bg-grad-2: rgba(0, 139, 31, 0.035);
+          --color-bg-grad-3: rgba(120, 120, 120, 0.035);
+          --color-bg-linear-1: var(--color-surface);
+          --color-bg-linear-2: #fbfcfb;
+          --color-bg-linear-3: var(--color-surface);
+        }
+
+
         @keyframes heroRise {
           from {
             opacity: 0;
@@ -357,23 +347,17 @@ export default function LandingPage() {
           }
         }
 
-        @keyframes orbitDrift {
+        @keyframes bentoFloat {
           0% {
-            transform: translate3d(0, 0, 0) rotate(0deg);
+            transform: perspective(1000px) rotateX(6deg) rotateY(-12deg) rotateZ(6deg) translateY(0);
           }
           100% {
-            transform: translate3d(0, 0, 0) rotate(360deg);
+            transform: perspective(1000px) rotateX(8deg) rotateY(-6deg) rotateZ(3deg) translateY(-20px);
           }
         }
 
-        @keyframes pixelPulse {
-          0%,
-          100% {
-            transform: translate(var(--tx, 0), var(--ty, 0)) scale(0.9);
-          }
-          50% {
-            transform: translate(var(--tx, 0), var(--ty, 0)) scale(1.22);
-          }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         @keyframes lineSweep {
@@ -387,12 +371,12 @@ export default function LandingPage() {
 
         .landing-page {
           min-height: 100vh;
-          color: ${COLORS.neutral.ink};
+          color: var(--color-ink);
           background:
-            radial-gradient(circle at 15% 20%, rgba(0, 139, 31, 0.04), transparent 28%),
-            radial-gradient(circle at 82% 22%, rgba(0, 139, 31, 0.035), transparent 30%),
-            radial-gradient(circle at 92% 12%, rgba(120, 120, 120, 0.035), transparent 22%),
-            linear-gradient(180deg, #ffffff 0%, #fbfcfb 52%, #ffffff 100%);
+            radial-gradient(circle at 15% 20%, var(--color-bg-grad-1), transparent 28%),
+            radial-gradient(circle at 82% 22%, var(--color-bg-grad-2), transparent 30%),
+            radial-gradient(circle at 92% 12%, var(--color-bg-grad-3), transparent 22%),
+            linear-gradient(180deg, var(--color-bg-linear-1) 0%, var(--color-bg-linear-2) 52%, var(--color-bg-linear-3) 100%);
           overflow-x: hidden;
           position: relative;
         }
@@ -444,7 +428,7 @@ export default function LandingPage() {
           align-items: center;
           gap: 10px;
           width: fit-content;
-          color: ${COLORS.neutral.ink};
+          color: var(--color-ink);
           text-decoration: none;
           font-family: var(--font-outfit), sans-serif;
           font-size: 18px;
@@ -457,14 +441,14 @@ export default function LandingPage() {
           align-items: center;
           gap: 4px;
           padding: 6px;
-          border: 1px solid ${COLORS.neutral.softLine};
+          border: 1px solid var(--color-softLine);
           border-radius: 999px;
-          background: #ffffff;
+          background: var(--color-bg-base);
           box-shadow: 0 14px 42px rgba(15, 23, 42, 0.06);
         }
 
         .nav-menu a {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           text-decoration: none;
           font-size: 13px;
           font-weight: 600;
@@ -505,7 +489,7 @@ export default function LandingPage() {
           color: ${COLORS.green.primary};
           border: 1px solid rgba(0, 139, 31, 0.22);
           padding: 10px 20px;
-          background: ${COLORS.neutral.surface};
+          background: var(--color-surface);
         }
 
         .nav-login:hover {
@@ -529,10 +513,10 @@ export default function LandingPage() {
         }
 
         .btn-secondary {
-          color: ${COLORS.neutral.ink};
-          border: 1px solid ${COLORS.neutral.line};
+          color: var(--color-ink);
+          border: 1px solid var(--color-line);
           padding: 13px 24px;
-          background: #ffffff;
+          background: var(--color-bg-base);
         }
 
         .btn-secondary:hover {
@@ -548,7 +532,7 @@ export default function LandingPage() {
         }
 
         .btn-text {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           padding: 12px 8px;
         }
 
@@ -606,7 +590,7 @@ export default function LandingPage() {
         .hero__copy {
           max-width: 560px;
           margin-top: 26px;
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: clamp(16px, 1.28vw, 19px);
           line-height: 1.75;
           animation: heroRise 860ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
@@ -643,117 +627,116 @@ export default function LandingPage() {
           will-change: transform;
         }
 
-        .pixel-orbit {
+        .abstract-bento {
           width: 100%;
           aspect-ratio: 1;
           position: relative;
-          opacity: 0.72;
           contain: layout paint;
-          transform: translateZ(0);
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          grid-template-rows: 1fr 1.2fr;
+          gap: 20px;
+          padding: 24px;
+          transform: perspective(1000px) rotateX(6deg) rotateY(-12deg) rotateZ(6deg);
+          animation: bentoFloat 14s ease-in-out infinite alternate;
         }
 
-        .pixel-orbit__globe {
-          position: absolute;
-          inset: 12%;
-          border-radius: 50%;
-          background:
-            radial-gradient(circle at 50% 50%, rgba(0, 139, 31, 0.085), transparent 62%),
-            repeating-radial-gradient(ellipse at center, transparent 0 24px, rgba(0, 139, 31, 0.105) 25px, transparent 26px),
-            repeating-conic-gradient(from -12deg, rgba(0, 139, 31, 0.12) 0deg 0.75deg, transparent 0.75deg 13deg);
-          border: 1px solid rgba(0, 139, 31, 0.12);
-          box-shadow:
-            inset 0 0 70px rgba(0, 139, 31, 0.06),
-            0 0 0 1px rgba(0, 139, 31, 0.025);
-          opacity: 0.74;
-          animation: orbitDrift 84s linear infinite;
-          will-change: transform;
+        .ab-cell {
+          border-radius: 24px;
+          background: rgba(var(--color-surface-rgb), 0.7);
+          border: 1px solid rgba(0, 139, 31, 0.16);
+          box-shadow: 0 24px 48px -12px rgba(0, 139, 31, 0.08), inset 0 2px 6px rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(12px);
+          padding: 28px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          position: relative;
+          overflow: hidden;
         }
 
-        .pixel-orbit__globe::before,
-        .pixel-orbit__globe::after,
-        .globe-arc {
+        .ab-cell::before {
           content: "";
           position: absolute;
-          inset: 4%;
-          border: 1px solid rgba(0, 139, 31, 0.11);
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 100%);
+          pointer-events: none;
+        }
+
+        .ab-cell--1 {
+          grid-column: 1 / 3;
+          grid-row: 1;
+        }
+
+        .ab-cell--2 {
+          grid-column: 1;
+          grid-row: 2;
+          background: rgba(0, 139, 31, 0.02);
+          align-items: center;
+          justify-content: center;
+        }
+
+        .ab-cell--3 {
+          grid-column: 2;
+          grid-row: 2;
+        }
+
+        .ab-bar {
+          height: 12px;
+          border-radius: 6px;
+          background: rgba(0, 139, 31, 0.08);
+          width: 100%;
+        }
+
+        .ab-bar--short {
+          width: 70%;
+        }
+
+        .ab-bar--shorter {
+          width: 45%;
+        }
+
+        .ab-circle {
+          width: 72px;
+          height: 72px;
           border-radius: 50%;
+          border: 6px solid rgba(0, 139, 31, 0.08);
+          border-top-color: rgba(0, 139, 31, 0.4);
+          animation: spin 2.4s linear infinite;
         }
 
-        .pixel-orbit__globe::before {
-          transform: scaleX(0.54);
+        .ab-task {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: auto;
+          background: var(--color-surface);
+          padding: 12px 16px;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+          border: 1px solid rgba(0, 139, 31, 0.06);
         }
 
-        .pixel-orbit__globe::after {
-          transform: scaleX(0.28);
+        .ab-task-check {
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          border: 2px solid ${COLORS.green.primary};
+          background: ${COLORS.green.primary};
+          position: relative;
+          opacity: 0.8;
         }
 
-        .globe-arc--one {
-          transform: rotate(58deg) scaleX(0.34);
-        }
-
-        .globe-arc--two {
-          transform: rotate(-58deg) scaleX(0.34);
-        }
-
-        .globe-arc--three {
-          transform: rotate(82deg) scaleX(0.18);
-        }
-
-        .globe-arc--four {
-          transform: rotate(-82deg) scaleX(0.18);
-        }
-
-        .pixel-orbit::before {
+        .ab-task-check::after {
           content: "";
           position: absolute;
-          inset: 3%;
-          border-radius: 50%;
-          background:
-            radial-gradient(circle, rgba(0, 139, 31, 0.035), transparent 60%),
-            repeating-radial-gradient(circle, transparent 0 28px, rgba(0, 139, 31, 0.045) 29px, transparent 30px);
-          filter: blur(0.2px);
-          animation: orbitDrift 110s linear infinite;
-          mask-image: radial-gradient(circle, #000 0 74%, transparent 82%);
-          will-change: transform;
-        }
-
-        .pixel-orbit__rings {
-          position: absolute;
-          inset: 14%;
-          border-radius: 50%;
-          border: 1px solid rgba(0, 139, 31, 0.08);
-          box-shadow:
-            0 0 0 42px rgba(0, 139, 31, 0.018),
-            0 0 0 88px rgba(30, 30, 30, 0.016),
-            0 0 0 146px rgba(0, 139, 31, 0.012);
-        }
-
-        .pixel-orbit__dots {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          animation: orbitDrift 120s linear infinite reverse;
-          will-change: transform;
-        }
-
-        .pixel-orbit__dots span {
-          position: absolute;
-          left: 0;
-          top: 0;
-          display: block;
-          border-radius: 50%;
-          animation: dotGlow 5.6s ease-in-out infinite;
-          will-change: opacity;
-        }
-
-        @keyframes dotGlow {
-          0%,
-          100% {
-            opacity: 0.18;
-          }
-          50% {
-            opacity: 0.46;
-          }
+          left: 5px;
+          top: 2px;
+          width: 4px;
+          height: 8px;
+          border: solid white;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
         }
 
         .hero .eyebrow {
@@ -765,10 +748,17 @@ export default function LandingPage() {
           right: 0;
           bottom: 38px;
           max-width: 250px;
-          color: ${COLORS.neutral.muted};
-          font-size: 14px;
-          font-weight: 700;
           text-align: center;
+        }
+
+        .hero__note > span:first-child {
+          display: block;
+          color: var(--color-muted);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
         }
 
         .hero__channels {
@@ -784,10 +774,10 @@ export default function LandingPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid ${COLORS.neutral.softLine};
+          border: 1px solid var(--color-softLine);
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.88);
-          color: ${COLORS.neutral.muted};
+          background: rgba(var(--color-surface-rgb), 0.88);
+          color: var(--color-muted);
           box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
         }
 
@@ -838,7 +828,7 @@ export default function LandingPage() {
         .section-heading p {
           max-width: 620px;
           margin-top: 18px;
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 16px;
           line-height: 1.75;
         }
@@ -851,34 +841,34 @@ export default function LandingPage() {
         .section-heading .eyebrow,
         .about-card > .eyebrow,
         .feature-summary > .eyebrow {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
         }
 
         .section-heading .eyebrow::before,
         .about-card > .eyebrow::before,
         .feature-summary > .eyebrow::before {
           content: "[ ";
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
         }
 
         .section-heading .eyebrow::after,
         .about-card > .eyebrow::after,
         .feature-summary > .eyebrow::after {
           content: " ]";
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
         }
 
         .guide-flow {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          border-top: 1px solid ${COLORS.neutral.line};
-          border-bottom: 1px solid ${COLORS.neutral.line};
+          border-top: 1px solid var(--color-line);
+          border-bottom: 1px solid var(--color-line);
         }
 
         .guide-step {
           min-height: 220px;
           padding: 28px 28px 34px;
-          border-right: 1px solid ${COLORS.neutral.softLine};
+          border-right: 1px solid var(--color-softLine);
           position: relative;
           overflow: hidden;
         }
@@ -914,14 +904,14 @@ export default function LandingPage() {
 
         .guide-step h3 {
           margin-top: 34px;
-          color: ${COLORS.neutral.ink};
+          color: var(--color-ink);
           font-size: 20px;
           line-height: 1.3;
         }
 
         .guide-step p {
           margin-top: 12px;
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 14px;
           line-height: 1.7;
         }
@@ -944,7 +934,7 @@ export default function LandingPage() {
           gap: 10px;
           margin-top: 36px;
           padding-top: 24px;
-          border-top: 1px solid ${COLORS.neutral.line};
+          border-top: 1px solid var(--color-line);
         }
 
         .metric strong {
@@ -955,13 +945,13 @@ export default function LandingPage() {
         }
 
         .metric span {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 14px;
           line-height: 1.4;
         }
 
         .feature-list {
-          border-top: 1px solid ${COLORS.neutral.line};
+          border-top: 1px solid var(--color-line);
         }
 
         .feature-row {
@@ -969,11 +959,11 @@ export default function LandingPage() {
           grid-template-columns: 96px 1fr;
           gap: 26px;
           padding: 34px 0;
-          border-bottom: 1px solid ${COLORS.neutral.softLine};
+          border-bottom: 1px solid var(--color-softLine);
         }
 
         .feature-row__key {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
           font-size: 12px;
           font-weight: 800;
@@ -990,16 +980,16 @@ export default function LandingPage() {
         .feature-row p {
           max-width: 620px;
           margin-top: 12px;
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 15px;
           line-height: 1.75;
         }
 
         .template-panel {
-          border: 1px solid ${COLORS.neutral.line};
+          border: 1px solid var(--color-line);
           border-radius: 8px;
           overflow: hidden;
-          background: rgba(255, 255, 255, 0.86);
+          background: rgba(var(--color-surface-rgb), 0.86);
           box-shadow: 0 26px 80px rgba(15, 23, 42, 0.05);
         }
 
@@ -1009,7 +999,7 @@ export default function LandingPage() {
           align-items: center;
           gap: 28px;
           padding: 28px 34px;
-          border-bottom: 1px solid ${COLORS.neutral.softLine};
+          border-bottom: 1px solid var(--color-softLine);
         }
 
         .template-row:last-child {
@@ -1022,7 +1012,7 @@ export default function LandingPage() {
         }
 
         .template-row p {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 15px;
           line-height: 1.65;
         }
@@ -1059,16 +1049,16 @@ export default function LandingPage() {
         .about-card__panel {
           margin-top: 32px;
           padding: clamp(28px, 4vw, 48px);
-          border: 1px solid ${COLORS.neutral.softLine};
+          border: 1px solid var(--color-softLine);
           border-radius: 24px;
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(var(--color-surface-rgb), 0.9);
           box-shadow: 0 28px 90px rgba(15, 23, 42, 0.06);
         }
 
         .about-card__panel p {
           max-width: 620px;
           margin: 0 auto;
-          color: ${COLORS.neutral.ink};
+          color: var(--color-ink);
           font-size: 16px;
           line-height: 1.8;
         }
@@ -1104,7 +1094,7 @@ export default function LandingPage() {
         .about-stats span {
           display: block;
           margin-top: 8px;
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 13px;
           line-height: 1.4;
         }
@@ -1112,11 +1102,11 @@ export default function LandingPage() {
         .faq-container {
           max-width: 820px;
           margin: 0 auto;
-          border-top: 1px solid ${COLORS.neutral.line};
+          border-top: 1px solid var(--color-line);
         }
 
         .faq-item {
-          border-bottom: 1px solid ${COLORS.neutral.line};
+          border-bottom: 1px solid var(--color-line);
         }
 
         .faq-item button {
@@ -1126,7 +1116,7 @@ export default function LandingPage() {
           justify-content: space-between;
           gap: 24px;
           padding: 24px 0;
-          color: ${COLORS.neutral.ink};
+          color: var(--color-ink);
           background: transparent;
           border: none;
           cursor: pointer;
@@ -1157,15 +1147,15 @@ export default function LandingPage() {
         .faq-answer p {
           max-width: 720px;
           padding: 0 0 24px;
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 15px;
           line-height: 1.75;
         }
 
         .footer {
           padding: 52px 32px 46px;
-          border-top: 1px solid ${COLORS.neutral.line};
-          background: #ffffff;
+          border-top: 1px solid var(--color-line);
+          background: var(--color-bg-base);
         }
 
         .footer__inner {
@@ -1190,7 +1180,7 @@ export default function LandingPage() {
         }
 
         .footer__brand p {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-size: 13px;
         }
 
@@ -1200,7 +1190,7 @@ export default function LandingPage() {
         }
 
         .footer__group span {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
           font-size: 12px;
           font-weight: 800;
@@ -1210,7 +1200,7 @@ export default function LandingPage() {
 
         .footer__group a,
         .footer__group button {
-          color: ${COLORS.neutral.muted};
+          color: var(--color-muted);
           background: none;
           border: none;
           padding: 0;
@@ -1332,7 +1322,7 @@ export default function LandingPage() {
 
           .guide-step {
             border-right: none;
-            border-bottom: 1px solid ${COLORS.neutral.softLine};
+            border-bottom: 1px solid var(--color-softLine);
           }
 
           .template-row span {
@@ -1422,7 +1412,7 @@ export default function LandingPage() {
               </div>
 
               <div className="hero__visual">
-                <PixelOrbitBackground />
+                <AbstractBentoBackground />
                 <div className="hero__note">
                   <span>Jalankan lewat:</span>
                   <div className="hero__channels" aria-hidden="true">

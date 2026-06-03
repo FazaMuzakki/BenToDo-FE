@@ -17,7 +17,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Ben To Do — Plan Your Tasks, Achieve Your Best",
+  title: "Bento-Do",
   description:
     "Ben To Do helps you plan your tasks today and achieve your best productivity with Priority Tasks, Focus Timer, and Energy Level tracking.",
 };
