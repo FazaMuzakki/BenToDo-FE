@@ -346,13 +346,30 @@ function PriorityBadge({ level }: { level: "HIGH" | "MEDIUM" | "LOW" }) {
 
 // ─── Mini Line Chart (SVG) ────────────────────────────────────────────────────
 
-function ProductivityChart() {
-  const data = [3, 4, 2, 3, 3, 4, 1];
+type ChartRange = "week" | "month" | "year";
+
+const CHART_DATA: Record<ChartRange, { labels: string[]; data: number[] }> = {
+  week: {
+    labels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    data: [3, 4, 2, 3, 3, 4, 1],
+  },
+  month: {
+    labels: ["W1", "W2", "W3", "W4"],
+    data: [8, 12, 6, 10],
+  },
+  year: {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    data: [15, 20, 12, 18, 22, 14, 19, 25, 17, 21, 16, 23],
+  },
+};
+
+function ProductivityChart({ range = "week" }: { range?: ChartRange }) {
+  const { labels, data } = CHART_DATA[range];
   const width = 520;
   const height = 220;
   const padX = 40;
   const padY = 20;
-  const maxVal = 7;
+  const maxVal = Math.max(...data) + 2;
   const chartW = width - padX * 2;
   const chartH = height - padY * 2;
 
@@ -367,30 +384,43 @@ function ProductivityChart() {
     `${width - padX},${height - padY}`,
   ].join(" ");
 
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const yLabels = [0, 1, 2, 3, 4, 5, 6];
+  const ySteps = 7;
+  const yLabels = Array.from({ length: ySteps }, (_, i) => Math.round((maxVal / (ySteps - 1)) * i));
+
+  const lineLength = points.reduce((acc, _, i, arr) => {
+    if (i === 0) return 0;
+    const [x1, y1] = arr[i - 1].split(",").map(Number);
+    const [x2, y2] = arr[i].split(",").map(Number);
+    return acc + Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  }, 0);
 
   return (
     <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height + 30}`} style={{ overflow: "visible" }}>
-      {/* Y axis labels */}
-      {yLabels.map((v) => {
+      <style>{`
+        @keyframes drawLine { from { stroke-dashoffset: ${lineLength}; } to { stroke-dashoffset: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { r: 0; } 60% { r: 4.5; } 100% { r: 3; } }
+      `}</style>
+      {/* Y axis labels & grid */}
+      {yLabels.map((v, i) => {
         const y = padY + chartH - (v / maxVal) * chartH;
         return (
-          <g key={v}>
+          <g key={`y-${i}`} style={{ animation: `fadeIn 0.4s ease ${i * 0.05}s both` }}>
             <text x={padX - 12} y={y + 4} textAnchor="end" fontSize="9" fill={COLOR.muted}>{v}</text>
             <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#E8E8E8" strokeWidth="1" />
           </g>
         );
       })}
       {/* X axis labels */}
-      {days.map((d, i) => {
-        const x = padX + (i / (days.length - 1)) * chartW;
+      {labels.map((d, i) => {
+        const x = padX + (i / (labels.length - 1)) * chartW;
         return (
-          <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}>{d}</text>
+          <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}
+            style={{ animation: `fadeIn 0.4s ease ${0.2 + i * 0.04}s both` }}>{d}</text>
         );
       })}
-      <polygon points={areaPoints} fill="#EEFFF0" opacity="0.95" />
-      {/* Line */}
+      <polygon points={areaPoints} fill="#EEFFF0" opacity="0.95" style={{ animation: `fadeIn 0.8s ease 0.3s both` }} />
+      {/* Animated Line */}
       <polyline
         points={points.join(" ")}
         fill="none"
@@ -398,12 +428,16 @@ function ProductivityChart() {
         strokeWidth="2"
         strokeLinejoin="round"
         strokeLinecap="round"
+        strokeDasharray={lineLength}
+        strokeDashoffset="0"
+        style={{ animation: `drawLine 1.2s ease-out 0.3s both` }}
       />
-      {/* Dots */}
+      {/* Animated Dots */}
       {data.map((v, i) => {
         const x = padX + (i / (data.length - 1)) * chartW;
         const y = padY + chartH - (v / maxVal) * chartH;
-        return <circle key={i} cx={x} cy={y} r="3" fill={COLOR.primary} />;
+        return <circle key={i} cx={x} cy={y} r="3" fill={COLOR.primary}
+          style={{ animation: `popIn 0.4s ease ${0.5 + i * 0.1}s both` }} />;
       })}
     </svg>
   );
@@ -411,12 +445,29 @@ function ProductivityChart() {
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
 
-// ─── Calendar Data ────────────────────────────────────────────────────────────
+// ─── Calendar Helpers ─────────────────────────────────────────────────────────
 
-const calendarDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-const calendarDates = [4, 5, 6, 7, 8, 9, 10];
-const todayIndex = 2; // Wednesday = index 2 (6th)
-const dotDays = [1]; // Tuesday has a dot
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const DAY_HEADERS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+function getCalendarWeek(referenceDate: Date) {
+  const day = referenceDate.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(referenceDate);
+  monday.setDate(referenceDate.getDate() + mondayOffset);
+
+  const dates: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
 
 // ─── Template Data ────────────────────────────────────────────────────────────
 
@@ -525,6 +576,9 @@ export default function DashboardPage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [deadlineStats, setDeadlineStats] = useState({ upcoming: 0, overdue: 0 });
+  const [chartRange, setChartRange] = useState<ChartRange>("week");
+  const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
+  const [calendarRef, setCalendarRef] = useState(() => new Date());
 
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [addTaskTitle, setAddTaskTitle] = useState("");
@@ -1067,8 +1121,8 @@ export default function DashboardPage() {
                     transition: "background-color 0.15s",
                   }}
                 >
-                  {activeMenu === "dashboard" ? <PlayIcon /> : activeMenu === "task" ? <PlayIcon /> : <span style={{ fontSize: "16px", fontWeight: "bold", lineHeight: 1 }}>+</span>}
-                  {activeMenu === "dashboard" ? "Start Focus Timer" : activeMenu === "task" ? "Add Task" : "Template Baru"}
+                  {activeMenu === "dashboard" ? <PlayIcon /> : <span style={{ fontSize: "16px", fontWeight: "bold", lineHeight: 1 }}>+</span>}
+                  {activeMenu === "dashboard" ? "Start Focus Timer" : activeMenu === "task" ? "Task Baru" : "Template Baru"}
                 </button>
               </div>
             </div>
@@ -1087,7 +1141,7 @@ export default function DashboardPage() {
                 }}
               >
                 {/* Task Completed */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
+                <div className="hover-card" style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Task Completed</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                     <CheckSquareIcon />
@@ -1098,7 +1152,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Upcoming Deadlines */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
+                <div className="hover-card" style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Upcoming Deadlines</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                     <ClockAlertIcon />
@@ -1109,7 +1163,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Overdue Task */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
+                <div className="hover-card" style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Overdue Task</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                     <AlertTriangleIcon />
@@ -1120,7 +1174,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Energy */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
+                <div className="hover-card" style={{ ...CARD_STYLE, width: "100%", minHeight: "100px", padding: "16px clamp(18px, 2.8vw, 48px)", boxSizing: "border-box" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, marginBottom: "12px", lineHeight: 1.1 }}>Energy</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
                     <BatteryIcon />
@@ -1150,7 +1204,7 @@ export default function DashboardPage() {
                 }}
               >
                 {/* Priority Task Card */}
-                <div style={{ ...CARD_STYLE, width: "100%", minHeight: "230px", padding: "24px clamp(18px, 2.2vw, 32px)", boxSizing: "border-box", gridColumn: "1" }}>
+                <div className="hover-card" style={{ ...CARD_STYLE, width: "100%", minHeight: "230px", padding: "24px clamp(18px, 2.2vw, 32px)", boxSizing: "border-box", gridColumn: "1" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
                     <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Priority Task</span>
                     <span style={{ fontSize: "12px", color: COLOR.mutedDark, cursor: "pointer", lineHeight: 1 }}>View all</span>
@@ -1201,146 +1255,165 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Productivity Overview Chart */}
-                <div style={{ ...CARD_STYLE, padding: "24px clamp(18px, 2vw, 32px)", gridColumn: "2", gridRow: "1 / span 2", minHeight: "386px", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
+                <div className="hover-card" style={{ ...CARD_STYLE, padding: "24px clamp(18px, 2vw, 32px)", gridColumn: "2", gridRow: "1 / span 2", minHeight: "386px", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
                     <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Productivity Overview</span>
-                    <button
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        height: "28px",
-                        padding: "0 12px",
-                        borderRadius: "4px",
-                        border: `1px solid ${COLOR.border}`,
-                        backgroundColor: COLOR.surface,
-                        fontSize: "11px",
-                        color: COLOR.text,
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      <CalendarSmIcon /> This Week
-                    </button>
-                  </div>
-                  <div style={{ width: "100%", flex: 1, minHeight: "300px" }}>
-                    <ProductivityChart />
-                  </div>
-                </div>
-
-                <div style={{ ...CARD_STYLE, width: "100%", padding: "12px 14px", minHeight: "86px", boxSizing: "border-box", gridColumn: "1" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "9px" }}>
-                    <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>Calendar</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <button style={{ ...buttonReset, color: COLOR.text, display: "flex" }}>
-                        <ChevronLeftIcon />
+                    <div style={{ position: "relative" }}>
+                      <button
+                        onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          height: "28px",
+                          padding: "0 12px",
+                          borderRadius: "4px",
+                          border: `1px solid ${COLOR.border}`,
+                          backgroundColor: COLOR.surface,
+                          fontSize: "11px",
+                          color: COLOR.text,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          transition: "border-color 0.2s, box-shadow 0.2s",
+                          borderColor: chartDropdownOpen ? COLOR.primary : COLOR.border,
+                          boxShadow: chartDropdownOpen ? `0 0 0 2px ${COLOR.primaryPale}` : "none",
+                        }}
+                      >
+                        <CalendarSmIcon />
+                        {chartRange === "week" ? "This Week" : chartRange === "month" ? "This Month" : "This Year"}
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                          style={{ transition: "transform 0.2s", transform: chartDropdownOpen ? "rotate(180deg)" : "rotate(0)" }}>
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
                       </button>
-                      <span style={{ fontSize: "11px", fontWeight: 600, color: COLOR.text }}>June 2026</span>
-                      <button style={{ ...buttonReset, color: COLOR.text, display: "flex" }}>
-                        <ChevronRightIcon />
-                      </button>
+                      {chartDropdownOpen && (
+                        <div style={{
+                          position: "absolute", top: "34px", right: 0, zIndex: 30,
+                          backgroundColor: COLOR.surface, border: `1px solid ${COLOR.border}`,
+                          borderRadius: "6px", boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                          overflow: "hidden", minWidth: "130px",
+                          animation: "fadeSlideDown 0.18s ease",
+                        }}>
+                          {(["week", "month", "year"] as ChartRange[]).map((r) => (
+                            <button
+                              key={r}
+                              onClick={() => { setChartRange(r); setChartDropdownOpen(false); }}
+                              style={{
+                                display: "flex", alignItems: "center", gap: "8px",
+                                width: "100%", padding: "9px 14px", border: "none",
+                                backgroundColor: chartRange === r ? COLOR.primaryPale : "transparent",
+                                color: chartRange === r ? COLOR.primary : COLOR.text,
+                                fontSize: "12px", fontWeight: chartRange === r ? 600 : 400,
+                                cursor: "pointer", fontFamily: "inherit",
+                                transition: "background-color 0.15s",
+                              }}
+                              onMouseEnter={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "#f9f9f9"; }}
+                              onMouseLeave={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "transparent"; }}
+                            >
+                              {chartRange === r && <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: COLOR.primary }} />}
+                              {r === "week" ? "This Week" : r === "month" ? "This Month" : "This Year"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", marginBottom: "5px" }}>
-                    {calendarDays.map((d) => (
-                      <span key={d} style={{ fontSize: "8px", fontWeight: 600, color: COLOR.text }}>{d}</span>
-                    ))}
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", gap: "3px" }}>
-                    {calendarDates.map((date, i) => (
-                      <div key={date} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                        <div
-                          style={{
-                            width: "19px",
-                            height: "19px",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "10px",
-                            fontWeight: i === todayIndex ? 700 : 500,
-                            color: i === todayIndex ? COLOR.primary : COLOR.text,
-                            backgroundColor: i === todayIndex ? COLOR.primarySoft : "transparent",
-                            cursor: "pointer",
-                          }}
-                        >
-                          {date}
-                        </div>
-                        {dotDays.includes(i) && (
-                          <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: COLOR.primary }} />
-                        )}
-                      </div>
-                    ))}
+                  <div style={{ width: "100%", flex: 1, minHeight: "300px" }} key={chartRange}>
+                    <ProductivityChart range={chartRange} />
                   </div>
                 </div>
-              </div>
 
-              {/* ── Calendar ── */}
-              <div
-                style={{
-                  display: "none",
-                  gridTemplateColumns: "340px 1fr",
-                  gap: "16px",
-                  marginBottom: "24px",
-                }}
-              >
-                {/* Calendar Card */}
-                <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0", padding: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                    <span style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>Calendar</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex" }}>
-                        <ChevronLeftIcon />
-                      </button>
-                      <span style={{ fontSize: "13px", fontWeight: 500, color: "#111827" }}>June 2026</span>
-                      <button style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex" }}>
-                        <ChevronRightIcon />
-                      </button>
+                {/* Dynamic Calendar */}
+                {(() => {
+                  const today = new Date();
+                  const weekDates = getCalendarWeek(calendarRef);
+                  const displayMonth = MONTH_NAMES[calendarRef.getMonth()];
+                  const displayYear = calendarRef.getFullYear();
+
+                  const deadlineDates = apiTasks
+                    .filter((t) => t.deadline && t.status !== "done")
+                    .map((t) => new Date(t.deadline!));
+
+                  return (
+                    <div className="hover-card" style={{ ...CARD_STYLE, width: "100%", padding: "12px 14px", minHeight: "86px", boxSizing: "border-box", gridColumn: "1" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "9px" }}>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>Calendar</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                          <button
+                            onClick={() => {
+                              const prev = new Date(calendarRef);
+                              prev.setDate(prev.getDate() - 7);
+                              setCalendarRef(prev);
+                            }}
+                            style={{ ...buttonReset, color: COLOR.text, display: "flex", padding: "2px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                          >
+                            <ChevronLeftIcon />
+                          </button>
+                          <button
+                            onClick={() => setCalendarRef(new Date())}
+                            style={{ ...buttonReset, fontSize: "11px", fontWeight: 600, color: COLOR.text, padding: "2px 4px", borderRadius: "4px", transition: "color 0.15s" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.primary; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.text; }}
+                          >
+                            {displayMonth} {displayYear}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const next = new Date(calendarRef);
+                              next.setDate(next.getDate() + 7);
+                              setCalendarRef(next);
+                            }}
+                            style={{ ...buttonReset, color: COLOR.text, display: "flex", padding: "2px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                          >
+                            <ChevronRightIcon />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", marginBottom: "5px" }}>
+                        {DAY_HEADERS.map((d) => (
+                          <span key={d} style={{ fontSize: "8px", fontWeight: 600, color: COLOR.muted }}>{d}</span>
+                        ))}
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", gap: "3px" }}>
+                        {weekDates.map((dateObj, i) => {
+                          const isToday = isSameDay(dateObj, today);
+                          const hasDot = deadlineDates.some((dl) => isSameDay(dl, dateObj));
+                          return (
+                            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                              <div
+                                style={{
+                                  width: "19px",
+                                  height: "19px",
+                                  borderRadius: "50%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "10px",
+                                  fontWeight: isToday ? 700 : 500,
+                                  color: isToday ? COLOR.primary : COLOR.text,
+                                  backgroundColor: isToday ? COLOR.primarySoft : "transparent",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s",
+                                }}
+                              >
+                                {dateObj.getDate()}
+                              </div>
+                              {hasDot && (
+                                <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: COLOR.primary }} />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Days header */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", marginBottom: "8px" }}>
-                    {calendarDays.map((d) => (
-                      <span key={d} style={{ fontSize: "10px", fontWeight: 600, color: "#9ca3af", letterSpacing: "0.04em" }}>{d}</span>
-                    ))}
-                  </div>
-
-                  {/* Dates */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", gap: "4px" }}>
-                    {calendarDates.map((date, i) => (
-                      <div key={date} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
-                        <div
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "13px",
-                            fontWeight: i === todayIndex ? 700 : 400,
-                            color: i === todayIndex ? "#ffffff" : "#111827",
-                            backgroundColor: i === todayIndex ? "#111827" : "transparent",
-                            cursor: "pointer",
-                            transition: "all 0.15s",
-                          }}
-                        >
-                          {date}
-                        </div>
-                        {/* Dot indicator */}
-                        {dotDays.includes(i) && (
-                          <div style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#16a34a" }} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Spacer or placeholder for the right */}
-                <div />
+                  );
+                })()}
               </div>
 
               {/* ── Recent Tasks Table ── */}
