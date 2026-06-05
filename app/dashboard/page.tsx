@@ -108,22 +108,22 @@ const PlayIcon = () => (
   </svg>
 );
 
-const CheckSquareIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const CheckSquareIcon = ({ color = COLOR.text, size = 18 }: { color?: string, size?: number } = {}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="9 11 12 14 22 4" />
     <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
   </svg>
 );
 
-const ClockAlertIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const ClockAlertIcon = ({ color = COLOR.text, size = 18 }: { color?: string, size?: number } = {}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 
-const AlertTriangleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const AlertTriangleIcon = ({ color = COLOR.text, size = 18 }: { color?: string, size?: number } = {}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
     <line x1="12" y1="9" x2="12" y2="13" />
     <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -180,6 +180,20 @@ const MoreDotsIcon = () => (
     <circle cx="5" cy="12" r="2" />
     <circle cx="12" cy="12" r="2" />
     <circle cx="19" cy="12" r="2" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+const PenIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
   </svg>
 );
 
@@ -350,7 +364,7 @@ type ChartRange = "week" | "month" | "year";
 
 const CHART_DATA: Record<ChartRange, { labels: string[]; data: number[] }> = {
   week: {
-    labels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    labels: ["1 Jun", "2 Jun", "3 Jun", "4 Jun", "5 Jun", "6 Jun", "7 Jun"],
     data: [3, 4, 2, 3, 3, 4, 1],
   },
   month: {
@@ -581,6 +595,7 @@ export default function DashboardPage() {
   const [chartRange, setChartRange] = useState<ChartRange>("week");
   const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
   const [calendarRef, setCalendarRef] = useState(() => new Date());
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [addTaskTitle, setAddTaskTitle] = useState("");
@@ -805,6 +820,26 @@ export default function DashboardPage() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: COLOR.surface, color: COLOR.text, fontFamily: "inherit" }}>
+      <style>{`
+        @keyframes dashRingBell {
+          0% { transform: rotate(0); }
+          10% { transform: rotate(15deg); }
+          20% { transform: rotate(-10deg); }
+          30% { transform: rotate(5deg); }
+          40% { transform: rotate(-5deg); }
+          50% { transform: rotate(2deg); }
+          60% { transform: rotate(0); }
+          100% { transform: rotate(0); }
+        }
+        .dash-bell-hover:hover svg {
+          animation: dashRingBell 0.5s ease-in-out;
+          transform-origin: top center;
+        }
+        @keyframes dashNotifPop {
+          from { opacity: 0; transform: translateY(10px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
 
       {/* ═══════════════════════════════════════
           SIDEBAR
@@ -978,22 +1013,77 @@ export default function DashboardPage() {
             </div>
 
             {/* Notification */}
-            <button
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "32px",
-                height: "32px",
-                borderRadius: "3px",
-                border: `1px solid ${COLOR.border}`,
-                background: "none",
-                color: COLOR.mutedDark,
-                cursor: "pointer",
-              }}
-            >
-              <BellIcon />
-            </button>
+            <div style={{ position: "relative" }}>
+              <button
+                className="dash-bell-hover"
+                onClick={() => setShowNotifications(!showNotifications)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "6px",
+                  border: `1px solid ${showNotifications ? COLOR.primary : COLOR.border}`,
+                  background: showNotifications ? "#f0fdf4" : "none",
+                  color: showNotifications ? COLOR.primary : COLOR.mutedDark,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.color = COLOR.primary; }}
+                onMouseLeave={(e) => {
+                  if (!showNotifications) {
+                    e.currentTarget.style.borderColor = COLOR.border;
+                    e.currentTarget.style.color = COLOR.mutedDark;
+                  }
+                }}
+              >
+                <BellIcon />
+              </button>
+
+              {/* Notification Pop-up */}
+              {showNotifications && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "42px",
+                    right: 0,
+                    width: "320px",
+                    backgroundColor: COLOR.surface,
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
+                    border: `1px solid ${COLOR.borderSoft}`,
+                    zIndex: 100,
+                    animation: "dashNotifPop 0.2s ease-out forwards",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}`, backgroundColor: "#f9fafb" }}>
+                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: COLOR.text }}>Notifications & History</h3>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", maxHeight: "300px", overflowY: "auto" }}>
+                    <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text }}>Task Completed</div>
+                        <div style={{ width: "8px", height: "8px", backgroundColor: COLOR.primary, borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
+                      </div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>You completed "Design Homepage UI". Great job!</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>10 mins ago</div>
+                    </div>
+                    <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}`, backgroundColor: "#ffffff" }}>
+                      <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>New Task Added</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>"Submit Invoice" has been added to your dashboard.</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>1 hour ago</div>
+                    </div>
+                    <div style={{ padding: "16px", backgroundColor: "#ffffff" }}>
+                      <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>Template Created</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>"Weekly Report" template was successfully saved.</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>Yesterday</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* User Avatar + Name */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingLeft: "12px", borderLeft: `1px solid ${COLOR.borderSoft}` }}>
@@ -1163,7 +1253,9 @@ export default function DashboardPage() {
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Task Completed</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <CheckSquareIcon />
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#e0f2fe", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <CheckSquareIcon color="currentColor" size={24} />
+                    </div>
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{completedCount}</span>
                     <TrendBadge value="+10%" up />
                   </div>
@@ -1174,7 +1266,9 @@ export default function DashboardPage() {
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Upcoming Deadlines</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <ClockAlertIcon />
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#fef08a", color: "#a16207", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <ClockAlertIcon color="currentColor" size={24} />
+                    </div>
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{upcomingDeadlineCount}</span>
                     <TrendBadge value="+10%" up />
                   </div>
@@ -1185,7 +1279,9 @@ export default function DashboardPage() {
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Overdue Task</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <AlertTriangleIcon />
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <AlertTriangleIcon color="currentColor" size={24} />
+                    </div>
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{overdueCount}</span>
                     <TrendBadge value="-10%" up={false} />
                   </div>
@@ -1195,19 +1291,37 @@ export default function DashboardPage() {
                 {/* Energy */}
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Energy</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <BatteryIcon />
-                    <span style={{ fontSize: "24px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{energyData.percent}%</span>
-                    <span style={{ fontSize: "12px", color: COLOR.muted, fontWeight: 500, marginLeft: "auto" }}>{energyData.current} / {energyData.max} mins</span>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "4px" }}>
+                    {/* Circle Progress */}
+                    <div style={{ position: "relative", width: "48px", height: "48px", flexShrink: 0 }}>
+                      <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                        <path
+                          style={{ fill: "none", stroke: "#E8E8E8", strokeWidth: 4 }}
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path
+                          style={{ fill: "none", stroke: "#111827", strokeWidth: 4, strokeDasharray: `${energyData.percent}, 100`, transition: "stroke-dasharray 0.3s ease" }}
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                      </svg>
+                      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                        {energyData.percent}%
+                      </div>
+                    </div>
+
+                    {/* Linear Progress and Label */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ width: "100%", height: "8px", backgroundColor: "#E8E8E8", borderRadius: "999px", overflow: "hidden" }}>
+                        <div style={{ width: `${energyData.percent}%`, height: "100%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary, borderRadius: "999px", transition: "width 0.3s ease, background-color 0.3s ease" }} />
+                      </div>
+                      <div style={{ fontSize: "11px", color: COLOR.mutedDark, fontWeight: 500 }}>Capacity Energy</div>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ width: "100%", height: "8px", backgroundColor: "#E8E8E8", borderRadius: "999px", overflow: "hidden" }}>
-                      <div style={{ width: `${energyData.percent}%`, height: "100%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary, borderRadius: "999px", transition: "width 0.3s ease, background-color 0.3s ease" }} />
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: energyData.isCritical ? COLOR.danger : COLOR.primary, fontWeight: 600 }}>
-                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary }} />
-                      {energyData.current === 0 ? "Depleted" : energyData.isCritical ? "Critical Energy" : "Ready for do Task"}
-                    </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: energyData.isCritical ? COLOR.danger : COLOR.primary, fontWeight: 600, marginTop: "8px" }}>
+                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary }} />
+                    {energyData.current === 0 ? "Depleted" : energyData.isCritical ? "Critical Energy" : "Ready for do Task"}
                   </div>
                 </div>
               </div>
@@ -1228,7 +1342,7 @@ export default function DashboardPage() {
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "230px", padding: "24px clamp(18px, 2.2vw, 32px)", boxSizing: "border-box", gridColumn: "1" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
                     <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Priority Task</span>
-                    <span onClick={() => setActiveMenu("task")} style={{ fontSize: "12px", color: COLOR.mutedDark, cursor: "pointer", lineHeight: 1 }}>View all</span>
+                    <span onClick={() => setActiveMenu("task")} style={{ fontSize: "12px", fontWeight: 600, color: "#3b82f6", cursor: "pointer", lineHeight: 1 }}>View all</span>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -1263,9 +1377,6 @@ export default function DashboardPage() {
                           <PriorityBadge level={task.level} />
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: COLOR.text, lineHeight: 1 }}>
-                            <SubtaskIcon /> {task.subtask}
-                          </span>
                           <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: COLOR.text, lineHeight: 1 }}>
                             <CalendarSmIcon /> {task.date}
                           </span>
@@ -1444,79 +1555,30 @@ export default function DashboardPage() {
 
               {/* ── Recent Tasks Table ── */}
               <div id="recent-tasks-section" style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "hidden" }}>
-                <div style={{ height: "78px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 30px" }}>
+                <div style={{ height: "64px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 30px" }}>
                   <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Recent Tasks</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    {/* Search in table */}
-                    <div style={{ position: "relative" }}>
-                      <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: COLOR.muted, display: "flex" }}>
-                        <SearchIcon />
-                      </span>
-                      <input
-                        type="text"
-                        placeholder="Search task"
-                        value={searchTask}
-                        onChange={(e) => setSearchTask(e.target.value)}
-                        style={{
-                          width: "255px",
-                          height: "28px",
-                          borderRadius: "7px",
-                          border: "none",
-                          paddingLeft: "40px",
-                          paddingRight: "14px",
-                          fontSize: "12px",
-                          color: COLOR.text,
-                          backgroundColor: "#F1F1F1",
-                          fontFamily: "inherit",
-                          outline: "none",
-                        }}
-                      />
-                    </div>
-                    {/* Filter */}
-                    <button
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "7px",
-                        width: "78px",
-                        height: "32px",
-                        padding: 0,
-                        borderRadius: "7px",
-                        border: `1px solid ${COLOR.border}`,
-                        background: COLOR.surface,
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: COLOR.text,
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      <FilterIcon /> Filter
-                    </button>
-                  </div>
+                  <button style={{ background: "none", border: "none", color: "#3b82f6", fontSize: "14px", fontWeight: 600, cursor: "pointer", padding: 0 }}>View All</button>
                 </div>
 
                 {/* Table */}
                 <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                   <colgroup>
-                    <col style={{ width: "33%" }} />
-                    <col style={{ width: "16%" }} />
-                    <col style={{ width: "17%" }} />
+                    <col style={{ width: "35%" }} />
                     <col style={{ width: "20%" }} />
-                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "25%" }} />
                   </colgroup>
                   <thead>
-                    <tr style={{ height: "52px", backgroundColor: COLOR.panel, borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
-                      {["TASK ↕", "TASK LEVEL ↕", "SUBTASK ↕", "DUE DATE ↕", "VIEW DETAIL ↕"].map((h) => (
+                    <tr style={{ height: "52px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
+                      {["TASK", "TASK LEVEL", "DUE DATE", "ACTIONS"].map((h, i) => (
                         <th
                           key={h}
                           style={{
-                            fontSize: "11px",
-                            fontWeight: 700,
+                            fontSize: "12px",
+                            fontWeight: 600,
                             color: COLOR.mutedDark,
-                            textAlign: "center",
-                            padding: "0 16px",
+                            textAlign: i === 0 ? "left" : "center",
+                            padding: i === 0 ? "0 16px 0 clamp(58px, 4.5vw, 80px)" : "0 16px",
                             letterSpacing: "0.02em",
                             whiteSpace: "nowrap",
                             verticalAlign: "middle",
@@ -1531,7 +1593,7 @@ export default function DashboardPage() {
                     {recentTaskItems.length === 0 ? (
                       <tr style={{ height: "78px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                         <td
-                          colSpan={5}
+                          colSpan={4}
                           style={{
                             padding: "0 16px",
                             textAlign: "center",
@@ -1547,7 +1609,7 @@ export default function DashboardPage() {
                     ) : recentTaskItems.map((task) => (
                       <tr key={task.id ?? task.title} style={{ height: "78px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                         <td style={{ padding: "0 16px 0 clamp(58px, 4.5vw, 80px)", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "46px", minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "24px", minWidth: 0 }}>
                             <input
                               type="checkbox"
                               checked={!!task.done}
@@ -1556,30 +1618,33 @@ export default function DashboardPage() {
                                 void handleToggleTaskStatus(task, e.target.checked);
                               }}
                               style={{
-                                width: "16px",
-                                height: "16px",
+                                width: "24px",
+                                height: "24px",
                                 accentColor: COLOR.primary,
                                 borderRadius: "4px",
                                 cursor: "pointer",
                                 flexShrink: 0,
                               }}
                             />
-                            <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.2, overflowWrap: "break-word" }}>{task.title}</span>
+                            <span style={{ fontSize: "16px", fontWeight: 600, color: COLOR.text, lineHeight: 1.2, overflowWrap: "break-word" }}>{task.title}</span>
                           </div>
                         </td>
                         <td style={{ padding: "0 16px", verticalAlign: "middle", textAlign: "center" }}>
                           <PriorityBadge level={task.level} />
                         </td>
-                        <td style={{ padding: "0 16px", fontSize: "13px", color: COLOR.text, verticalAlign: "middle", textAlign: "center" }}>
-                          {task.subtask}
-                        </td>
-                        <td style={{ padding: "0 16px", fontSize: "13px", color: COLOR.text, fontWeight: 700, verticalAlign: "middle", textAlign: "center" }}>
+                        <td style={{ padding: "0 16px", fontSize: "14px", color: COLOR.text, fontWeight: 600, verticalAlign: "middle", textAlign: "center" }}>
                           {task.date}
                         </td>
                         <td style={{ padding: "0 16px", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "34px" }}>
-                            <button style={{ ...buttonReset, color: COLOR.text, display: "flex" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px" }}>
+                            <button style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex" }}>
                               <MoreDotsIcon />
+                            </button>
+                            <button style={{ ...buttonReset, color: "#3b82f6", display: "flex" }}>
+                              <PenIcon />
+                            </button>
+                            <button style={{ ...buttonReset, color: "#ef4444", display: "flex" }}>
+                              <TrashIcon />
                             </button>
                             <button
                               disabled={isActionLoading}
@@ -1590,12 +1655,12 @@ export default function DashboardPage() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                padding: "6px 16px",
+                                padding: "8px 16px",
                                 minWidth: "110px",
-                                borderRadius: "8px",
-                                border: "1px solid #d1d5db",
+                                borderRadius: "24px",
+                                border: "1.5px solid #6b7280",
                                 backgroundColor: "#ffffff",
-                                fontSize: "12px",
+                                fontSize: "13px",
                                 fontWeight: 600,
                                 color: "#111827",
                                 cursor: "pointer",
@@ -1769,7 +1834,7 @@ export default function DashboardPage() {
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: 0 }}>Task Detail</h2>
                   <button onClick={() => setSelectedTaskId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
                 </div>
 
@@ -1777,11 +1842,11 @@ export default function DashboardPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: "500px" }}>
                   {/* Left Column */}
                   <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
-                    
+
                     {/* Title */}
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
                         Title
                       </div>
                       <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "20px", fontWeight: 700, color: "#111827" }}>
@@ -1792,7 +1857,7 @@ export default function DashboardPage() {
                     {/* Description */}
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                         Description
                       </div>
                       <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", color: "#4b5563", minHeight: "100px", whiteSpace: "pre-wrap" }}>
@@ -1804,7 +1869,7 @@ export default function DashboardPage() {
                     <div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
                           Subtasks
                         </div>
                         <div style={{ backgroundColor: "#f3f4f6", padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, color: "#4b5563" }}>
@@ -1818,14 +1883,14 @@ export default function DashboardPage() {
                             <div style={{ width: "20px", height: "20px", borderRadius: "4px", backgroundColor: st.done ? "#6366f1" : "#ffffff", border: st.done ? "none" : "1px solid #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => {
                               const newSubs = [...taskSubtasks];
                               newSubs[idx] = { ...newSubs[idx], done: !newSubs[idx].done };
-                              setLocalTaskMeta(prev => ({...prev, [task.id]: { description: taskDescription, subtasks: newSubs }}));
+                              setLocalTaskMeta(prev => ({ ...prev, [task.id]: { description: taskDescription, subtasks: newSubs } }));
                             }}>
-                              {st.done && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                              {st.done && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                             </div>
                             <span style={{ fontSize: "14px", color: st.done ? "#9ca3af" : "#4b5563", textDecoration: st.done ? "line-through" : "none" }}>{st.text}</span>
                           </div>
                         ))}
-                        
+
                         <button style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#6366f1", fontSize: "14px", fontWeight: 600, padding: 0, marginTop: "8px" }} onClick={() => setNotice("Adding subtasks after creation needs backend support.")}>
                           <span style={{ fontSize: "18px", fontWeight: 400 }}>+</span> Add subtask
                         </button>
@@ -1836,12 +1901,12 @@ export default function DashboardPage() {
 
                   {/* Right Column */}
                   <div style={{ borderLeft: "1px solid #e5e7eb", padding: "32px 24px", display: "flex", flexDirection: "column", gap: "32px" }}>
-                    
+
                     {/* Priority */}
                     <div>
                       <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>PRIORITY</div>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: energyLevel === "HIGH" ? "#16a34a" : energyLevel === "MEDIUM" ? "#f59e0b" : "#6b7280", color: "#ffffff", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
                         {energyLevel === "HIGH" ? "High Priority" : energyLevel === "MEDIUM" ? "Medium Priority" : "Low Priority"}
                       </div>
                     </div>
@@ -1850,7 +1915,7 @@ export default function DashboardPage() {
                     <div>
                       <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>DUE DATE</div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: task.deadline && new Date(task.deadline) < new Date() ? "#dc2626" : "#4b5563" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                         {task.deadline ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(task.deadline)) : "No due date"}
                         {task.deadline && new Date(task.deadline) < new Date() && " (Overdue)"}
                       </div>
@@ -1861,7 +1926,7 @@ export default function DashboardPage() {
                       <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>TASK LEVEL</div>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: 700, color: "#16a34a" }}>
                         {task.energy_weight}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
                       </div>
                     </div>
 
@@ -1875,11 +1940,11 @@ export default function DashboardPage() {
                     {/* Actions */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
                       <button onClick={() => setNotice("Fitur edit task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: "13px", fontWeight: 600, padding: 0 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-3.25-1.95"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-3.25-1.95" /></svg>
                         Update Task
                       </button>
                       <button onClick={() => setNotice("Fitur hapus task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: "13px", fontWeight: 600, padding: 0 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                         Delete Task
                       </button>
                     </div>
