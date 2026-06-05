@@ -1,0 +1,2035 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LOGO_SRC } from "../lib/assets";
+
+// ─── Design Tokens ─────────────────────────────────────────────────────────────
+
+const COLOR = {
+  primary: "#008B1F",
+  primaryHover: "#007A1B",
+  primarySoft: "#9CFFAD",
+  primaryPale: "#ECFFF0",
+  border: "#D9D9D9",
+  borderSoft: "#ECECEC",
+  surface: "#FFFFFF",
+  panel: "#F5F5F5",
+  text: "#1E1E1E",
+  muted: "#8A8A8A",
+  mutedDark: "#666666",
+  danger: "#FF6B76",
+  dangerSoft: "#FFCDD2",
+};
+
+const CARD_STYLE = {
+  backgroundColor: COLOR.surface,
+  borderRadius: "8px",
+  border: `1px solid ${COLOR.border}`,
+} as const;
+
+const buttonReset = {
+  border: "none",
+  background: "none",
+  fontFamily: "inherit",
+  cursor: "pointer",
+} as const;
+
+// ─── SVG Icons ─────────────────────────────────────────────────────────────────
+
+const DashboardIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+
+const FolderIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const SignOutIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const BellIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+const TrendUpIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+    <polyline points="17 6 23 6 23 12" />
+  </svg>
+);
+
+const TrendDownIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.danger} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+    <polyline points="17 18 23 18 23 12" />
+  </svg>
+);
+
+const GuestUserIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <polyline points="16 11 18 13 22 9" />
+  </svg>
+);
+
+const UsersGroupIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const TaskClipIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const TemplatesIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const CalendarSmIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const MoreDotsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="5" cy="12" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="19" cy="12" r="2" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const DocIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
+const DescIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
+
+const GlobeIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const ArrowDownIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <polyline points="19 12 12 19 5 12" />
+  </svg>
+);
+
+const MinusIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="8" y1="12" x2="16" y2="12" />
+  </svg>
+);
+
+const ArrowUpIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="19" x2="12" y2="5" />
+    <polyline points="5 12 12 5 19 12" />
+  </svg>
+);
+
+const SuccessCheckIcon = () => (
+  <svg width="80" height="80" viewBox="0 0 120 120" fill="none">
+    <circle cx="60" cy="60" r="46" stroke={COLOR.primary} strokeWidth="6" />
+    <path d="M38 60l14 14 30-30" stroke={COLOR.primary} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const SparkleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill={COLOR.primary}>
+    <path d="M12 2l2.09 6.26L20.18 10l-6.09 1.74L12 18l-2.09-6.26L3.82 10l6.09-1.74L12 2z" />
+    <circle cx="19" cy="5" r="2" />
+  </svg>
+);
+
+const CalendarLineIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const FlagLineIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+    <line x1="4" y1="22" x2="4" y2="15" />
+  </svg>
+);
+
+const PlayTriangleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="5 3 19 12 5 21 5 3" />
+  </svg>
+);
+
+const CheckCircleSolidIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill={COLOR.primary}>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+  </svg>
+);
+
+// ─── Trend Badge ───────────────────────────────────────────────────────────────
+
+function TrendBadge({ value, up }: { value: string; up: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "3px",
+        fontSize: "12px",
+        fontWeight: 700,
+        color: up ? COLOR.primary : "#D62839",
+        backgroundColor: up ? "#BDFCC8" : COLOR.dangerSoft,
+        borderRadius: "999px",
+        padding: "3px 10px",
+      }}
+    >
+      {up ? <TrendUpIcon /> : <TrendDownIcon />}
+      {value}
+    </span>
+  );
+}
+
+// ─── Level Badge ───────────────────────────────────────────────────────────────
+
+function LevelBadge({ level }: { level: string }) {
+  const map: Record<string, { bg: string; text: string }> = {
+    High: { bg: "#6D6D6D", text: "#fff" },
+    Medium: { bg: "#7B7B7B", text: "#fff" },
+    Low: { bg: "#8E8E8E", text: "#fff" },
+  };
+  const { bg, text } = map[level] ?? { bg: "#6D6D6D", text: "#fff" };
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        fontSize: "11px",
+        fontWeight: 700,
+        letterSpacing: "0.04em",
+        color: text,
+        backgroundColor: bg,
+        borderRadius: "999px",
+        padding: "4px 14px",
+        lineHeight: "16px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {level}
+    </span>
+  );
+}
+
+// ─── User Activity Chart ───────────────────────────────────────────────────────
+
+type ChartRange = "week" | "month" | "year";
+
+const CHART_DATA: Record<ChartRange, { labels: string[]; data: number[] }> = {
+  week: {
+    labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    data: [3, 4, 2, 3, 3.5, 4, 0.5],
+  },
+  month: {
+    labels: ["W1", "W2", "W3", "W4"],
+    data: [8, 12, 6, 10],
+  },
+  year: {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    data: [15, 20, 12, 18, 22, 14, 19, 25, 17, 21, 16, 23],
+  },
+};
+
+function UserActivityChart({ range = "week" }: { range?: ChartRange }) {
+  const { labels, data } = CHART_DATA[range];
+  const width = 680;
+  const height = 260;
+  const padX = 40;
+  const padY = 30;
+  const maxVal = Math.ceil(Math.max(...data)) + 2;
+  const chartW = width - padX * 2;
+  const chartH = height - padY * 2;
+
+  const points = data.map((v, i) => {
+    const x = padX + (i / (data.length - 1)) * chartW;
+    const y = padY + chartH - (v / maxVal) * chartH;
+    return `${x},${y}`;
+  });
+
+  const areaPoints = [
+    `${padX},${height - padY}`,
+    ...points,
+    `${width - padX},${height - padY}`,
+  ].join(" ");
+
+  const ySteps = maxVal + 1;
+  const yLabels = Array.from({ length: ySteps }, (_, i) => i);
+
+  const lineLength = points.reduce((acc, _, i, arr) => {
+    if (i === 0) return 0;
+    const [x1, y1] = arr[i - 1].split(",").map(Number);
+    const [x2, y2] = arr[i].split(",").map(Number);
+    return acc + Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  }, 0);
+
+  return (
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height + 30}`} style={{ overflow: "visible" }}>
+      <style>{`
+        @keyframes adminDrawLine { from { stroke-dashoffset: ${lineLength}; } to { stroke-dashoffset: 0; } }
+        @keyframes adminFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes adminPopIn { 0% { r: 0; } 60% { r: 5; } 100% { r: 3.5; } }
+      `}</style>
+
+      {/* Y axis labels & grid */}
+      {yLabels.map((v, i) => {
+        const y = padY + chartH - (v / maxVal) * chartH;
+        return (
+          <g key={`y-${i}`} style={{ animation: `adminFadeIn 0.4s ease ${i * 0.04}s both` }}>
+            <text x={padX - 14} y={y + 4} textAnchor="end" fontSize="10" fill={COLOR.muted}>{v}</text>
+            <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#EFEFEF" strokeWidth="1" strokeDasharray="4 4" />
+          </g>
+        );
+      })}
+
+      {/* X axis labels */}
+      {labels.map((d, i) => {
+        const x = padX + (i / (labels.length - 1)) * chartW;
+        return (
+          <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="10" fill={COLOR.text}
+            style={{ animation: `adminFadeIn 0.4s ease ${0.2 + i * 0.04}s both` }}>{d}</text>
+        );
+      })}
+
+      {/* Area fill */}
+      <polygon points={areaPoints} fill="#EEFFF0" opacity="0.8" style={{ animation: `adminFadeIn 0.8s ease 0.3s both` }} />
+
+      {/* Animated Line */}
+      <polyline
+        points={points.join(" ")}
+        fill="none"
+        stroke={COLOR.primary}
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        strokeDasharray={lineLength}
+        strokeDashoffset="0"
+        style={{ animation: `adminDrawLine 1.2s ease-out 0.3s both` }}
+      />
+
+      {/* Animated Dots */}
+      {data.map((v, i) => {
+        const x = padX + (i / (data.length - 1)) * chartW;
+        const y = padY + chartH - (v / maxVal) * chartH;
+        return <circle key={i} cx={x} cy={y} r="3.5" fill={COLOR.primary}
+          style={{ animation: `adminPopIn 0.4s ease ${0.5 + i * 0.1}s both` }} />;
+      })}
+    </svg>
+  );
+}
+
+// ─── Sample Data ───────────────────────────────────────────────────────────────
+
+type TemplateItem = {
+  id: number;
+  name: string;
+  createdAt: string;
+  createdBy: string;
+  usage: string;
+  level: string;
+  description: string;
+  label: string;
+};
+
+const INITIAL_TEMPLATES: TemplateItem[] = [
+  { id: 1, name: "Onboarding Journey", createdAt: "Oct 24, 2023", createdBy: "Jane Doe", usage: "1,402 Users", level: "High", description: "A comprehensive onboarding template designed to guide new users through the platform. Includes step-by-step walkthroughs, resource links, and milestone checkpoints to ensure smooth adoption.", label: "Public" },
+  { id: 2, name: "Weekly Sprint Plan", createdAt: "Nov 12, 2023", createdBy: "Jane Doe", usage: "987 Users", level: "High", description: "Organize your weekly sprint cycles with structured task breakdowns, daily standups tracking, and retrospective notes. Perfect for agile teams managing iterative development.", label: "Custom" },
+  { id: 3, name: "Project Kickoff", createdAt: "Dec 5, 2023", createdBy: "Jane Doe", usage: "2,145 Users", level: "High", description: "Start any new project on the right foot with stakeholder identification, scope definition, timeline planning, and resource allocation templates built in.", label: "Public" },
+  { id: 4, name: "Research Pipeline", createdAt: "Jan 15, 2024", createdBy: "Jane Doe", usage: "654 Users", level: "High", description: "Streamline your research workflow from hypothesis formation to data collection, analysis, and presentation. Includes templates for literature review and methodology documentation.", label: "Custom" },
+  { id: 5, name: "Content Calendar", createdAt: "Feb 28, 2024", createdBy: "Jane Doe", usage: "1,823 Users", level: "High", description: "Plan and schedule content across multiple channels with this comprehensive calendar template. Track drafts, reviews, approvals, and publication dates all in one place.", label: "Public" },
+  { id: 6, name: "Bug Triage Workflow", createdAt: "Mar 10, 2024", createdBy: "Jane Doe", usage: "1,102 Users", level: "High", description: "Efficiently manage and prioritize bug reports with severity classification, assignment workflows, and resolution tracking. Integrates with development sprints seamlessly.", label: "Public" },
+  { id: 7, name: "Team Retrospective", createdAt: "Apr 2, 2024", createdBy: "Jane Doe", usage: "756 Users", level: "High", description: "Facilitate productive team retrospectives with structured formats for what went well, what needs improvement, and action items. Includes voting and priority ranking features.", label: "Custom" },
+];
+
+// ─── Main Admin Dashboard ──────────────────────────────────────────────────────
+
+type AdminMenu = "dashboard" | "template";
+
+type TaskLevel = "Low" | "Medium" | "High";
+type LabelType = "Public" | "Custom";
+
+export default function AdminDashboardPage() {
+  const router = useRouter();
+  const [activeMenu, setActiveMenu] = useState<AdminMenu>("dashboard");
+  const [chartRange, setChartRange] = useState<ChartRange>("week");
+  const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
+  const [timeRange, setTimeRange] = useState<"Daily" | "Weekly" | "Monthly" | "Yearly">("Weekly");
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // ─── Templates List (stateful for deletion) ────────────────────────────────
+  const [templates, setTemplates] = useState<TemplateItem[]>(INITIAL_TEMPLATES);
+
+  // ─── Create Template Modal State ────────────────────────────────────────────
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDesc, setTemplateDesc] = useState("");
+  const [templateLevel, setTemplateLevel] = useState<TaskLevel>("Medium");
+  const [templateLabel, setTemplateLabel] = useState<LabelType>("Public");
+
+  // ─── Detail & Delete Modal State ────────────────────────────────────────────
+  const [detailTemplate, setDetailTemplate] = useState<TemplateItem | null>(null);
+  const [deleteTemplate, setDeleteTemplate] = useState<TemplateItem | null>(null);
+
+  const handleOpenCreateModal = () => {
+    setTemplateName("");
+    setTemplateDesc("");
+    setTemplateLevel("Medium");
+    setTemplateLabel("Public");
+    setShowCreateModal(true);
+  };
+
+  const handleCreateTemplate = () => {
+    if (!templateName.trim()) return;
+    const newTmpl: TemplateItem = {
+      id: Date.now(),
+      name: templateName,
+      createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      createdBy: "Admin",
+      usage: "0 Users",
+      level: templateLevel,
+      description: templateDesc,
+      label: templateLabel,
+    };
+    setTemplates((prev) => [newTmpl, ...prev]);
+    setShowCreateModal(false);
+    setShowSuccessModal(true);
+  };
+
+  const handleCloseSuccess = () => {
+    setShowSuccessModal(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTemplate) return;
+    setTemplates((prev) => prev.filter((t) => t.id !== deleteTemplate.id));
+    setDeleteTemplate(null);
+  };
+
+  const handleSignOut = () => {
+    router.push("/login");
+  };
+
+  // ─── Sidebar Menu Items ────────────────────────────────────────────────────
+
+  const menuItems = [
+    { key: "dashboard" as const, label: "DashBoard", icon: <DashboardIcon /> },
+    { key: "template" as const, label: "Template Management", icon: <FolderIcon /> },
+  ];
+
+  // ─── Stat Cards Data ───────────────────────────────────────────────────────
+
+  const STAT_DATA = {
+    Daily: [
+      { label: "Guest Users", value: "18", icon: <GuestUserIcon />, trend: "+5%", up: true },
+      { label: "Users", value: "5", icon: <UsersGroupIcon />, trend: "+2%", up: true },
+      { label: "Task", value: "120", icon: <TaskClipIcon />, trend: "-1%", up: false },
+      { label: "Templates", value: "15", icon: <TemplatesIcon />, trend: "+10%", up: true },
+    ],
+    Weekly: [
+      { label: "Guest Users", value: "128", icon: <GuestUserIcon />, trend: "+10%", up: true },
+      { label: "Users", value: "50", icon: <UsersGroupIcon />, trend: "+10%", up: true },
+      { label: "Task", value: "9000", icon: <TaskClipIcon />, trend: "-10%", up: false },
+      { label: "Templates", value: "9000", icon: <TemplatesIcon />, trend: "-10%", up: false },
+    ],
+    Monthly: [
+      { label: "Guest Users", value: "540", icon: <GuestUserIcon />, trend: "+25%", up: true },
+      { label: "Users", value: "210", icon: <UsersGroupIcon />, trend: "+15%", up: true },
+      { label: "Task", value: "35000", icon: <TaskClipIcon />, trend: "+5%", up: true },
+      { label: "Templates", value: "32000", icon: <TemplatesIcon />, trend: "+8%", up: true },
+    ],
+    Yearly: [
+      { label: "Guest Users", value: "6480", icon: <GuestUserIcon />, trend: "+45%", up: true },
+      { label: "Users", value: "2500", icon: <UsersGroupIcon />, trend: "+30%", up: true },
+      { label: "Task", value: "420000", icon: <TaskClipIcon />, trend: "+20%", up: true },
+      { label: "Templates", value: "380000", icon: <TemplatesIcon />, trend: "+22%", up: true },
+    ]
+  };
+
+  const statCards = STAT_DATA[timeRange];
+  
+  const timeRangeText = {
+    Daily: "from yesterday",
+    Weekly: "from last week",
+    Monthly: "from last month",
+    Yearly: "from last year"
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: COLOR.surface, color: COLOR.text, fontFamily: "inherit" }}>
+      <style>{`
+        @keyframes adminRingBell {
+          0% { transform: rotate(0); }
+          10% { transform: rotate(15deg); }
+          20% { transform: rotate(-10deg); }
+          30% { transform: rotate(5deg); }
+          40% { transform: rotate(-5deg); }
+          50% { transform: rotate(2deg); }
+          60% { transform: rotate(0); }
+          100% { transform: rotate(0); }
+        }
+        .admin-bell-hover:hover svg {
+          animation: adminRingBell 0.5s ease-in-out;
+          transform-origin: top center;
+        }
+        @keyframes adminNotifPop {
+          from { opacity: 0; transform: translateY(10px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+
+      {/* ═══════════════════════════════════════
+          SIDEBAR
+      ═══════════════════════════════════════ */}
+      <aside
+        style={{
+          width: "220px",
+          minHeight: "100vh",
+          backgroundColor: COLOR.surface,
+          borderRight: `1px solid ${COLOR.borderSoft}`,
+          display: "flex",
+          flexDirection: "column",
+          padding: "28px 0 0",
+          position: "sticky",
+          top: 0,
+          flexShrink: 0,
+        }}
+      >
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "0 28px", marginBottom: "42px" }}>
+          <span
+            aria-label="Ben To Do Logo"
+            style={{
+              width: "36px",
+              height: "36px",
+              display: "inline-block",
+              backgroundColor: COLOR.primary,
+              WebkitMask: `url('${LOGO_SRC}') center / contain no-repeat`,
+              mask: `url('${LOGO_SRC}') center / contain no-repeat`,
+              flexShrink: 0,
+            }}
+          />
+          <div>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: COLOR.text, lineHeight: 1.1 }}>Ben To Do</div>
+            <div style={{ fontSize: "11px", color: COLOR.muted, fontWeight: 400, lineHeight: 1.3 }}>Task Dashboard</div>
+          </div>
+        </div>
+
+        {/* Menu Label */}
+        <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.muted, letterSpacing: "0.05em", padding: "0 28px", marginBottom: "14px", textTransform: "uppercase" }}>
+          Menu
+        </div>
+
+        {/* Nav Items */}
+        <nav style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "0 16px" }}>
+          {menuItems.map(({ key, label, icon }) => {
+            const isActive = activeMenu === key;
+            return (
+              <button
+                key={key}
+                id={`admin-nav-${key}`}
+                onClick={() => setActiveMenu(key)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  height: "42px",
+                  padding: "0 16px",
+                  borderRadius: "6px",
+                  border: isActive ? `2px solid ${COLOR.primary}` : "2px solid transparent",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "13px",
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? COLOR.primary : COLOR.mutedDark,
+                  backgroundColor: isActive ? COLOR.primarySoft : "transparent",
+                  transition: "all 0.2s ease",
+                  width: "100%",
+                  textAlign: "left",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = COLOR.panel;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                <span style={{ display: "flex", color: isActive ? COLOR.primary : COLOR.mutedDark }}>
+                  {icon}
+                </span>
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Sign Out */}
+        <div style={{ padding: "22px 16px", borderTop: `1px solid ${COLOR.borderSoft}` }}>
+          <button
+            id="admin-sign-out"
+            onClick={handleSignOut}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              height: "40px",
+              padding: "0 16px",
+              borderRadius: "6px",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: "13px",
+              fontWeight: 400,
+              color: COLOR.mutedDark,
+              backgroundColor: "transparent",
+              transition: "all 0.2s ease",
+              width: "100%",
+              textAlign: "left",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+          >
+            <SignOutIcon />
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* ═══════════════════════════════════════
+          MAIN CONTENT
+      ═══════════════════════════════════════ */}
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+
+        {/* ── Top Bar ── */}
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: "70px",
+            padding: "0 36px",
+            backgroundColor: COLOR.surface,
+            borderBottom: `1px solid ${COLOR.borderSoft}`,
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+          }}
+        >
+          <h1 style={{ fontSize: "18px", fontWeight: 500, color: COLOR.text, margin: 0, letterSpacing: "-0.01em" }}>
+            {activeMenu === "dashboard" ? "Dashboard Admin" : "Template Management Admin"}
+          </h1>
+
+          {/* Right side: notification + profile */}
+          <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+            {/* Notification Bell */}
+            <div style={{ position: "relative" }}>
+              <button
+                id="admin-notification-bell"
+                className="admin-bell-hover"
+                onClick={() => setShowNotifications(!showNotifications)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "6px",
+                  border: `1px solid ${showNotifications ? COLOR.primary : COLOR.border}`,
+                  background: showNotifications ? "#f0fdf4" : "none",
+                  color: showNotifications ? COLOR.primary : COLOR.mutedDark,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.color = COLOR.primary; }}
+                onMouseLeave={(e) => { 
+                  if (!showNotifications) {
+                    e.currentTarget.style.borderColor = COLOR.border; 
+                    e.currentTarget.style.color = COLOR.mutedDark;
+                  }
+                }}
+              >
+                <BellIcon />
+              </button>
+
+              {/* Notification Pop-up */}
+              {showNotifications && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "46px",
+                    right: 0,
+                    width: "320px",
+                    backgroundColor: COLOR.surface,
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
+                    border: `1px solid ${COLOR.borderSoft}`,
+                    zIndex: 100,
+                    animation: "adminNotifPop 0.2s ease-out forwards",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}`, backgroundColor: "#f9fafb" }}>
+                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: COLOR.text }}>Notifications</h3>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", maxHeight: "300px", overflowY: "auto" }}>
+                    <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text }}>System Update v1.2</div>
+                        <div style={{ width: "8px", height: "8px", backgroundColor: COLOR.primary, borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
+                      </div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>Added new template layouts and improved dashboard performance.</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>Just now</div>
+                    </div>
+                    <div style={{ padding: "16px", backgroundColor: "#ffffff" }}>
+                      <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>New User Registered</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>5 new guest users have joined in the last hour.</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>2 hours ago</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Separator */}
+            <div style={{ width: "1px", height: "28px", backgroundColor: COLOR.borderSoft }} />
+
+            {/* Admin Avatar + Info */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #3A7C5F 0%, #1B4332 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  flexShrink: 0,
+                  border: "2px solid #e0e0e0",
+                }}
+              >
+                A
+              </div>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.2 }}>Admin</div>
+                <div style={{ fontSize: "10px", color: COLOR.muted, lineHeight: 1.3 }}>SuperAdmin</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* ── Scrollable Content ── */}
+        <div style={{ flex: 1, padding: "28px 36px 40px", overflowY: "auto", overflowX: "hidden", backgroundColor: "#FAFAFA" }}>
+
+          {/* ═══════════════════════════════════════
+              DASHBOARD VIEW
+          ═══════════════════════════════════════ */}
+          {activeMenu === "dashboard" && (
+            <>
+              {/* Overview Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
+                <h2 style={{ fontSize: "24px", fontWeight: 700, color: COLOR.text, margin: 0 }}>Overview</h2>
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: "6px",
+                    backgroundColor: "#F1F1F1",
+                    padding: "3px",
+                    overflow: "hidden",
+                  }}
+                >
+                  {(["Daily", "Weekly", "Monthly", "Yearly"] as const).map((t) => (
+                    <button
+                      key={t}
+                      id={`admin-range-${t.toLowerCase()}`}
+                      onClick={() => setTimeRange(t)}
+                      style={{
+                        width: "72px",
+                        height: "34px",
+                        fontSize: "12px",
+                        fontWeight: timeRange === t ? 600 : 400,
+                        fontFamily: "inherit",
+                        color: COLOR.text,
+                        backgroundColor: timeRange === t ? COLOR.surface : "transparent",
+                        border: "none",
+                        borderRadius: timeRange === t ? "4px" : "0",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        boxShadow: timeRange === t ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Stat Cards ── */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: "20px",
+                  marginBottom: "28px",
+                }}
+              >
+                {statCards.map((card, idx) => (
+                  <div
+                    key={idx}
+                    id={`admin-stat-${card.label.toLowerCase().replace(/\s/g, "-")}`}
+                    style={{
+                      ...CARD_STYLE,
+                      padding: "22px 24px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    <div style={{ fontSize: "14px", fontWeight: 500, color: COLOR.text }}>{card.label}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <span style={{ display: "flex", color: COLOR.text }}>{card.icon}</span>
+                      <span style={{ fontSize: "28px", fontWeight: 700, color: COLOR.text, lineHeight: 1, letterSpacing: "-0.02em" }}>{card.value}</span>
+                      <TrendBadge value={card.trend} up={card.up} />
+                    </div>
+                    <div style={{ fontSize: "12px", color: COLOR.muted }}>{timeRangeText[timeRange]}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── User Activity Chart ── */}
+              <div
+                style={{
+                  ...CARD_STYLE,
+                  padding: "24px 28px",
+                  marginBottom: "28px",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                  <div>
+                    <div style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, marginBottom: "4px" }}>User Activity</div>
+                    <div style={{ fontSize: "12px", color: COLOR.muted }}>Sing-ups over the last week</div>
+                  </div>
+
+                  {/* Chart Range Dropdown */}
+                  <div style={{ position: "relative" }}>
+                    <button
+                      id="admin-chart-range-toggle"
+                      onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        height: "34px",
+                        padding: "0 14px",
+                        borderRadius: "6px",
+                        border: `1px solid ${COLOR.border}`,
+                        backgroundColor: COLOR.surface,
+                        fontSize: "12px",
+                        color: COLOR.text,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
+                        borderColor: chartDropdownOpen ? COLOR.primary : COLOR.border,
+                        boxShadow: chartDropdownOpen ? `0 0 0 2px ${COLOR.primaryPale}` : "none",
+                      }}
+                    >
+                      <CalendarSmIcon />
+                      {chartRange === "week" ? "This Week" : chartRange === "month" ? "This Month" : "This Year"}
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                        style={{ transition: "transform 0.2s", transform: chartDropdownOpen ? "rotate(180deg)" : "rotate(0)" }}>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    {chartDropdownOpen && (
+                      <div style={{
+                        position: "absolute", top: "40px", right: 0, zIndex: 30,
+                        backgroundColor: COLOR.surface, border: `1px solid ${COLOR.border}`,
+                        borderRadius: "8px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                        overflow: "hidden", minWidth: "140px",
+                        animation: "fadeSlideDown 0.18s ease",
+                      }}>
+                        {(["week", "month", "year"] as ChartRange[]).map((r) => (
+                          <button
+                            key={r}
+                            id={`admin-chart-range-${r}`}
+                            onClick={() => { setChartRange(r); setChartDropdownOpen(false); }}
+                            style={{
+                              display: "flex", alignItems: "center", gap: "8px",
+                              width: "100%", padding: "10px 14px", border: "none",
+                              backgroundColor: chartRange === r ? COLOR.primaryPale : "transparent",
+                              color: chartRange === r ? COLOR.primary : COLOR.text,
+                              fontSize: "12px", fontWeight: chartRange === r ? 600 : 400,
+                              cursor: "pointer", fontFamily: "inherit",
+                              transition: "background-color 0.15s",
+                            }}
+                            onMouseEnter={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "#f5f5f5"; }}
+                            onMouseLeave={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "transparent"; }}
+                          >
+                            {chartRange === r && <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: COLOR.primary }} />}
+                            {r === "week" ? "This Week" : r === "month" ? "This Month" : "This Year"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ width: "100%", minHeight: "290px" }} key={chartRange}>
+                  <UserActivityChart range={chartRange} />
+                </div>
+              </div>
+
+              {/* ── Recent Templates Table ── */}
+              <div style={{ ...CARD_STYLE, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 28px" }}>
+                  <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text }}>Recent Templates</span>
+                  <button
+                    id="admin-view-all-templates"
+                    onClick={() => setActiveMenu("template")}
+                    style={{
+                      ...buttonReset,
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: COLOR.primary,
+                      transition: "opacity 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.75"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                  >
+                    View All
+                  </button>
+                </div>
+
+                <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                  <colgroup>
+                    <col style={{ width: "35%" }} />
+                    <col style={{ width: "18%" }} />
+                    <col style={{ width: "17%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "16%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr style={{ height: "48px", borderTop: `1px solid ${COLOR.borderSoft}`, borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      {["Template Name", "Created By", "Usage", "Level", "Actions"].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: COLOR.text,
+                            textAlign: "left",
+                            padding: "0 28px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {templates.slice(0, 3).map((tmpl, idx) => (
+                      <tr
+                        key={tmpl.id}
+                        style={{
+                          height: "68px",
+                          borderBottom: `1px solid ${COLOR.borderSoft}`,
+                          backgroundColor: hoveredRow === idx ? "#FAFFFE" : "transparent",
+                          transition: "background-color 0.15s",
+                        }}
+                        onMouseEnter={() => setHoveredRow(idx)}
+                        onMouseLeave={() => setHoveredRow(null)}
+                      >
+                        <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
+                          <div>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{tmpl.name}</div>
+                            <div style={{ fontSize: "11px", color: COLOR.muted, marginTop: "2px" }}>Created on {tmpl.createdAt}</div>
+                          </div>
+                        </td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.createdBy}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.usage}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
+                          <LevelBadge level={tmpl.level} />
+                        </td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                            <button
+                              onClick={() => setDetailTemplate(tmpl)}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.text; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
+                            >
+                              <MoreDotsIcon />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTemplate(tmpl)}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.danger; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Show More */}
+                <div style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+                  <button
+                    id="admin-show-more-templates"
+                    onClick={() => setActiveMenu("template")}
+                    style={{
+                      ...buttonReset,
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: COLOR.mutedDark,
+                      padding: "8px 20px",
+                      borderRadius: "6px",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; e.currentTarget.style.color = COLOR.text; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = COLOR.mutedDark; }}
+                  >
+                    Show More Templates
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ═══════════════════════════════════════
+              TEMPLATE MANAGEMENT VIEW
+          ═══════════════════════════════════════ */}
+          {activeMenu === "template" && (
+            <>
+              {/* Overview Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
+                <h2 style={{ fontSize: "24px", fontWeight: 700, color: COLOR.text, margin: 0, fontStyle: "italic" }}>Overview</h2>
+                <button
+                  id="admin-create-new-template"
+                  onClick={handleOpenCreateModal}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    height: "42px",
+                    padding: "0 24px",
+                    borderRadius: "8px",
+                    backgroundColor: COLOR.primary,
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 2px 8px rgba(0,139,31,0.25)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = COLOR.primaryHover;
+                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,139,31,0.35)";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = COLOR.primary;
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,139,31,0.25)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  <PlusIcon />
+                  Create New Template
+                </button>
+              </div>
+
+              {/* ── Full Templates Table ── */}
+              <div style={{ ...CARD_STYLE, overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                  <colgroup>
+                    <col style={{ width: "35%" }} />
+                    <col style={{ width: "18%" }} />
+                    <col style={{ width: "17%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "16%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr style={{ height: "52px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      {["Template Name", "Created By", "Usage", "Level", "Actions"].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: COLOR.text,
+                            textAlign: "left",
+                            padding: "0 28px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {templates.map((tmpl, idx) => (
+                      <tr
+                        key={tmpl.id}
+                        id={`admin-template-row-${tmpl.id}`}
+                        style={{
+                          height: "72px",
+                          borderBottom: `1px solid ${COLOR.borderSoft}`,
+                          backgroundColor: hoveredRow === idx + 100 ? "#FAFFFE" : "transparent",
+                          transition: "background-color 0.15s",
+                        }}
+                        onMouseEnter={() => setHoveredRow(idx + 100)}
+                        onMouseLeave={() => setHoveredRow(null)}
+                      >
+                        <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
+                          <div>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{tmpl.name}</div>
+                            <div style={{ fontSize: "11px", color: COLOR.muted, marginTop: "2px" }}>Created on {tmpl.createdAt}</div>
+                          </div>
+                        </td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.createdBy}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.usage}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
+                          <LevelBadge level={tmpl.level} />
+                        </td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                            <button
+                              onClick={() => setDetailTemplate(tmpl)}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.text; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
+                            >
+                              <MoreDotsIcon />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTemplate(tmpl)}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.danger; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+
+      {/* ═══════════════════════════════════════
+          TEMPLATE DETAIL MODAL
+      ═══════════════════════════════════════ */}
+      {detailTemplate && (
+        <div
+          id="admin-detail-modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            animation: "adminModalOverlayIn 0.25s ease",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setDetailTemplate(null); }}
+        >
+          <div
+            id="admin-detail-modal"
+            style={{
+              backgroundColor: COLOR.surface,
+              borderRadius: "16px",
+              width: "520px",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: "32px 36px 28px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+              animation: "adminModalSlideIn 0.3s ease",
+              position: "relative",
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "10px",
+                  backgroundColor: COLOR.primaryPale,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 style={{ fontSize: "18px", fontWeight: 700, color: COLOR.text, margin: 0 }}>Template Detail</h2>
+                  <p style={{ fontSize: "11px", color: COLOR.muted, margin: "2px 0 0" }}>View template information</p>
+                </div>
+              </div>
+              <button
+                id="admin-detail-modal-close"
+                onClick={() => setDetailTemplate(null)}
+                style={{
+                  ...buttonReset,
+                  color: COLOR.mutedDark,
+                  padding: "4px",
+                  borderRadius: "6px",
+                  display: "flex",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; e.currentTarget.style.color = COLOR.text; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = COLOR.mutedDark; }}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            {/* Template Name */}
+            <div style={{
+              backgroundColor: COLOR.primaryPale,
+              borderRadius: "10px",
+              padding: "18px 20px",
+              marginBottom: "20px",
+              borderLeft: `4px solid ${COLOR.primary}`,
+            }}>
+              <div style={{ fontSize: "10px", fontWeight: 600, color: COLOR.primary, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>Template Name</div>
+              <div style={{ fontSize: "17px", fontWeight: 700, color: COLOR.text }}>{detailTemplate.name}</div>
+            </div>
+
+            {/* Description */}
+            <div style={{ marginBottom: "22px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: COLOR.muted, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</div>
+              <p style={{ fontSize: "13px", color: COLOR.text, lineHeight: 1.7, margin: 0, padding: "12px 16px", backgroundColor: "#F9F9F9", borderRadius: "8px", border: `1px solid ${COLOR.borderSoft}` }}>
+                {detailTemplate.description || "No description provided."}
+              </p>
+            </div>
+
+            {/* Info Grid */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "14px",
+              marginBottom: "24px",
+            }}>
+              {[
+                { label: "Created By", value: detailTemplate.createdBy, icon: <UsersGroupIcon /> },
+                { label: "Created On", value: detailTemplate.createdAt, icon: <CalendarLineIcon /> },
+                { label: "Usage", value: detailTemplate.usage, icon: <TaskClipIcon /> },
+                { label: "Level", value: detailTemplate.level, icon: <FlagLineIcon /> },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "14px 16px",
+                  borderRadius: "8px",
+                  border: `1px solid ${COLOR.borderSoft}`,
+                  backgroundColor: COLOR.surface,
+                }}>
+                  <span style={{ display: "flex", color: COLOR.muted, flexShrink: 0 }}>{item.icon}</span>
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "2px" }}>{item.label}</div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{item.value}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Label Badge */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: COLOR.muted }}>Label:</span>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "5px 14px",
+                borderRadius: "999px",
+                fontSize: "12px",
+                fontWeight: 600,
+                backgroundColor: detailTemplate.label === "Public" ? COLOR.primaryPale : "#FEF3C7",
+                color: detailTemplate.label === "Public" ? COLOR.primary : "#92400E",
+                border: `1px solid ${detailTemplate.label === "Public" ? "#BBF7D0" : "#FDE68A"}`,
+              }}>
+                {detailTemplate.label === "Public" ? <GlobeIcon /> : <LockIcon />}
+                {detailTemplate.label || "Public"}
+              </span>
+            </div>
+
+            {/* Close Button */}
+            <button
+              id="admin-detail-modal-done"
+              onClick={() => setDetailTemplate(null)}
+              style={{
+                width: "100%",
+                height: "44px",
+                borderRadius: "8px",
+                border: `1px solid ${COLOR.border}`,
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = COLOR.surface; }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════
+          DELETE CONFIRMATION MODAL
+      ═══════════════════════════════════════ */}
+      {deleteTemplate && (
+        <div
+          id="admin-delete-modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            animation: "adminModalOverlayIn 0.25s ease",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setDeleteTemplate(null); }}
+        >
+          <div
+            id="admin-delete-modal"
+            style={{
+              backgroundColor: COLOR.surface,
+              borderRadius: "16px",
+              width: "420px",
+              maxWidth: "90vw",
+              padding: "32px 32px 28px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+              animation: "adminSuccessPop 0.35s ease",
+              position: "relative",
+              textAlign: "center",
+            }}
+          >
+            {/* Warning Icon */}
+            <div style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              backgroundColor: "#FEE2E2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px",
+            }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: COLOR.text, margin: "0 0 8px" }}>
+              Delete Template?
+            </h2>
+            <p style={{ fontSize: "13px", color: COLOR.muted, margin: "0 0 8px", lineHeight: 1.5 }}>
+              Are you sure you want to delete
+            </p>
+
+            {/* Template name highlight */}
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              backgroundColor: "#FEF2F2",
+              border: "1px solid #FECACA",
+              marginBottom: "16px",
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#DC2626" }}>&ldquo;{deleteTemplate.name}&rdquo;</span>
+            </div>
+
+            <p style={{ fontSize: "12px", color: COLOR.muted, margin: "0 0 28px", lineHeight: 1.5 }}>
+              This action cannot be undone. All data associated<br />with this template will be permanently removed.
+            </p>
+
+            {/* Action Buttons */}
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                id="admin-delete-cancel"
+                onClick={() => setDeleteTemplate(null)}
+                style={{
+                  flex: 1,
+                  height: "44px",
+                  borderRadius: "8px",
+                  border: `1px solid ${COLOR.border}`,
+                  backgroundColor: COLOR.surface,
+                  color: COLOR.text,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = COLOR.surface; }}
+              >
+                No, Cancel
+              </button>
+              <button
+                id="admin-delete-confirm"
+                onClick={handleConfirmDelete}
+                style={{
+                  flex: 1,
+                  height: "44px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor: "#EF4444",
+                  color: "#ffffff",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#DC2626";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(239,68,68,0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#EF4444";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(239,68,68,0.3)";
+                }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════
+          CREATE TEMPLATE MODAL
+      ═══════════════════════════════════════ */}
+      {showCreateModal && (
+        <div
+          id="admin-create-modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            animation: "adminModalOverlayIn 0.25s ease",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCreateModal(false); }}
+        >
+          <style>{`
+            @keyframes adminModalOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes adminModalSlideIn { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            @keyframes adminSuccessPop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+            @keyframes adminCheckDraw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+          `}</style>
+          <div
+            id="admin-create-modal"
+            style={{
+              backgroundColor: COLOR.surface,
+              borderRadius: "16px",
+              width: "580px",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: "36px 40px 32px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+              animation: "adminModalSlideIn 0.3s ease",
+              position: "relative",
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
+              <div>
+                <h2 style={{ fontSize: "22px", fontWeight: 700, color: COLOR.text, margin: "0 0 6px" }}>Create Template</h2>
+                <p style={{ fontSize: "13px", color: COLOR.muted, margin: 0 }}>Create a template according to your needs.</p>
+              </div>
+              <button
+                id="admin-create-modal-close"
+                onClick={() => setShowCreateModal(false)}
+                style={{
+                  ...buttonReset,
+                  color: COLOR.mutedDark,
+                  padding: "4px",
+                  borderRadius: "6px",
+                  display: "flex",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; e.currentTarget.style.color = COLOR.text; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = COLOR.mutedDark; }}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            {/* Template Name */}
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
+                Template Name <span style={{ color: COLOR.danger }}>*</span>
+              </label>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                border: `1px solid ${templateName ? COLOR.primary : COLOR.border}`,
+                borderRadius: "8px",
+                padding: "0 14px",
+                height: "46px",
+                transition: "border-color 0.2s",
+                backgroundColor: COLOR.surface,
+              }}>
+                <DocIcon />
+                <input
+                  id="admin-template-name-input"
+                  type="text"
+                  placeholder="Enter template name"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value.slice(0, 100))}
+                  style={{
+                    flex: 1,
+                    border: "none",
+                    outline: "none",
+                    fontSize: "13px",
+                    color: COLOR.text,
+                    fontFamily: "inherit",
+                    backgroundColor: "transparent",
+                  }}
+                />
+                <span style={{ fontSize: "11px", color: COLOR.muted, flexShrink: 0 }}>{templateName.length}/100</span>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
+                Description
+              </label>
+              <div style={{
+                border: `1px solid ${templateDesc ? COLOR.primary : COLOR.border}`,
+                borderRadius: "8px",
+                padding: "14px",
+                transition: "border-color 0.2s",
+                backgroundColor: COLOR.surface,
+                position: "relative",
+              }}>
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  <div style={{ paddingTop: "2px", flexShrink: 0 }}>
+                    <DescIcon />
+                  </div>
+                  <textarea
+                    id="admin-template-desc-input"
+                    placeholder="Describe your template..."
+                    value={templateDesc}
+                    onChange={(e) => setTemplateDesc(e.target.value.slice(0, 500))}
+                    rows={3}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: "13px",
+                      color: COLOR.text,
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                      minHeight: "60px",
+                      backgroundColor: "transparent",
+                      lineHeight: 1.6,
+                    }}
+                  />
+                </div>
+                <div style={{ textAlign: "right", fontSize: "11px", color: COLOR.muted, marginTop: "6px" }}>
+                  {templateDesc.length}/500
+                </div>
+              </div>
+            </div>
+
+            {/* Task Level */}
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: COLOR.text, marginBottom: "10px" }}>
+                Task Level <span style={{ color: COLOR.danger }}>*</span>
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+                {([
+                  { key: "Low" as TaskLevel, color: "#EAB308", softBg: "#FEF9C3", icon: <ArrowDownIcon /> },
+                  { key: "Medium" as TaskLevel, color: "#F97316", softBg: "#FFEDD5", icon: <MinusIcon /> },
+                  { key: "High" as TaskLevel, color: "#EF4444", softBg: "#FEE2E2", icon: <ArrowUpIcon /> },
+                ]).map(({ key, color, softBg, icon }) => {
+                  const isSelected = templateLevel === key;
+                  return (
+                    <button
+                      key={key}
+                      id={`admin-level-${key.toLowerCase()}`}
+                      onClick={() => setTemplateLevel(key)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        height: "44px",
+                        borderRadius: "8px",
+                        border: `2px solid ${isSelected ? color : COLOR.border}`,
+                        backgroundColor: isSelected ? softBg : COLOR.surface,
+                        color: isSelected ? color : COLOR.mutedDark,
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = color;
+                          e.currentTarget.style.backgroundColor = softBg;
+                          e.currentTarget.style.color = color;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.borderColor = COLOR.border;
+                          e.currentTarget.style.backgroundColor = COLOR.surface;
+                          e.currentTarget.style.color = COLOR.mutedDark;
+                        }
+                      }}
+                    >
+                      <span style={{ display: "flex" }}>{icon}</span>
+                      {key}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Label */}
+            <div style={{ marginBottom: "32px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: COLOR.text, marginBottom: "10px" }}>
+                Label <span style={{ color: COLOR.danger }}>*</span>
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {/* Public */}
+                <button
+                  id="admin-label-public"
+                  onClick={() => setTemplateLabel("Public")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "16px",
+                    borderRadius: "10px",
+                    border: `2px solid ${templateLabel === "Public" ? COLOR.primary : COLOR.border}`,
+                    backgroundColor: templateLabel === "Public" ? COLOR.primaryPale : COLOR.surface,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    textAlign: "left",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <span style={{ display: "flex", flexShrink: 0 }}><GlobeIcon /></span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, marginBottom: "2px" }}>Public</div>
+                    <div style={{ fontSize: "11px", color: COLOR.muted, lineHeight: 1.35 }}>Anyone in your workspace can view and use</div>
+                  </div>
+                  <div style={{
+                    width: "18px",
+                    height: "18px",
+                    borderRadius: "50%",
+                    border: `2px solid ${templateLabel === "Public" ? COLOR.primary : COLOR.border}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    transition: "all 0.2s",
+                  }}>
+                    {templateLabel === "Public" && (
+                      <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: COLOR.primary }} />
+                    )}
+                  </div>
+                </button>
+
+                {/* Custom (Private) */}
+                <button
+                  id="admin-label-custom"
+                  onClick={() => setTemplateLabel("Custom")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "16px",
+                    borderRadius: "10px",
+                    border: `2px solid ${templateLabel === "Custom" ? COLOR.primary : COLOR.border}`,
+                    backgroundColor: templateLabel === "Custom" ? COLOR.primaryPale : COLOR.surface,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    textAlign: "left",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <span style={{ display: "flex", flexShrink: 0 }}><LockIcon /></span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, marginBottom: "2px" }}>Custom (Private)</div>
+                    <div style={{ fontSize: "11px", color: COLOR.muted, lineHeight: 1.35 }}>Only you and people you invite can view and use</div>
+                  </div>
+                  <div style={{
+                    width: "18px",
+                    height: "18px",
+                    borderRadius: "50%",
+                    border: `2px solid ${templateLabel === "Custom" ? COLOR.primary : COLOR.border}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    transition: "all 0.2s",
+                  }}>
+                    {templateLabel === "Custom" && (
+                      <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: COLOR.primary }} />
+                    )}
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                id="admin-create-modal-cancel"
+                onClick={() => setShowCreateModal(false)}
+                style={{
+                  height: "44px",
+                  padding: "0 28px",
+                  borderRadius: "8px",
+                  border: `1px solid ${COLOR.border}`,
+                  backgroundColor: COLOR.surface,
+                  color: COLOR.text,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = COLOR.surface; }}
+              >
+                Cancel
+              </button>
+              <button
+                id="admin-create-modal-submit"
+                onClick={handleCreateTemplate}
+                disabled={!templateName.trim()}
+                style={{
+                  height: "44px",
+                  padding: "0 28px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor: !templateName.trim() ? COLOR.muted : COLOR.primary,
+                  color: "#ffffff",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: !templateName.trim() ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.2s ease",
+                  boxShadow: !templateName.trim() ? "none" : "0 2px 8px rgba(0,139,31,0.25)",
+                }}
+                onMouseEnter={(e) => {
+                  if (templateName.trim()) {
+                    e.currentTarget.style.backgroundColor = COLOR.primaryHover;
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (templateName.trim()) {
+                    e.currentTarget.style.backgroundColor = COLOR.primary;
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }
+                }}
+              >
+                Create Template
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════
+          SUCCESS MODAL
+      ═══════════════════════════════════════ */}
+      {showSuccessModal && (
+        <div
+          id="admin-success-modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            animation: "adminModalOverlayIn 0.25s ease",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) handleCloseSuccess(); }}
+        >
+          <div
+            id="admin-success-modal"
+            style={{
+              backgroundColor: COLOR.surface,
+              borderRadius: "16px",
+              width: "420px",
+              maxWidth: "90vw",
+              padding: "36px 36px 32px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+              animation: "adminSuccessPop 0.4s ease",
+              position: "relative",
+              textAlign: "center",
+            }}
+          >
+            {/* Close */}
+            <button
+              id="admin-success-modal-close"
+              onClick={handleCloseSuccess}
+              style={{
+                ...buttonReset,
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                color: COLOR.mutedDark,
+                padding: "4px",
+                borderRadius: "6px",
+                display: "flex",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; e.currentTarget.style.color = COLOR.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = COLOR.mutedDark; }}
+            >
+              <CloseIcon />
+            </button>
+
+            {/* Success Icon */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px", position: "relative" }}>
+              <div style={{ position: "relative" }}>
+                <SuccessCheckIcon />
+                <div style={{ position: "absolute", top: "-6px", right: "-8px" }}>
+                  <SparkleIcon />
+                </div>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: COLOR.text, margin: "0 0 6px" }}>
+              Template added successfully!
+            </h2>
+            <p style={{ fontSize: "12px", color: COLOR.muted, margin: "0 0 24px" }}>
+              All tasks have been added to your task list.
+            </p>
+
+            {/* Summary Card */}
+            <div style={{
+              border: `1px solid ${COLOR.borderSoft}`,
+              borderRadius: "10px",
+              padding: "20px",
+              textAlign: "left",
+              marginBottom: "24px",
+            }}>
+              {/* Template Title */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+                <CheckCircleSolidIcon />
+                <span style={{ fontSize: "15px", fontWeight: 700, color: COLOR.text }}>{templateName || "Template"}</span>
+              </div>
+
+              {/* Details */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {/* Deadline */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <CalendarLineIcon />
+                  <span style={{ fontSize: "13px", color: COLOR.muted, minWidth: "80px" }}>Deadline</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, marginRight: "4px" }}>:</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                    {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+
+                {/* Level Task */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <FlagLineIcon />
+                  <span style={{ fontSize: "13px", color: COLOR.muted, minWidth: "80px" }}>Level Task</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, marginRight: "4px" }}>:</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{templateLevel}</span>
+                </div>
+
+                {/* Label */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <PlayTriangleIcon />
+                  <span style={{ fontSize: "13px", color: COLOR.muted, minWidth: "80px" }}>Label</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, marginRight: "4px" }}>:</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{templateLabel}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* View Template Button */}
+            <button
+              id="admin-success-view-template"
+              onClick={handleCloseSuccess}
+              style={{
+                width: "100%",
+                height: "46px",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: COLOR.primary,
+                color: "#ffffff",
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.2s ease",
+                boxShadow: "0 2px 8px rgba(0,139,31,0.25)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = COLOR.primaryHover;
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,139,31,0.35)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = COLOR.primary;
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,139,31,0.25)";
+              }}
+            >
+              View Template
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
