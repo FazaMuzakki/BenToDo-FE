@@ -205,11 +205,116 @@ export default function SignInPage() {
           RIGHT PANEL
       ══════════════════════════════════════ */}
       <div className="flex flex-1 items-center justify-center bg-white px-8 py-14 md:py-0">
-        {/*
-          Container: lebar tetap 360px agar proporsional seperti referensi.
-          Padding kiri-kanan 0 karena sudah dihandle parent.
-        */}
-        <div style={{ width: "100%", maxWidth: "360px" }}>
+        {isLoading ? (
+          /* ── Loading / Waiting UI ── */
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", textAlign: "center", width: "100%", maxWidth: "360px",
+          }}>
+            {/* Inline keyframes for animations */}
+            <style>{`
+              @keyframes authSpinRing {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              @keyframes authPulse {
+                0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+                40% { transform: scale(1); opacity: 1; }
+              }
+              @keyframes authProgressBar {
+                0% { width: 0%; }
+                50% { width: 70%; }
+                90% { width: 92%; }
+                100% { width: 92%; }
+              }
+              @keyframes authFadeIn {
+                from { opacity: 0; transform: translateY(12px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            `}</style>
+
+            <div style={{ animation: "authFadeIn 0.4s ease-out forwards" }}>
+              {/* Spinner Ring */}
+              <div style={{
+                width: "72px", height: "72px", margin: "0 auto 28px",
+                position: "relative",
+              }}>
+                <div style={{
+                  width: "72px", height: "72px", borderRadius: "50%",
+                  border: "3px solid #e5e7eb",
+                  borderTopColor: "#16a34a",
+                  animation: "authSpinRing 1s linear infinite",
+                }} />
+                {/* Inner check icon (static) */}
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  color: "#16a34a",
+                }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h2 style={{
+                fontSize: "22px", fontWeight: 700, color: "#111827",
+                margin: "0 0 8px", lineHeight: 1.3,
+              }}>
+                Signing you in...
+              </h2>
+
+              {/* Subtitle */}
+              <p style={{
+                fontSize: "14px", color: "#9ca3af", fontWeight: 400,
+                margin: "0 0 28px", lineHeight: 1.5,
+              }}>
+                Please wait a few seconds while we verify your credentials.
+              </p>
+
+              {/* Pulsing dots */}
+              <div style={{
+                display: "flex", justifyContent: "center", gap: "8px",
+                marginBottom: "28px",
+              }}>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: "10px", height: "10px", borderRadius: "50%",
+                      backgroundColor: "#16a34a",
+                      animation: `authPulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Progress bar */}
+              <div style={{
+                width: "200px", height: "4px", borderRadius: "4px",
+                backgroundColor: "#e5e7eb", overflow: "hidden",
+                margin: "0 auto",
+              }}>
+                <div style={{
+                  height: "100%", borderRadius: "4px",
+                  backgroundColor: "#16a34a",
+                  animation: "authProgressBar 3s ease-out forwards",
+                }} />
+              </div>
+
+              {/* Extra hint */}
+              <p style={{
+                fontSize: "12px", color: "#d1d5db", fontWeight: 400,
+                marginTop: "20px",
+              }}>
+                This may take a moment on first login
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* ── Normal Form UI ── */
+          <div style={{ width: "100%", maxWidth: "360px" }}>
 
           {/* ── Heading ── */}
           <div className="text-center" style={{ marginBottom: "28px" }}>
@@ -425,14 +530,7 @@ export default function SignInPage() {
                 (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
               }}
             >
-              {isLoading ? (
-                <>
-                  <SpinnerIcon />
-                  <span>Signing in…</span>
-                </>
-              ) : (
-                "Sign In"
-              )}
+              Sign In
             </button>
           </form>
 
@@ -457,6 +555,7 @@ export default function SignInPage() {
           </p>
 
         </div>
+        )}
       </div>
     </main>
   );
