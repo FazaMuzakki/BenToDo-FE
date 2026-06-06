@@ -176,23 +176,23 @@ const ChevronRightIcon = () => (
   </svg>
 );
 
-const MoreDotsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+const MoreDotsIcon = ({ size = 14 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <circle cx="5" cy="12" r="2" />
     <circle cx="12" cy="12" r="2" />
     <circle cx="19" cy="12" r="2" />
   </svg>
 );
 
-const TrashIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const TrashIcon = ({ size = 13 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" />
     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
   </svg>
 );
 
-const PenIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const PenIcon = ({ size = 13 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 20h9" />
     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
   </svg>
@@ -606,7 +606,7 @@ export default function DashboardPage() {
 
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
-  
+
   const [isDetailTaskModalOpen, setIsDetailTaskModalOpen] = useState(false);
   const [detailTaskData, setDetailTaskData] = useState<any>(null);
 
@@ -626,8 +626,12 @@ export default function DashboardPage() {
     category: "WORK",
     priority: "MIDLE",
     status: "TO DO",
-    label: "PRIVATE"
+    label: "PRIVATE",
+    tasks: [] as { name: string; level: "EASY" | "MEDIUM" | "HARD" }[],
   });
+  const [newTaskName, setNewTaskName] = useState("");
+  const [newTaskLevel, setNewTaskLevel] = useState<"EASY" | "MEDIUM" | "HARD">("EASY");
+  const [expandedTaskIdx, setExpandedTaskIdx] = useState<number | null>(null);
 
   const loadDashboardData = useCallback(async (silent = false) => {
     if (!hasActiveSession()) {
@@ -1050,10 +1054,7 @@ export default function DashboardPage() {
         >
           <h1 style={{ fontSize: "18px", fontWeight: 400, color: COLOR.text, margin: 0 }}>
             {activeMenu === "dashboard" ? "Dashboard" :
-              activeMenu === "task" ? (selectedTaskId ? "Detail Task" : "Task") :
-                templateView === "create" ? "Create Template" :
-                  templateView === "success" ? "Create Template" :
-                    templateView === "detail" ? "Detail Template" : "Template"}
+              activeMenu === "task" ? (selectedTaskId ? "Detail Task" : "Task") : "Template"}
           </h1>
 
           {/* Search + Notification + Profile */}
@@ -1641,17 +1642,17 @@ export default function DashboardPage() {
                     <col style={{ width: "25%" }} />
                   </colgroup>
                   <thead>
-                    <tr style={{ height: "52px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
+                    <tr style={{ height: "42px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
                       {["TASK", "TASK LEVEL", "DUE DATE", "ACTIONS"].map((h, i) => (
                         <th
                           key={h}
                           style={{
-                            fontSize: "12px",
+                            fontSize: "11px",
                             fontWeight: 600,
                             color: COLOR.mutedDark,
                             textAlign: i === 0 ? "left" : "center",
-                            padding: i === 0 ? "0 16px 0 clamp(58px, 4.5vw, 80px)" : "0 16px",
-                            letterSpacing: "0.02em",
+                            padding: i === 0 ? "0 12px 0 clamp(44px, 3.5vw, 60px)" : "0 12px",
+                            letterSpacing: "0.04em",
                             whiteSpace: "nowrap",
                             verticalAlign: "middle",
                           }}
@@ -1663,14 +1664,14 @@ export default function DashboardPage() {
                   </thead>
                   <tbody>
                     {recentTaskItems.length === 0 ? (
-                      <tr style={{ height: "78px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      <tr style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                         <td
                           colSpan={4}
                           style={{
-                            padding: "0 16px",
+                            padding: "0 12px",
                             textAlign: "center",
                             verticalAlign: "middle",
-                            fontSize: "13px",
+                            fontSize: "12px",
                             fontWeight: 600,
                             color: COLOR.mutedDark,
                           }}
@@ -1679,9 +1680,9 @@ export default function DashboardPage() {
                         </td>
                       </tr>
                     ) : recentTaskItems.map((task) => (
-                      <tr key={task.id ?? task.title} style={{ height: "78px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                        <td style={{ padding: "0 16px 0 clamp(58px, 4.5vw, 80px)", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "24px", minWidth: 0 }}>
+                      <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                        <td style={{ padding: "0 12px 0 clamp(44px, 3.5vw, 60px)", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }}>
                             <input
                               type="checkbox"
                               checked={!!task.done}
@@ -1690,32 +1691,131 @@ export default function DashboardPage() {
                                 void handleToggleTaskStatus(task, e.target.checked);
                               }}
                               style={{
-                                width: "24px",
-                                height: "24px",
+                                width: "18px",
+                                height: "18px",
                                 accentColor: COLOR.primary,
-                                borderRadius: "4px",
+                                borderRadius: "3px",
                                 cursor: "pointer",
                                 flexShrink: 0,
                               }}
                             />
-                            <span style={{ fontSize: "16px", fontWeight: 600, color: COLOR.text, lineHeight: 1.2, overflowWrap: "break-word" }}>{task.title}</span>
+                            <span style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text, lineHeight: 1.3, overflowWrap: "break-word" }}>{task.title}</span>
                           </div>
                         </td>
-                        <td style={{ padding: "0 16px", verticalAlign: "middle", textAlign: "center" }}>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                           <PriorityBadge level={task.level} />
                         </td>
-                        <td style={{ padding: "0 16px", fontSize: "14px", color: COLOR.text, fontWeight: 600, verticalAlign: "middle", textAlign: "center" }}>
+                        <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
                           {task.date}
                         </td>
-                        <td style={{ padding: "0 16px", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px" }}>
-                            <button style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex" }}>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle", position: "relative" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                            {/* 3-dot menu */}
+                            <button
+                              onClick={() => {
+                                setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
+                              }}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f3f4f6"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                            >
                               <MoreDotsIcon />
                             </button>
-                            <button style={{ ...buttonReset, color: "#3b82f6", display: "flex" }}>
+
+                            {/* Dropdown menu for 3-dot */}
+                            {openTaskMenuId === task.id && (
+                              <div style={{
+                                position: "absolute",
+                                top: "100%", right: "60px",
+                                marginTop: "4px",
+                                backgroundColor: "#ffffff",
+                                borderRadius: "8px",
+                                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                border: `1px solid ${COLOR.borderSoft}`,
+                                zIndex: 100,
+                                width: "150px",
+                                display: "flex",
+                                flexDirection: "column",
+                                padding: "6px",
+                              }}>
+                                <button onClick={() => {
+                                  setEditTaskId(task.id ?? null);
+                                  setAddTaskTitle(task.title);
+                                  setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
+                                  setAddTaskDeadline(task.date === "No due date" ? "" : task.date);
+                                  setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
+                                  setIsEditTaskModalOpen(true);
+                                  setOpenTaskMenuId(null);
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                                >
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
+                                  Edit Task
+                                </button>
+                                <button onClick={() => {
+                                  setDetailTaskData({ ...task, description: localTaskMeta[task.id ?? ""]?.description || "" });
+                                  setIsDetailTaskModalOpen(true);
+                                  setOpenTaskMenuId(null);
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                                >
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#f3f4f6", color: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                  </div>
+                                  Detail Task
+                                </button>
+                                <button onClick={() => {
+                                  void handleCompleteTask(task.id ?? "");
+                                  setOpenTaskMenuId(null);
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                                >
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={11} color="currentColor" /></div>
+                                  Complete Task
+                                </button>
+                                <button onClick={() => {
+                                  setDeleteTaskId(task.id ?? null);
+                                  setIsDeleteTaskModalOpen(true);
+                                  setOpenTaskMenuId(null);
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "#ef4444", width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                                >
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#fee2e2", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
+                                  Delete Task
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Edit button */}
+                            <button
+                              onClick={() => {
+                                setEditTaskId(task.id ?? null);
+                                setAddTaskTitle(task.title);
+                                setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
+                                setAddTaskDeadline(task.date === "No due date" ? "" : task.date);
+                                setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
+                                setIsEditTaskModalOpen(true);
+                              }}
+                              style={{ ...buttonReset, color: "#3b82f6", display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#eff6ff"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                            >
                               <PenIcon />
                             </button>
-                            <button style={{ ...buttonReset, color: "#ef4444", display: "flex" }}>
+                            {/* Delete button */}
+                            <button
+                              onClick={() => {
+                                setDeleteTaskId(task.id ?? null);
+                                setIsDeleteTaskModalOpen(true);
+                              }}
+                              style={{ ...buttonReset, color: "#ef4444", display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                            >
                               <TrashIcon />
                             </button>
                             <button
@@ -1727,12 +1827,12 @@ export default function DashboardPage() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                padding: "8px 16px",
-                                minWidth: "110px",
-                                borderRadius: "24px",
-                                border: "1.5px solid #6b7280",
+                                padding: "5px 12px",
+                                minWidth: "85px",
+                                borderRadius: "20px",
+                                border: "1px solid #d1d5db",
                                 backgroundColor: "#ffffff",
-                                fontSize: "13px",
+                                fontSize: "11px",
                                 fontWeight: 600,
                                 color: "#111827",
                                 cursor: "pointer",
@@ -1774,17 +1874,17 @@ export default function DashboardPage() {
                   <col style={{ width: "25%" }} />
                 </colgroup>
                 <thead>
-                  <tr style={{ height: "52px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
+                  <tr style={{ height: "42px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
                     {["TASK", "TASK LEVEL", "DUE DATE", "ACTIONS"].map((h, i) => (
                       <th
                         key={h}
                         style={{
-                          fontSize: "12px",
+                          fontSize: "11px",
                           fontWeight: 600,
                           color: COLOR.mutedDark,
                           textAlign: i === 0 ? "left" : "center",
-                          padding: i === 0 ? "0 16px 0 clamp(58px, 4.5vw, 80px)" : "0 16px",
-                          letterSpacing: "0.02em",
+                          padding: i === 0 ? "0 12px 0 clamp(44px, 3.5vw, 60px)" : "0 12px",
+                          letterSpacing: "0.04em",
                           whiteSpace: "nowrap",
                           verticalAlign: "middle",
                         }}
@@ -1796,14 +1896,14 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {recentTaskItems.length === 0 ? (
-                    <tr style={{ height: "78px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                    <tr style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                       <td
                         colSpan={4}
                         style={{
-                          padding: "0 16px",
+                          padding: "0 12px",
                           textAlign: "center",
                           verticalAlign: "middle",
-                          fontSize: "13px",
+                          fontSize: "12px",
                           fontWeight: 600,
                           color: COLOR.mutedDark,
                         }}
@@ -1812,9 +1912,9 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : recentTaskItems.map((task) => (
-                    <tr key={task.id ?? task.title} style={{ height: "78px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                      <td style={{ padding: "0 16px 0 clamp(58px, 4.5vw, 80px)", verticalAlign: "middle" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "24px", minWidth: 0 }}>
+                    <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      <td style={{ padding: "0 12px 0 clamp(44px, 3.5vw, 60px)", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }}>
                           <input
                             type="checkbox"
                             checked={!!task.done}
@@ -1823,45 +1923,47 @@ export default function DashboardPage() {
                               void handleToggleTaskStatus(task, e.target.checked);
                             }}
                             style={{
-                              width: "24px",
-                              height: "24px",
+                              width: "18px",
+                              height: "18px",
                               accentColor: COLOR.primary,
-                              borderRadius: "4px",
+                              borderRadius: "3px",
                               cursor: "pointer",
                               flexShrink: 0,
                             }}
                           />
-                          <span style={{ fontSize: "16px", fontWeight: 600, color: COLOR.text, lineHeight: 1.2, overflowWrap: "break-word" }}>{task.title}</span>
+                          <span style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text, lineHeight: 1.3, overflowWrap: "break-word" }}>{task.title}</span>
                         </div>
                       </td>
-                      <td style={{ padding: "0 16px", verticalAlign: "middle", textAlign: "center" }}>
+                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                         <PriorityBadge level={task.level} />
                       </td>
-                      <td style={{ padding: "0 16px", fontSize: "14px", color: COLOR.text, fontWeight: 600, verticalAlign: "middle", textAlign: "center" }}>
+                      <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
                         {task.date}
                       </td>
-                      <td style={{ padding: "0 16px", verticalAlign: "middle", position: "relative" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px" }}>
+                      <td style={{ padding: "0 12px", verticalAlign: "middle", position: "relative" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                           <button onClick={() => {
                             setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
-                          }} style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", position: "relative" }}>
+                          }} style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f3f4f6"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                          >
                             <MoreDotsIcon />
                           </button>
                           {openTaskMenuId === task.id && (
                             <div style={{
                               position: "absolute",
-                              top: "100%", left: "50%",
-                              transform: "translateX(-50%)",
-                              marginTop: "8px",
+                              top: "100%", right: "60px",
+                              marginTop: "4px",
                               backgroundColor: "#ffffff",
                               borderRadius: "8px",
                               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                               border: `1px solid ${COLOR.borderSoft}`,
                               zIndex: 100,
-                              width: "160px",
+                              width: "150px",
                               display: "flex",
                               flexDirection: "column",
-                              padding: "8px"
+                              padding: "6px",
                             }}>
                               <button onClick={() => {
                                 setEditTaskId(task.id ?? null);
@@ -1871,36 +1973,45 @@ export default function DashboardPage() {
                                 setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
                                 setIsEditTaskModalOpen(true);
                                 setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "6px", fontSize: "13px", fontWeight: 600, color: COLOR.text }}>
-                                <div style={{ width: "24px", height: "24px", borderRadius: "6px", backgroundColor: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon /></div>
+                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                              >
+                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
                                 Edit Task
                               </button>
-                              <div style={{ height: "1px", backgroundColor: COLOR.borderSoft, margin: "4px 0" }} />
                               <button onClick={() => {
                                 setDetailTaskData({ ...task, description: localTaskMeta[task.id ?? ""]?.description || "" });
                                 setIsDetailTaskModalOpen(true);
                                 setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "6px", fontSize: "13px", fontWeight: 600, color: COLOR.text }}>
-                                <div style={{ width: "24px", height: "24px", borderRadius: "6px", backgroundColor: "#f3f4f6", color: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                              >
+                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#f3f4f6", color: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                                 </div>
                                 Detail Task
                               </button>
-                              <div style={{ height: "1px", backgroundColor: COLOR.borderSoft, margin: "4px 0" }} />
                               <button onClick={() => {
                                 void handleCompleteTask(task.id ?? "");
                                 setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "6px", fontSize: "13px", fontWeight: 600, color: COLOR.text }}>
-                                <div style={{ width: "24px", height: "24px", borderRadius: "6px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={14} color="currentColor" /></div>
+                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                              >
+                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={11} color="currentColor" /></div>
                                 Complete Task
                               </button>
-                              <div style={{ height: "1px", backgroundColor: COLOR.borderSoft, margin: "4px 0" }} />
                               <button onClick={() => {
                                 setDeleteTaskId(task.id ?? null);
                                 setIsDeleteTaskModalOpen(true);
                                 setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "12px", padding: "10px", borderRadius: "6px", fontSize: "13px", fontWeight: 600, color: "#ef4444" }}>
-                                <div style={{ width: "24px", height: "24px", borderRadius: "6px", backgroundColor: "#fee2e2", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon /></div>
+                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "#ef4444", width: "100%", transition: "background-color 0.1s" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                              >
+                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#fee2e2", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
                                 Delete Task
                               </button>
                             </div>
@@ -1915,12 +2026,12 @@ export default function DashboardPage() {
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              padding: "8px 16px",
-                              minWidth: "110px",
-                              borderRadius: "24px",
-                              border: "1.5px solid #6b7280",
+                              padding: "5px 12px",
+                              minWidth: "85px",
+                              borderRadius: "20px",
+                              border: "1px solid #d1d5db",
                               backgroundColor: "#ffffff",
-                              fontSize: "13px",
+                              fontSize: "11px",
                               fontWeight: 600,
                               color: "#111827",
                               cursor: "pointer",
@@ -2210,83 +2321,84 @@ export default function DashboardPage() {
             );
           })()}
 
-          {/* ── Detail Template View ── */}
+          {/* ── Detail Template Pop-up ── */}
           {activeMenu === "template" && templateView === "detail" && selectedCard && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <button
-                onClick={() => {
-                  setSelectedTemplateId(null);
-                  setTemplateView("list");
-                }}
-                style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#111827", fontSize: "14px", fontWeight: 500, fontFamily: "inherit", alignSelf: "flex-start"
-                }}
-              >
-                <ArrowLeftIcon /> Back
-              </button>
+            <div style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.35)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 100, padding: "20px",
+              animation: "dashNotifPop 0.25s ease-out forwards",
+            }}>
+              <div style={{
+                backgroundColor: "#ffffff", borderRadius: "16px",
+                width: "100%", maxWidth: "820px", padding: "32px 36px 36px",
+                position: "relative", maxHeight: "90vh", overflowY: "auto",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              }}>
+                {/* Close Button */}
+                <button
+                  onClick={() => {
+                    setSelectedTemplateId(null);
+                    setTemplateView("list");
+                  }}
+                  style={{
+                    position: "absolute", top: "24px", right: "24px",
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#6b7280", padding: "4px", display: "flex",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#111827"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
 
-              <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flexWrap: "wrap" }}>
-                {/* Left Side: Detail & Tasks */}
-                <div style={{ flex: 1, minWidth: "400px", display: "flex", flexDirection: "column", gap: "24px" }}>
-
-                  {/* Top Card */}
+                {/* Header: Icon + Title + Badge + Description */}
+                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", marginBottom: "28px" }}>
                   <div style={{
-                    backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0",
-                    padding: "32px", position: "relative"
+                    width: "56px", height: "56px", borderRadius: "12px", backgroundColor: "#f3f4f6",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                   }}>
-                    <button style={{
-                      position: "absolute", top: "24px", right: "24px",
-                      width: "36px", height: "36px", borderRadius: "8px",
-                      border: "1px solid #e5e7eb", backgroundColor: "#ffffff",
-                      display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#111827"
-                    }}>
-                      <ShareIcon />
-                    </button>
-
-                    <div style={{ display: "flex", gap: "20px" }}>
-                      <div style={{
-                        width: "80px", height: "80px", borderRadius: "12px", backgroundColor: "#e0e7ff",
-                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                      }}>
-                        <UsersIcon />
-                      </div>
-
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                          <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: 0 }}>{selectedCard.title}</h2>
-                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#6b7280", backgroundColor: "#f3f4f6", padding: "4px 10px", borderRadius: "999px", letterSpacing: "0.04em" }}>{selectedCard.level}</span>
-                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#4f46e5", backgroundColor: "#e0e7ff", padding: "4px 10px", borderRadius: "999px", letterSpacing: "0.04em" }}>WORK</span>
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#4b5563", backgroundColor: "#f3f4f6", padding: "6px 12px", borderRadius: "6px", fontWeight: 500 }}>
-                            <SubtaskIcon /> {selectedCard.subtasks} Subtasks
-                          </span>
-                          <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#4b5563", backgroundColor: "#f3f4f6", padding: "6px 12px", borderRadius: "6px", fontWeight: 500 }}>
-                            <CalendarSmIcon /> No due date
-                          </span>
-                        </div>
-
-                        <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.6, margin: 0, maxWidth: "340px" }}>
-                          {selectedCard.desc}
-                        </p>
-                      </div>
-                    </div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
                   </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                      <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: 0 }}>{selectedCard.title}</h2>
+                      <span style={{
+                        fontSize: "10px", fontWeight: 700, color: "#166534", backgroundColor: "#dcfce7",
+                        padding: "3px 10px", borderRadius: "4px", letterSpacing: "0.04em",
+                      }}>
+                        {selectedCard.level === "HIGH" ? "HIGH" : selectedCard.level === "LOW" ? "LOW" : "MEDIUM"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.5, margin: 0, maxWidth: "500px" }}>
+                      {selectedCard.desc}
+                    </p>
+                  </div>
+                </div>
 
-                  {/* Tasks List Card */}
-                  <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0", padding: "24px" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 24px" }}>Preview Daftar Task</h3>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                {/* Two Column Layout */}
+                <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+                  {/* Left: Template Tasks */}
+                  <div style={{
+                    flex: 1, minWidth: "320px", border: "1px solid #f0f0f0", borderRadius: "12px",
+                    padding: "24px", backgroundColor: "#ffffff",
+                  }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 24px" }}>Template Tasks</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                       {(selectedCard.previewItems?.map((item) => item.title) ?? ["Belum ada preview task"]).map((task, idx) => (
-                        <div key={idx} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div key={idx} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                           <div style={{
-                            width: "24px", height: "24px", borderRadius: "50%", backgroundColor: "#16a34a",
+                            width: "28px", height: "28px", borderRadius: "50%", backgroundColor: "#166534",
                             color: "#ffffff", fontSize: "12px", fontWeight: 700,
-                            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                           }}>
                             {idx + 1}
                           </div>
@@ -2295,73 +2407,94 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   </div>
-                </div>
 
-                {/* Right Side: Template Information */}
-                <div style={{ width: "320px", backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0", padding: "24px" }}>
-                  <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 32px" }}>Template Information</h3>
+                  {/* Right: Template Information */}
+                  <div style={{
+                    width: "300px", flexShrink: 0, border: "1px solid #f0f0f0", borderRadius: "12px",
+                    padding: "24px", backgroundColor: "#ffffff",
+                    display: "flex", flexDirection: "column",
+                  }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 28px" }}>Template Information</h3>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "32px", marginBottom: "40px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "#111827" }}>
-                        <WrenchIcon />
-                        <span style={{ fontSize: "13px", fontWeight: 500, color: "#6b7280" }}>Made by</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "24px", flex: 1 }}>
+                      {/* Created by */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6b7280" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                          <span style={{ fontSize: "13px", fontWeight: 500 }}>Created by</span>
+                        </div>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>BenToDo Official</span>
                       </div>
-                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#111827" }}>BenToDo Official</span>
+
+                      {/* Used */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6b7280" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          <span style={{ fontSize: "13px", fontWeight: 500 }}>Used</span>
+                        </div>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>1.2k times</span>
+                      </div>
+
+                      {/* Last updated */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6b7280" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                          </svg>
+                          <span style={{ fontSize: "13px", fontWeight: 500 }}>Last updated</span>
+                        </div>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>May 12, 2025</span>
+                      </div>
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "#111827" }}>
-                        <MailIcon />
-                        <span style={{ fontSize: "13px", fontWeight: 500, color: "#6b7280" }}>Category</span>
-                      </div>
-                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#111827" }}>Work</span>
+                    {/* Action Buttons */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "32px" }}>
+                      <button
+                        onClick={() => {
+                          void handleUseCard(selectedCard);
+                        }}
+                        style={{
+                          width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "#166534",
+                          color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none",
+                          cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        Use Template
+                      </button>
+                      <button
+                        onClick={() => setNotice("Fitur private custom template perlu endpoint backend tambahan.")}
+                        style={{
+                          width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "#ffffff",
+                          color: "#111827", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb",
+                          cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f9fafb"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ffffff"; }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        Save Template as Private
+                      </button>
                     </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "#111827" }}>
-                        <UsersUpIcon />
-                        <span style={{ fontSize: "13px", fontWeight: 500, color: "#6b7280" }}>Used</span>
-                      </div>
-                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#111827" }}>{selectedCard.subtasks} tasks</span>
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "#111827" }}>
-                        <DownloadSquareIcon />
-                        <span style={{ fontSize: "13px", fontWeight: 500, color: "#6b7280" }}>Last updated</span>
-                      </div>
-                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#111827" }}>Backend API</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <button
-                      onClick={() => {
-                        void handleUseCard(selectedCard);
-                      }}
-                      style={{
-                        width: "100%", height: "40px", borderRadius: "8px", backgroundColor: "#16a34a",
-                        color: "#ffffff", fontSize: "13px", fontWeight: 600, border: "none",
-                        cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s"
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#15803d"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#16a34a"; }}
-                    >
-                      Use Template
-                    </button>
-                    <button
-                      onClick={() => setNotice("Fitur private custom template perlu endpoint backend tambahan.")}
-                      style={{
-                        width: "100%", height: "40px", borderRadius: "8px", backgroundColor: "#ffffff",
-                        color: "#111827", fontSize: "13px", fontWeight: 600, border: "1px solid #e5e7eb",
-                        cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s"
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f9fafb"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ffffff"; }}
-                    >
-                      Save Template to Private
-                    </button>
                   </div>
                 </div>
               </div>
@@ -2369,282 +2502,496 @@ export default function DashboardPage() {
           )}
 
 
-          {/* ── Create Template View ── */}
+          {/* ── Create Template Pop-up ── */}
           {activeMenu === "template" && templateView === "create" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <button
-                onClick={() => setTemplateView("list")}
-                style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#111827", fontSize: "14px", fontWeight: 500, fontFamily: "inherit", alignSelf: "flex-start"
-                }}
-              >
-                <ArrowLeftIcon /> Back
-              </button>
-
+            <div style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.35)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 100, padding: "20px",
+              animation: "dashNotifPop 0.25s ease-out forwards",
+            }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0",
-                padding: "32px", position: "relative", maxWidth: "800px"
+                backgroundColor: "#ffffff", borderRadius: "16px",
+                width: "100%", maxWidth: "640px", padding: "32px 36px 36px",
+                position: "relative", maxHeight: "90vh", overflowY: "auto",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
               }}>
-                <button style={{
-                  position: "absolute", top: "24px", right: "24px",
-                  width: "36px", height: "36px", borderRadius: "8px",
-                  border: "1px solid #e5e7eb", backgroundColor: "#ffffff",
-                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#111827"
-                }}>
-                  <ShareIcon />
+                {/* Close Button */}
+                <button
+                  onClick={() => setTemplateView("list")}
+                  style={{
+                    position: "absolute", top: "24px", right: "24px",
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#6b7280", padding: "4px", display: "flex",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#111827"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                 </button>
 
-                <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", margin: "0 0 8px" }}>Create Template</h2>
-                <p style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 32px" }}>Create a template according to your needs</p>
+                {/* Title */}
+                <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>Create Template</h2>
+                <p style={{ fontSize: "13px", color: "#9ca3af", margin: "0 0 28px" }}>Create a template according to your needs.</p>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                  {/* Name Task */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "8px" }}>Name Task</label>
+                {/* GENERAL INFORMATION */}
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em", marginBottom: "16px" }}>GENERAL INFORMATION</div>
+
+                {/* Template Name */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#111827", marginBottom: "8px" }}>
+                    Template Name <span style={{ color: "#dc2626" }}>*</span>
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", display: "flex" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                    </div>
                     <input
                       type="text"
                       value={newTemplate.title}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, title: e.target.value })}
-                      placeholder="Jadwal Kuliah"
-                      style={{ width: "100%", height: "40px", borderRadius: "8px", border: "1px solid #e5e7eb", padding: "0 16px", fontSize: "13px", fontFamily: "inherit", outline: "none" }}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 100) setNewTemplate({ ...newTemplate, title: e.target.value });
+                      }}
+                      placeholder="Skripsi"
+                      maxLength={100}
+                      style={{
+                        width: "100%", height: "44px", borderRadius: "8px", border: "1px solid #e5e7eb",
+                        padding: "0 50px 0 40px", fontSize: "14px", fontFamily: "inherit", outline: "none",
+                        boxSizing: "border-box", transition: "border-color 0.2s",
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = COLOR.primary; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
                     />
+                    <span style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#16a34a" }}>
+                      {newTemplate.title.length}/100
+                    </span>
                   </div>
+                </div>
 
-                  {/* Deskripsi */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "8px" }}>Deskripsi</label>
-                    <input
-                      type="text"
+                {/* Description */}
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#111827", marginBottom: "8px" }}>Description</label>
+                  <div style={{ position: "relative" }}>
+                    <div style={{ position: "absolute", left: "14px", top: "14px", color: "#9ca3af", display: "flex" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="18" x2="15" y2="18" />
+                      </svg>
+                    </div>
+                    <textarea
                       value={newTemplate.desc}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, desc: e.target.value })}
-                      placeholder="Checklist jadwal kuliah tahun 2024/2025"
-                      style={{ width: "100%", height: "40px", borderRadius: "8px", border: "1px solid #e5e7eb", padding: "0 16px", fontSize: "13px", fontFamily: "inherit", outline: "none" }}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 500) setNewTemplate({ ...newTemplate, desc: e.target.value });
+                      }}
+                      placeholder="Organize your thesis workflow efficiently with structured tasks, milestone tracking, deadlines, and progress monitoring from research proposal to final defense."
+                      maxLength={500}
+                      rows={3}
+                      style={{
+                        width: "100%", borderRadius: "8px", border: "1px solid #e5e7eb",
+                        padding: "12px 14px 12px 40px", fontSize: "13px", fontFamily: "inherit", outline: "none",
+                        boxSizing: "border-box", resize: "vertical", lineHeight: 1.5,
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = COLOR.primary; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
                     />
+                    <span style={{ position: "absolute", right: "14px", bottom: "10px", fontSize: "11px", color: "#16a34a" }}>
+                      {newTemplate.desc.length}/500
+                    </span>
                   </div>
+                </div>
 
-                  {/* Deadline */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "8px" }}>Deadline (Opsional)</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="text"
-                        value={newTemplate.deadline}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, deadline: e.target.value })}
-                        placeholder="22 Juni 2025"
-                        style={{ width: "100%", height: "40px", borderRadius: "8px", border: "1px solid #e5e7eb", padding: "0 16px", fontSize: "13px", fontFamily: "inherit", outline: "none" }}
-                      />
-                      <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#6b7280", display: "flex" }}>
-                        <CalendarLineIcon />
-                      </span>
+                {/* Divider */}
+                <div style={{ height: "1px", backgroundColor: "#f0f0f0", margin: "0 0 24px" }} />
+
+                {/* TEMPLATE TASKS */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em" }}>
+                    TEMPLATE TASKS ({newTemplate.tasks.length})
+                  </span>
+                  <button
+                    onClick={() => {
+                      setNewTemplate({
+                        ...newTemplate,
+                        tasks: [...newTemplate.tasks, { name: "", level: "EASY" }],
+                      });
+                      setExpandedTaskIdx(newTemplate.tasks.length);
+                    }}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "#16a34a", fontSize: "13px", fontWeight: 600, fontFamily: "inherit",
+                      display: "flex", alignItems: "center", gap: "4px",
+                    }}
+                  >
+                    + Add Task
+                  </button>
+                </div>
+
+                {/* Tasks List */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
+                  {newTemplate.tasks.map((task, idx) => (
+                    <div key={idx} style={{
+                      border: "1px solid #e5e7eb", borderRadius: "10px",
+                      overflow: "hidden", transition: "box-shadow 0.2s",
+                    }}>
+                      {/* Task Header */}
+                      <div
+                        style={{
+                          display: "flex", alignItems: "center", gap: "10px",
+                          padding: "12px 16px", backgroundColor: "#fafafa",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => setExpandedTaskIdx(expandedTaskIdx === idx ? null : idx)}
+                      >
+                        {/* Drag handle icon */}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#9ca3af">
+                          <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+                          <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                          <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+                        </svg>
+                        <span style={{ flex: 1, fontSize: "14px", fontWeight: 600, color: "#111827" }}>
+                          {task.name || `Task ${idx + 1}`}
+                        </span>
+                        <span style={{
+                          fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em",
+                          padding: "3px 10px", borderRadius: "4px",
+                          backgroundColor: task.level === "EASY" ? "#dcfce7" : task.level === "MEDIUM" ? "#fef3c7" : "#fee2e2",
+                          color: task.level === "EASY" ? "#166534" : task.level === "MEDIUM" ? "#92400e" : "#991b1b",
+                        }}>
+                          {task.level}
+                        </span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"
+                          style={{ transition: "transform 0.2s", transform: expandedTaskIdx === idx ? "rotate(180deg)" : "rotate(0)" }}>
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </div>
+
+                      {/* Expanded: Edit Task */}
+                      {expandedTaskIdx === idx && (
+                        <div style={{ padding: "16px", borderTop: "1px solid #f0f0f0", backgroundColor: "#ffffff" }}>
+                          <div style={{ marginBottom: "12px" }}>
+                            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>Task Name</label>
+                            <input
+                              type="text"
+                              value={task.name}
+                              onChange={(e) => {
+                                const updated = [...newTemplate.tasks];
+                                updated[idx] = { ...updated[idx], name: e.target.value };
+                                setNewTemplate({ ...newTemplate, tasks: updated });
+                              }}
+                              placeholder="Enter task name"
+                              style={{
+                                width: "100%", height: "36px", borderRadius: "6px", border: "1px solid #e5e7eb",
+                                padding: "0 12px", fontSize: "13px", fontFamily: "inherit", outline: "none",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+                          <div style={{ marginBottom: "12px" }}>
+                            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>Difficulty</label>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              {(["EASY", "MEDIUM", "HARD"] as const).map((lvl) => (
+                                <button
+                                  key={lvl}
+                                  onClick={() => {
+                                    const updated = [...newTemplate.tasks];
+                                    updated[idx] = { ...updated[idx], level: lvl };
+                                    setNewTemplate({ ...newTemplate, tasks: updated });
+                                  }}
+                                  style={{
+                                    padding: "5px 14px", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
+                                    letterSpacing: "0.04em", cursor: "pointer",
+                                    border: task.level === lvl ? "2px solid" : "1px solid #e5e7eb",
+                                    borderColor: task.level === lvl
+                                      ? (lvl === "EASY" ? "#16a34a" : lvl === "MEDIUM" ? "#d97706" : "#dc2626")
+                                      : "#e5e7eb",
+                                    backgroundColor: task.level === lvl
+                                      ? (lvl === "EASY" ? "#dcfce7" : lvl === "MEDIUM" ? "#fef3c7" : "#fee2e2")
+                                      : "#f9fafb",
+                                    color: task.level === lvl
+                                      ? (lvl === "EASY" ? "#166534" : lvl === "MEDIUM" ? "#92400e" : "#991b1b")
+                                      : "#6b7280",
+                                    transition: "all 0.15s",
+                                  }}
+                                >
+                                  {lvl}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const updated = newTemplate.tasks.filter((_, i) => i !== idx);
+                              setNewTemplate({ ...newTemplate, tasks: updated });
+                              setExpandedTaskIdx(null);
+                            }}
+                            style={{
+                              background: "none", border: "none", cursor: "pointer",
+                              color: "#dc2626", fontSize: "12px", fontWeight: 600, fontFamily: "inherit",
+                              padding: "4px 0", display: "flex", alignItems: "center", gap: "4px",
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            Remove Task
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Category */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "12px" }}>Category</label>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {["WORK", "DAILY", "HEALTH", "SHOPPING", "FINANCE", "GOALS"].map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setNewTemplate({ ...newTemplate, category: cat })}
-                          style={{
-                            padding: "6px 16px", borderRadius: "999px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", cursor: "pointer", border: "none",
-                            backgroundColor: newTemplate.category === cat ? "#818cf8" : "#e0e7ff",
-                            color: newTemplate.category === cat ? "#ffffff" : "#6366f1"
-                          }}
-                        >
-                          {cat}
-                        </button>
-                      ))}
+                  ))}
+                  {newTemplate.tasks.length === 0 && (
+                    <div style={{
+                      padding: "20px", textAlign: "center", color: "#9ca3af", fontSize: "13px",
+                      border: "1px dashed #e5e7eb", borderRadius: "10px", backgroundColor: "#fafafa",
+                    }}>
+                      No tasks added yet. Click &quot;+ Add Task&quot; to get started.
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Priority */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "12px" }}>Priority</label>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {["HIGH", "MIDLE", "LOW"].map((pri) => (
-                        <button
-                          key={pri}
-                          onClick={() => setNewTemplate({ ...newTemplate, priority: pri })}
-                          style={{
-                            padding: "6px 16px", borderRadius: "999px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", cursor: "pointer", border: "none",
-                            backgroundColor: newTemplate.priority === pri ? "#e5e7eb" : "#f3f4f6",
-                            color: newTemplate.priority === pri ? "#111827" : "#4b5563"
-                          }}
-                        >
-                          {pri}
-                        </button>
-                      ))}
+                {/* Divider */}
+                <div style={{ height: "1px", backgroundColor: "#f0f0f0", margin: "0 0 24px" }} />
+
+                {/* VISIBILITY LABEL */}
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em", marginBottom: "16px" }}>
+                  VISIBILITY LABEL <span style={{ color: "#dc2626" }}>*</span>
+                </div>
+
+                <div style={{ display: "flex", gap: "12px", marginBottom: "32px" }}>
+                  {/* Public Option */}
+                  <div
+                    onClick={() => setNewTemplate({ ...newTemplate, label: "PUBLIC" })}
+                    style={{
+                      flex: 1, padding: "16px", borderRadius: "10px", cursor: "pointer",
+                      border: newTemplate.label === "PUBLIC" ? "2px solid #166534" : "1px solid #e5e7eb",
+                      backgroundColor: newTemplate.label === "PUBLIC" ? "#f0fdf4" : "#ffffff",
+                      transition: "all 0.2s", display: "flex", alignItems: "center", gap: "12px",
+                    }}
+                  >
+                    <div style={{
+                      width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#f3f4f6",
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                      </svg>
                     </div>
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "12px" }}>Status</label>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {[
-                        { id: "TO DO", bg: "#fecdd3", color: "#be123c", activeBg: "#fb7185", activeColor: "#fff" },
-                        { id: "DONE", bg: "#bbf7d0", color: "#166534", activeBg: "#4ade80", activeColor: "#fff" },
-                        { id: "IN PROGRES", bg: "#e0e7ff", color: "#4338ca", activeBg: "#818cf8", activeColor: "#fff" }
-                      ].map((st) => (
-                        <button
-                          key={st.id}
-                          onClick={() => setNewTemplate({ ...newTemplate, status: st.id })}
-                          style={{
-                            padding: "6px 16px", borderRadius: "999px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", cursor: "pointer", border: "none",
-                            backgroundColor: newTemplate.status === st.id ? st.activeBg : st.bg,
-                            color: newTemplate.status === st.id ? st.activeColor : st.color
-                          }}
-                        >
-                          {st.id}
-                        </button>
-                      ))}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "#111827", marginBottom: "2px" }}>Public</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", lineHeight: 1.4 }}>Anyone in your workspace can view and use</div>
                     </div>
+                    <div style={{
+                      width: "18px", height: "18px", borderRadius: "50%",
+                      border: newTemplate.label === "PUBLIC" ? `5px solid #166534` : "2px solid #d1d5db",
+                      backgroundColor: "#ffffff", flexShrink: 0, transition: "all 0.2s",
+                    }} />
                   </div>
 
-                  {/* Label */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "12px" }}>Label</label>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {[
-                        { id: "PUBLIC", bg: "#e5e7eb", color: "#4b5563", activeBg: "#9ca3af", activeColor: "#fff" },
-                        { id: "PRIVATE", bg: "#dcfce7", color: "#166534", activeBg: "#16a34a", activeColor: "#fff" }
-                      ].map((lbl) => (
-                        <button
-                          key={lbl.id}
-                          onClick={() => setNewTemplate({ ...newTemplate, label: lbl.id })}
-                          style={{
-                            padding: "6px 16px", borderRadius: "999px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", cursor: "pointer", border: "none",
-                            backgroundColor: newTemplate.label === lbl.id ? lbl.activeBg : lbl.bg,
-                            color: newTemplate.label === lbl.id ? lbl.activeColor : lbl.color
-                          }}
-                        >
-                          {lbl.id}
-                        </button>
-                      ))}
+                  {/* Custom (Private) Option */}
+                  <div
+                    onClick={() => setNewTemplate({ ...newTemplate, label: "PRIVATE" })}
+                    style={{
+                      flex: 1, padding: "16px", borderRadius: "10px", cursor: "pointer",
+                      border: newTemplate.label === "PRIVATE" ? "2px solid #166534" : "1px solid #e5e7eb",
+                      backgroundColor: newTemplate.label === "PRIVATE" ? "#f0fdf4" : "#ffffff",
+                      transition: "all 0.2s", display: "flex", alignItems: "center", gap: "12px",
+                    }}
+                  >
+                    <div style={{
+                      width: "36px", height: "36px", borderRadius: "50%",
+                      backgroundColor: newTemplate.label === "PRIVATE" ? "#dcfce7" : "#f3f4f6",
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={newTemplate.label === "PRIVATE" ? "#166534" : "#6b7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
                     </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "#111827", marginBottom: "2px" }}>Custom (Private)</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", lineHeight: 1.4 }}>Only you and people you invite can view and use</div>
+                    </div>
+                    <div style={{
+                      width: "18px", height: "18px", borderRadius: "50%",
+                      border: newTemplate.label === "PRIVATE" ? `5px solid #166534` : "2px solid #d1d5db",
+                      backgroundColor: "#ffffff", flexShrink: 0, transition: "all 0.2s",
+                    }} />
                   </div>
+                </div>
 
-                  {/* Action Buttons */}
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
-                    <button
-                      onClick={() => setTemplateView("list")}
-                      style={{
-                        padding: "10px 32px", borderRadius: "8px", backgroundColor: "#ffffff",
-                        color: "#111827", fontSize: "13px", fontWeight: 600, border: "1px solid #e5e7eb",
-                        cursor: "pointer", fontFamily: "inherit"
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newTask: ViewCard = {
-                          id: templatesList.length + 1,
-                          title: newTemplate.title || "Untitled",
-                          desc: newTemplate.desc || "No description",
-                          level: newTemplate.priority,
-                          subtasks: 6,
-                          type: newTemplate.label === "PRIVATE" ? ["All", "Private"] : ["All", "Public"]
-                        };
-                        setTemplatesList([newTask, ...templatesList]);
-                        setTemplateView("success");
-                      }}
-                      style={{
-                        padding: "10px 32px", borderRadius: "8px", backgroundColor: "#16a34a",
-                        color: "#ffffff", fontSize: "13px", fontWeight: 600, border: "none",
-                        cursor: "pointer", fontFamily: "inherit"
-                      }}
-                    >
-                      Add Template
-                    </button>
-                  </div>
+                {/* Action Buttons */}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                  <button
+                    onClick={() => setTemplateView("list")}
+                    style={{
+                      padding: "10px 32px", borderRadius: "8px", backgroundColor: "#ffffff",
+                      color: "#111827", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb",
+                      cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f9fafb"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ffffff"; }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const newCard: ViewCard = {
+                        id: templatesList.length + 1,
+                        title: newTemplate.title || "Untitled",
+                        desc: newTemplate.desc || "No description",
+                        level: newTemplate.priority,
+                        subtasks: newTemplate.tasks.length || 6,
+                        type: newTemplate.label === "PRIVATE" ? ["All", "Private"] : ["All", "Public"]
+                      };
+                      setTemplatesList([newCard, ...templatesList]);
+                      setTemplateView("success");
+                    }}
+                    style={{
+                      padding: "10px 32px", borderRadius: "8px", backgroundColor: "#166534",
+                      color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none",
+                      cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
+                  >
+                    Create Template
+                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── Success View ── */}
+          {/* ── Success Pop-up ── */}
           {activeMenu === "template" && templateView === "success" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <button
-                onClick={() => setTemplateView("list")}
-                style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#111827", fontSize: "14px", fontWeight: 500, fontFamily: "inherit", alignSelf: "flex-start"
-                }}
-              >
-                <ArrowLeftIcon /> Back
-              </button>
-
+            <div style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.35)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 100, padding: "20px",
+              animation: "dashNotifPop 0.25s ease-out forwards",
+            }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #f0f0f0",
-                padding: "48px 32px", maxWidth: "800px", display: "flex", flexDirection: "column", alignItems: "center"
+                backgroundColor: "#ffffff", borderRadius: "16px",
+                width: "100%", maxWidth: "420px", padding: "36px 32px 32px",
+                position: "relative", textAlign: "center",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
               }}>
-                <SuccessCheckIcon />
+                {/* Close Button */}
+                <button
+                  onClick={() => setTemplateView("list")}
+                  style={{
+                    position: "absolute", top: "20px", right: "20px",
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#6b7280", padding: "4px", display: "flex",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#111827"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
 
-                <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: "24px 0 8px" }}>Template berhasil ditambahkan!</h2>
-                <p style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 32px" }}>all tasks have been added to your task list</p>
+                {/* Success Icon with sparkles */}
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px", position: "relative" }}>
+                  <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
+                    <circle cx="45" cy="45" r="35" stroke="#166534" strokeWidth="5" fill="none" />
+                    <path d="M28 45l10 10 24-24" stroke="#166534" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    {/* Sparkles */}
+                    <path d="M62 12l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#166534" opacity="0.7" />
+                    <circle cx="70" cy="8" r="1.5" fill="#166534" opacity="0.5" />
+                  </svg>
+                </div>
 
+                <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", margin: "0 0 6px" }}>Template added successfully!</h2>
+                <p style={{ fontSize: "13px", color: "#9ca3af", margin: "0 0 24px" }}>All tasks have been added to your task list.</p>
+
+                {/* Summary Card */}
                 <div style={{
-                  width: "100%", maxWidth: "600px", border: "1px solid #e5e7eb", borderRadius: "8px",
-                  padding: "24px", position: "relative", backgroundColor: "#fafafa"
+                  border: "1px solid #e5e7eb", borderRadius: "10px", padding: "20px",
+                  textAlign: "left", backgroundColor: "#fafafa", marginBottom: "24px",
                 }}>
-                  <span style={{
-                    position: "absolute", top: "24px", right: "24px",
-                    fontSize: "10px", fontWeight: 700, color: "#be123c", backgroundColor: "#fecdd3",
-                    padding: "4px 10px", borderRadius: "999px"
-                  }}>
-                    {newTemplate.status}
-                  </span>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
+                  {/* Title with check */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
                     <CheckCircleSolidIcon />
-                    <span style={{ fontSize: "20px", fontWeight: 600, color: "#111827" }}>{newTemplate.title || "Untitled"}</span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>{newTemplate.title || "Untitled"}</span>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginLeft: "40px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <PlusCircleIcon />
-                      <span style={{ fontSize: "13px", color: "#374151" }}>Subtask : 6 tasks added</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {/* Deadline */}
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#6b7280", minWidth: "130px" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        <span style={{ fontSize: "13px" }}>Deadline</span>
+                      </div>
+                      <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{newTemplate.deadline || "June 22, 2025"}</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <PlusCircleIcon />
-                      <span style={{ fontSize: "13px", color: "#374151" }}>Deadline : {newTemplate.deadline || "None"}</span>
+
+                    {/* Level Task */}
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#6b7280", minWidth: "130px" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                          <line x1="4" y1="22" x2="4" y2="15" />
+                        </svg>
+                        <span style={{ fontSize: "13px" }}>Level Task</span>
+                      </div>
+                      <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{newTemplate.priority === "HIGH" ? "High" : newTemplate.priority === "LOW" ? "Low" : "Medium"}</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <PlusCircleIcon />
-                      <span style={{ fontSize: "13px", color: "#374151" }}>Prioritas : {newTemplate.priority}</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <PlusCircleIcon />
-                      <span style={{ fontSize: "13px", color: "#374151", display: "flex", alignItems: "center", gap: "8px" }}>
-                        Label : {newTemplate.label === "PRIVATE" ? "Private" : "Public"}
-                        <span style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: newTemplate.label === "PRIVATE" ? "#16a34a" : "#9ca3af" }} />
-                      </span>
+
+                    {/* Label */}
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#6b7280", minWidth: "130px" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        <span style={{ fontSize: "13px" }}>Label</span>
+                      </div>
+                      <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{newTemplate.label === "PRIVATE" ? "Custom" : "Public"}</span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ width: "100%", maxWidth: "600px", display: "flex", justifyContent: "flex-end", marginTop: "32px" }}>
-                  <button
-                    onClick={() => {
-                      setTemplateFilter(newTemplate.label === "PRIVATE" ? "Private" : "Public");
-                      setTemplateView("list");
-                    }}
-                    style={{
-                      padding: "10px 32px", borderRadius: "8px", backgroundColor: "#16a34a",
-                      color: "#ffffff", fontSize: "13px", fontWeight: 600, border: "none",
-                      cursor: "pointer", fontFamily: "inherit"
-                    }}
-                  >
-                    See Template
-                  </button>
-                </div>
+                {/* View Template Button */}
+                <button
+                  onClick={() => {
+                    setTemplateFilter(newTemplate.label === "PRIVATE" ? "Private" : "Public");
+                    setTemplateView("list");
+                  }}
+                  style={{
+                    width: "100%", height: "44px", borderRadius: "8px", backgroundColor: "#166534",
+                    color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none",
+                    cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
+                >
+                  View Template
+                </button>
               </div>
             </div>
           )}
@@ -2923,7 +3270,7 @@ export default function DashboardPage() {
                 <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#b91c1c" }}>
                   <AlertTriangleIcon size={32} color="currentColor" />
                 </div>
-                
+
                 <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 12px", color: COLOR.text }}>Delete Task?</h2>
                 <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 32px", lineHeight: 1.5 }}>
                   Are you sure you want to delete this task? This action cannot be undone.
