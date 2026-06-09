@@ -504,6 +504,11 @@ const templatesData = [
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 type PriorityLevel = "HIGH" | "MEDIUM" | "LOW";
+type TaskFilter = "All" | "Active" | "Overdue" | "Done";
+type TaskSort = "created_desc" | "created_asc" | "deadline_asc" | "deadline_desc" | "level_easy" | "level_hard";
+
+const TASK_TITLE_MAX = 80;
+const TASK_DESCRIPTION_MAX = 500;
 
 type ViewTask = {
   id?: string;
@@ -513,6 +518,8 @@ type ViewTask = {
   date: string;
   done?: boolean;
   status?: TaskStatus;
+  deadlineRaw?: string | null;
+  createdAt?: string;
 };
 
 type DetailTaskData = ViewTask & {
@@ -557,14 +564,43 @@ const formatDate = (value: string | null) => {
   }).format(new Date(value));
 };
 
+const formatTaskDate = (value: string | null) => {
+  if (!value) return "No due date";
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+};
+
+const toDatetimeLocalValue = (value: string | null | undefined) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const toIsoDeadline = (value: string) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+};
+
 const mapTaskToViewTask = (task: Task): ViewTask => ({
   id: task.id,
   title: task.title,
   level: mapEnergyToLevel(task.energy_weight),
   subtask: task.source_template ? `Template: ${task.source_template}` : task.status,
-  date: formatDate(task.deadline),
+  date: formatTaskDate(task.deadline),
   done: task.status === "done",
   status: task.status,
+  deadlineRaw: task.deadline,
+  createdAt: task.created_at,
 });
 
 const mapTemplateToCard = (template: TaskTemplate, index: number): ViewCard => ({
@@ -607,6 +643,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<"Daily" | "Weekly" | "Monthly" | "Yearly">("Weekly");
   const [templateFilter, setTemplateFilter] = useState<TemplateFilter>("Official");
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("All");
+  const [taskSort, setTaskSort] = useState<TaskSort>("created_desc");
+  const [taskSortOpen, setTaskSortOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
   const [searchTask, setSearchTask] = useState("");
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
@@ -639,6 +679,7 @@ export default function DashboardPage() {
 
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
+  const [deleteTemplateId, setDeleteTemplateId] = useState<number | null>(null);
 
   const [openTaskMenuId, setOpenTaskMenuId] = useState<string | null>(null);
 
@@ -654,6 +695,19 @@ export default function DashboardPage() {
     label: TemplateFilter;
     taskCount: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    const syncCurrentTime = () => setCurrentTime(Date.now());
+    syncCurrentTime();
+    const timer = window.setInterval(syncCurrentTime, 60000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const loadDashboardData = useCallback(async (silent = false) => {
     if (!hasActiveSession()) {
@@ -746,6 +800,33 @@ export default function DashboardPage() {
   const emptyRecentTaskMessage = searchTask.trim()
     ? "Task tidak ditemukan"
     : "Belum ada task";
+  const taskListItems = useMemo<ViewTask[]>(() => {
+    const levelRank: Record<PriorityLevel, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
+    const byFilter = filteredTasks.filter((task) => {
+      const isDone = task.status === "done";
+      const deadlineTime = task.deadlineRaw ? new Date(task.deadlineRaw).getTime() : null;
+      const isOverdue = !isDone && currentTime > 0 && deadlineTime !== null && deadlineTime < currentTime;
+
+      if (taskFilter === "Done") return isDone;
+      if (taskFilter === "Overdue") return isOverdue;
+      if (taskFilter === "Active") return !isDone && !isOverdue;
+      return true;
+    });
+
+    return [...byFilter].sort((a, b) => {
+      if (taskSort === "created_asc") return new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime();
+      if (taskSort === "deadline_asc") return new Date(a.deadlineRaw ?? "9999-12-31").getTime() - new Date(b.deadlineRaw ?? "9999-12-31").getTime();
+      if (taskSort === "deadline_desc") return new Date(b.deadlineRaw ?? 0).getTime() - new Date(a.deadlineRaw ?? 0).getTime();
+      if (taskSort === "level_easy") return levelRank[a.level] - levelRank[b.level];
+      if (taskSort === "level_hard") return levelRank[b.level] - levelRank[a.level];
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+    });
+  }, [currentTime, filteredTasks, taskFilter, taskSort]);
+  const emptyTaskListMessage = searchTask.trim()
+    ? "Task tidak ditemukan"
+    : taskFilter === "All"
+      ? "Belum ada task"
+      : `Belum ada task ${taskFilter.toLowerCase()}.`;
 
   const taskCards = useMemo(() => {
     return apiTasks.map(mapTaskToCard);
@@ -754,6 +835,7 @@ export default function DashboardPage() {
   const cardItems = activeMenu === "task" ? taskCards : templatesList;
   const selectedCard = templatesList.find((item) => item.id === selectedTemplateId) ?? null;
   const editingTemplate = templatesList.find((item) => item.id === editingTemplateId) ?? null;
+  const deleteTemplateTarget = templatesList.find((item) => item.id === deleteTemplateId) ?? null;
   const currentUserId = getStoredUser()?.id ?? null;
   const visibleTemplateCards = templatesList.filter((item) =>
     templateFilter === "Manage"
@@ -836,13 +918,13 @@ export default function DashboardPage() {
 
   const handleDeleteCustomTemplate = async (item: ViewCard) => {
     if (!item.templateId) return;
-    if (!window.confirm(`Hapus template "${item.title}"?`)) return;
 
     setIsActionLoading(true);
     try {
       await deleteCustomTemplate(item.templateId);
       await loadDashboardData(true);
       setTemplateFilter("Manage");
+      setDeleteTemplateId(null);
       setNotice("Template berhasil dihapus.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Gagal menghapus template.");
@@ -931,6 +1013,20 @@ export default function DashboardPage() {
     }
   };
 
+  const openTaskEditModal = (task: ViewTask) => {
+    setEditTaskId(task.id ?? null);
+    setAddTaskTitle(task.title);
+    setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
+    setAddTaskDeadline(toDatetimeLocalValue(task.deadlineRaw));
+    setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
+    setIsEditTaskModalOpen(true);
+  };
+
+  const openTaskDetailModal = (task: ViewTask) => {
+    setDetailTaskData({ ...task, description: localTaskMeta[task.id ?? ""]?.description || "" });
+    setIsDetailTaskModalOpen(true);
+  };
+
   const handleCreateTask = async () => {
     if (!addTaskTitle.trim()) {
       setNotice("Nama tugas tidak boleh kosong.");
@@ -941,7 +1037,7 @@ export default function DashboardPage() {
       const result = await createTask({
         title: addTaskTitle,
         energy_weight: addTaskEnergy,
-        deadline: addTaskDeadline || null,
+        deadline: toIsoDeadline(addTaskDeadline),
       });
       // Store description and subtasks locally
       if (result?.data?.id) {
@@ -979,7 +1075,7 @@ export default function DashboardPage() {
       await updateTask(editTaskId, {
         title: addTaskTitle,
         energy_weight: addTaskEnergy,
-        deadline: addTaskDeadline || null,
+        deadline: toIsoDeadline(addTaskDeadline),
       });
       setLocalTaskMeta(prev => ({
         ...prev,
@@ -1019,6 +1115,7 @@ export default function DashboardPage() {
     setIsActionLoading(true);
     try {
       await updateTask(taskId, { status: "done" });
+      setTaskFilter("Done");
       setNotice("Tugas berhasil diselesaikan.");
       await loadDashboardData(true);
     } catch (error) {
@@ -1384,7 +1481,7 @@ export default function DashboardPage() {
                         {t}
                       </button>
                     ))
-                  ) : (
+                  ) : activeMenu === "template" ? (
                     <>
                       <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "#F1F1F1", padding: "2px", overflow: "hidden" }}>
                         {(["Official", "Public", "Private"] as const).map((t) => (
@@ -1427,6 +1524,101 @@ export default function DashboardPage() {
                       >
                         Manage
                       </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ position: "relative" }}>
+                        <button
+                          onClick={() => setTaskSortOpen((value) => !value)}
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "4px",
+                            border: `1px solid ${COLOR.border}`,
+                            backgroundColor: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            color: COLOR.text,
+                          }}
+                          aria-label="Sort task"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18" />
+                            <path d="M7 12h10" />
+                            <path d="M10 18h4" />
+                          </svg>
+                        </button>
+                        {taskSortOpen && (
+                          <div style={{
+                            position: "absolute",
+                            top: "42px",
+                            right: 0,
+                            width: "218px",
+                            border: `1px solid ${COLOR.borderSoft}`,
+                            borderRadius: "8px",
+                            backgroundColor: "#ffffff",
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                            zIndex: 60,
+                            padding: "6px",
+                          }}>
+                            {[
+                              { value: "created_desc", label: "Tanggal dibuat terbaru" },
+                              { value: "created_asc", label: "Tanggal dibuat terlama" },
+                              { value: "deadline_asc", label: "Tenggat terdekat" },
+                              { value: "deadline_desc", label: "Tenggat terjauh" },
+                              { value: "level_easy", label: "Tingkat termudah" },
+                              { value: "level_hard", label: "Tingkat tersulit" },
+                            ].map((item) => (
+                              <button
+                                key={item.value}
+                                onClick={() => {
+                                  setTaskSort(item.value as TaskSort);
+                                  setTaskSortOpen(false);
+                                }}
+                                style={{
+                                  width: "100%",
+                                  border: "none",
+                                  borderRadius: "6px",
+                                  backgroundColor: taskSort === item.value ? "#ECFFF0" : "transparent",
+                                  color: taskSort === item.value ? COLOR.primary : COLOR.text,
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  fontSize: "12px",
+                                  fontWeight: taskSort === item.value ? 700 : 500,
+                                  textAlign: "left",
+                                  padding: "9px 10px",
+                                }}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "#F1F1F1", padding: "2px", overflow: "hidden" }}>
+                        {(["All", "Active", "Overdue", "Done"] as const).map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => setTaskFilter(t)}
+                            style={{
+                              width: t === "Overdue" ? "76px" : "64px",
+                              height: "32px",
+                              fontSize: "11px",
+                              fontWeight: taskFilter === t ? 600 : 400,
+                              fontFamily: "inherit",
+                              color: COLOR.text,
+                              backgroundColor: taskFilter === t ? COLOR.surface : "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              transition: "all 0.15s",
+                            }}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
                     </>
                   )}
                 </div>
@@ -1900,7 +2092,7 @@ export default function DashboardPage() {
                                   setEditTaskId(task.id ?? null);
                                   setAddTaskTitle(task.title);
                                   setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
-                                  setAddTaskDeadline(task.date === "No due date" ? "" : task.date);
+                                  setAddTaskDeadline(toDatetimeLocalValue(task.deadlineRaw));
                                   setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
                                   setIsEditTaskModalOpen(true);
                                   setOpenTaskMenuId(null);
@@ -1954,7 +2146,7 @@ export default function DashboardPage() {
                                 setEditTaskId(task.id ?? null);
                                 setAddTaskTitle(task.title);
                                 setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
-                                setAddTaskDeadline(task.date === "No due date" ? "" : task.date);
+                                setAddTaskDeadline(toDatetimeLocalValue(task.deadlineRaw));
                                 setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
                                 setIsEditTaskModalOpen(true);
                               }}
@@ -2009,7 +2201,7 @@ export default function DashboardPage() {
                                 }
                               }}
                             >
-                              Mulai Fokus
+                              Start Focus
                             </button>
                           </div>
                         </td>
@@ -2023,25 +2215,26 @@ export default function DashboardPage() {
 
           {/* ── Task View (List) ── */}
           {activeMenu === "task" && !selectedTaskId && templateView === "list" && (
-            <div style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "hidden" }}>
+            <div style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "visible" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                 <colgroup>
-                  <col style={{ width: "35%" }} />
-                  <col style={{ width: "20%" }} />
-                  <col style={{ width: "20%" }} />
-                  <col style={{ width: "25%" }} />
+                  <col style={{ width: "72px" }} />
+                  <col style={{ width: "auto" }} />
+                  <col style={{ width: "170px" }} />
+                  <col style={{ width: "220px" }} />
+                  <col style={{ width: "250px" }} />
                 </colgroup>
                 <thead>
                   <tr style={{ height: "42px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
-                    {["TASK", "TASK LEVEL", "DUE DATE", "ACTIONS"].map((h, i) => (
+                    {["NO", "TASK", "TASK LEVEL", "DUE DATE", "ACTIONS"].map((h, i) => (
                       <th
                         key={h}
                         style={{
                           fontSize: "11px",
                           fontWeight: 600,
                           color: COLOR.mutedDark,
-                          textAlign: i === 0 ? "left" : "center",
-                          padding: i === 0 ? "0 12px 0 clamp(44px, 3.5vw, 60px)" : "0 12px",
+                          textAlign: i === 1 ? "left" : "center",
+                          padding: "0 12px",
                           letterSpacing: "0.04em",
                           whiteSpace: "nowrap",
                           verticalAlign: "middle",
@@ -2053,10 +2246,10 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentTaskItems.length === 0 ? (
+                  {taskListItems.length === 0 ? (
                     <tr style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         style={{
                           padding: "0 12px",
                           textAlign: "center",
@@ -2066,31 +2259,16 @@ export default function DashboardPage() {
                           color: COLOR.mutedDark,
                         }}
                       >
-                        {emptyRecentTaskMessage}
+                        {emptyTaskListMessage}
                       </td>
                     </tr>
-                  ) : recentTaskItems.map((task) => (
+                  ) : taskListItems.map((task, index) => (
                     <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                      <td style={{ padding: "0 12px 0 clamp(44px, 3.5vw, 60px)", verticalAlign: "middle" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }}>
-                          <input
-                            type="checkbox"
-                            checked={!!task.done}
-                            disabled={isActionLoading}
-                            onChange={(e) => {
-                              void handleToggleTaskStatus(task, e.target.checked);
-                            }}
-                            style={{
-                              width: "18px",
-                              height: "18px",
-                              accentColor: COLOR.primary,
-                              borderRadius: "3px",
-                              cursor: "pointer",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text, lineHeight: 1.3, overflowWrap: "break-word" }}>{task.title}</span>
-                        </div>
+                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ padding: "0 12px", verticalAlign: "middle" }}>
+                        <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
                       </td>
                       <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                         <PriorityBadge level={task.level} />
@@ -2098,38 +2276,38 @@ export default function DashboardPage() {
                       <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
                         {task.date}
                       </td>
-                      <td style={{ padding: "0 12px", verticalAlign: "middle", position: "relative" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", position: "relative" }}>
+                          <button
+                            onClick={() => openTaskDetailModal(task)}
+                            style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                            aria-label="Detail task"
+                          >
+                            <EyeOutlineIcon />
+                          </button>
                           <button onClick={() => {
                             setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
-                          }} style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f3f4f6"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                          }} style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, color: COLOR.mutedDark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                           >
                             <MoreDotsIcon />
                           </button>
                           {openTaskMenuId === task.id && (
                             <div style={{
                               position: "absolute",
-                              top: "100%", right: "60px",
-                              marginTop: "4px",
+                              top: "40px",
+                              right: 0,
                               backgroundColor: "#ffffff",
                               borderRadius: "8px",
                               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                               border: `1px solid ${COLOR.borderSoft}`,
-                              zIndex: 100,
-                              width: "150px",
+                              zIndex: 300,
+                              width: "142px",
                               display: "flex",
                               flexDirection: "column",
                               padding: "6px",
                             }}>
                               <button onClick={() => {
-                                setEditTaskId(task.id ?? null);
-                                setAddTaskTitle(task.title);
-                                setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
-                                setAddTaskDeadline(task.date === "No due date" ? "" : task.date);
-                                setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
-                                setIsEditTaskModalOpen(true);
+                                openTaskEditModal(task);
                                 setOpenTaskMenuId(null);
                               }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
@@ -2139,19 +2317,6 @@ export default function DashboardPage() {
                                 Edit Task
                               </button>
                               <button onClick={() => {
-                                setDetailTaskData({ ...task, description: localTaskMeta[task.id ?? ""]?.description || "" });
-                                setIsDetailTaskModalOpen(true);
-                                setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-                              >
-                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#f3f4f6", color: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                                </div>
-                                Detail Task
-                              </button>
-                              <button onClick={() => {
                                 void handleCompleteTask(task.id ?? "");
                                 setOpenTaskMenuId(null);
                               }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
@@ -2159,7 +2324,7 @@ export default function DashboardPage() {
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                               >
                                 <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={11} color="currentColor" /></div>
-                                Complete Task
+                                Done
                               </button>
                               <button onClick={() => {
                                 setDeleteTaskId(task.id ?? null);
@@ -2176,39 +2341,26 @@ export default function DashboardPage() {
                           )}
 
                           <button
-                            disabled={isActionLoading}
-                            onClick={() => {
-                              void handleStartFocus(task.id);
-                            }}
+                            onClick={() => setNotice("Fitur focus timer akan disambungkan di menu Focus.")}
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              padding: "5px 12px",
-                              minWidth: "85px",
+                              height: "34px",
+                              minWidth: "92px",
+                              padding: "0 14px",
                               borderRadius: "20px",
                               border: "1px solid #d1d5db",
                               backgroundColor: "#ffffff",
                               fontSize: "11px",
-                              fontWeight: 600,
-                              color: "#111827",
+                              fontWeight: 700,
+                              color: COLOR.text,
                               cursor: "pointer",
                               fontFamily: "inherit",
                               whiteSpace: "nowrap",
-                              transition: "all 0.15s"
+                              transition: "all 0.15s",
                             }}
-                            onMouseEnter={(e) => {
-                              if (!isActionLoading) {
-                                e.currentTarget.style.backgroundColor = "#f9fafb";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isActionLoading) {
-                                e.currentTarget.style.backgroundColor = "#ffffff";
-                              }
-                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
                           >
-                            Mulai Fokus
+                            Start Focus
                           </button>
                         </div>
                       </td>
@@ -2220,7 +2372,7 @@ export default function DashboardPage() {
           )}
 
           {/* ── Template View ── */}
-          {activeMenu === "template" && templateView !== "success" && (
+          {activeMenu === "template" && (templateView === "list" || templateView === "success") && (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {templateFilter === "Manage" ? (
                 <div style={{
@@ -2310,9 +2462,7 @@ export default function DashboardPage() {
                                     <PenIcon />
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      void handleDeleteCustomTemplate(item);
-                                    }}
+                                    onClick={() => setDeleteTemplateId(item.id)}
                                     style={{ width: "36px", height: "36px", borderRadius: "7px", border: "1px solid #FECACA", backgroundColor: "#FFF5F6", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#DC2626" }}
                                   >
                                     <TrashIcon />
@@ -2327,7 +2477,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "clamp(28px, 3vw, 44px)", alignItems: "start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "clamp(28px, 3vw, 44px)", alignItems: "stretch" }}>
                 {visibleTemplateCards
                   .map((item) => {
                     const badgeLabel = item.templateLabel ?? item.level;
@@ -2340,7 +2490,7 @@ export default function DashboardPage() {
                     return (
                     <div key={item.id} style={{
                       width: "100%",
-                      minHeight: "258px",
+                      height: "304px",
                       backgroundColor: COLOR.surface,
                       borderRadius: "7px",
                       border: `1px solid ${COLOR.border}`,
@@ -2374,6 +2524,10 @@ export default function DashboardPage() {
                         marginBottom: "10px",
                         marginTop: 0,
                         lineHeight: 1.25,
+                        overflow: "hidden",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
                         overflowWrap: "anywhere",
                         wordBreak: "break-word",
                       }}>
@@ -2394,7 +2548,7 @@ export default function DashboardPage() {
                         {item.desc}
                       </p>
                       {item.createdBy && (
-                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "-12px 0 18px", fontWeight: 700, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "-12px 0 18px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
                         </p>
                       )}
@@ -3068,12 +3222,16 @@ export default function DashboardPage() {
                     value={addTaskTitle}
                     onChange={(e) => setAddTaskTitle(e.target.value)}
                     placeholder="Enter Name Task"
+                    maxLength={TASK_TITLE_MAX}
                     style={{
                       width: "100%", height: "48px", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
                       padding: "0 16px", fontSize: "14px", color: COLOR.text, outline: "none",
                       boxSizing: "border-box"
                     }}
                   />
+                  <div style={{ marginTop: "6px", textAlign: "right", fontSize: "11px", fontWeight: 600, color: COLOR.primary }}>
+                    {addTaskTitle.length}/{TASK_TITLE_MAX}
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -3086,6 +3244,7 @@ export default function DashboardPage() {
                     value={addTaskDesc}
                     onChange={(e) => setAddTaskDesc(e.target.value)}
                     placeholder="Deskripsi"
+                    maxLength={TASK_DESCRIPTION_MAX}
                     rows={3}
                     style={{
                       width: "100%", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
@@ -3093,6 +3252,9 @@ export default function DashboardPage() {
                       boxSizing: "border-box", fontFamily: "inherit", resize: "vertical", minHeight: "80px"
                     }}
                   />
+                  <div style={{ marginTop: "6px", textAlign: "right", fontSize: "11px", fontWeight: 600, color: COLOR.primary }}>
+                    {addTaskDesc.length}/{TASK_DESCRIPTION_MAX}
+                  </div>
                 </div>
 
                 {/* Due Date */}
@@ -3101,7 +3263,7 @@ export default function DashboardPage() {
                     <CalendarSmIcon /> Due Date
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={addTaskDeadline}
                     onChange={(e) => setAddTaskDeadline(e.target.value)}
                     style={{
@@ -3208,7 +3370,7 @@ export default function DashboardPage() {
                       setEditTaskId(detailTaskData.id ?? null);
                       setAddTaskTitle(detailTaskData.title);
                       setAddTaskDesc(detailTaskData.description || "");
-                      setAddTaskDeadline(detailTaskData.date === "No due date" ? "" : detailTaskData.date);
+                      setAddTaskDeadline(toDatetimeLocalValue(detailTaskData.deadlineRaw));
                       setAddTaskEnergy(detailTaskData.level === "LOW" ? "Ringan" : detailTaskData.level === "MEDIUM" ? "Sedang" : "Berat");
                       setIsDetailTaskModalOpen(false);
                       setIsEditTaskModalOpen(true);
@@ -3251,7 +3413,7 @@ export default function DashboardPage() {
                       setEditTaskId(detailTaskData.id ?? null);
                       setAddTaskTitle(detailTaskData.title);
                       setAddTaskDesc(detailTaskData.description || "");
-                      setAddTaskDeadline(detailTaskData.date === "No due date" ? "" : detailTaskData.date);
+                      setAddTaskDeadline(toDatetimeLocalValue(detailTaskData.deadlineRaw));
                       setAddTaskEnergy(detailTaskData.level === "LOW" ? "Ringan" : detailTaskData.level === "MEDIUM" ? "Sedang" : "Berat");
                       setIsDetailTaskModalOpen(false);
                       setIsEditTaskModalOpen(true);
@@ -3315,6 +3477,56 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => void handleDeleteTask()}
+                    disabled={isActionLoading}
+                    style={{
+                      flex: 1, height: "44px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                      backgroundColor: "#b91c1c", color: "#ffffff",
+                      fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer",
+                      opacity: isActionLoading ? 0.7 : 1, transition: "opacity 0.2s"
+                    }}
+                  >
+                    <TrashIcon /> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Template Modal */}
+          {deleteTemplateTarget && (
+            <div style={{
+              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 100, padding: "20px"
+            }}>
+              <div style={{
+                backgroundColor: "#ffffff", borderRadius: "12px",
+                width: "100%", maxWidth: "400px", padding: "40px 32px 32px",
+                display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center"
+              }}>
+                <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#b91c1c" }}>
+                  <AlertTriangleIcon size={32} color="currentColor" />
+                </div>
+
+                <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 12px", color: COLOR.text }}>Delete Template?</h2>
+                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 32px", lineHeight: 1.5 }}>
+                  Are you sure you want to delete template &quot;{deleteTemplateTarget.title}&quot;? This action cannot be undone.
+                </p>
+
+                <div style={{ display: "flex", width: "100%", gap: "16px", justifyContent: "center" }}>
+                  <button
+                    onClick={() => setDeleteTemplateId(null)}
+                    style={{
+                      flex: 1, height: "44px", borderRadius: "8px",
+                      backgroundColor: "transparent", color: COLOR.mutedDark,
+                      fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => void handleDeleteCustomTemplate(deleteTemplateTarget)}
                     disabled={isActionLoading}
                     style={{
                       flex: 1, height: "44px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
