@@ -18,6 +18,7 @@ import {
   createTask,
   createTemplate,
 } from "../lib/api";
+import CreateTemplateModal, { type CreateTemplateModalPayload } from "../components/CreateTemplateModal";
 import { LOGO_SRC } from "../lib/assets";
 import type { EnergyWeight, Task, TaskStatus, TaskTemplate } from "../lib/api";
 
@@ -488,12 +489,12 @@ function isSameDay(a: Date, b: Date) {
 // ─── Template Data ────────────────────────────────────────────────────────────
 
 const templatesData = [
-  { id: 1, title: "Weekly Design Sprint", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "HIGH", subtasks: 2, type: ["All", "Public"] },
-  { id: 2, title: "Proyek Kelompok", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "MIDLE", subtasks: 4, type: ["All", "Private"] },
-  { id: 3, title: "Rencana Belajar Semester", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "LOW", subtasks: 3, type: ["All", "Public"] },
-  { id: 4, title: "Menulis Skripsi", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "HIGH", subtasks: 4, type: ["All", "Private"] },
-  { id: 5, title: "Persiapan Ujian", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "LOW", subtasks: 2, type: ["All"] },
-  { id: 6, title: "Persiapan Presentasi", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "MIDLE", subtasks: 5, type: ["All", "Public", "Private"] },
+  { id: 1, title: "Weekly Design Sprint", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "OFFICIAL", subtasks: 2, type: ["Official"] },
+  { id: 2, title: "Proyek Kelompok", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "MEDIUM", subtasks: 4, type: ["Private"] },
+  { id: 3, title: "Rencana Belajar Semester", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "LOW", subtasks: 3, type: ["Public"] },
+  { id: 4, title: "Menulis Skripsi", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "HIGH", subtasks: 4, type: ["Private"] },
+  { id: 5, title: "Persiapan Ujian", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "OFFICIAL", subtasks: 2, type: ["Official"] },
+  { id: 6, title: "Persiapan Presentasi", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "MEDIUM", subtasks: 5, type: ["Public"] },
   { id: 7, title: "Project PKM Mahasiswa", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "HIGH", subtasks: 4, type: ["Private"] },
 ];
 
@@ -515,6 +516,8 @@ type DetailTaskData = ViewTask & {
   description?: string;
 };
 
+type TemplateFilter = "Official" | "Public" | "Private";
+
 type ViewCard = {
   id: number;
   backendKey?: string;
@@ -534,18 +537,6 @@ const mapEnergyToLevel = (energyWeight: EnergyWeight): PriorityLevel => {
   if (energyWeight === "Berat") return "HIGH";
   if (energyWeight === "Sedang") return "MEDIUM";
   return "LOW";
-};
-
-const mapTemplateTaskLevelToEnergy = (level: "EASY" | "MEDIUM" | "HARD"): EnergyWeight => {
-  if (level === "HARD") return "Berat";
-  if (level === "MEDIUM") return "Sedang";
-  return "Ringan";
-};
-
-const mapTemplatePriorityToLevel = (priority: string): "Low" | "Medium" | "High" => {
-  if (priority === "HIGH") return "High";
-  if (priority === "LOW") return "Low";
-  return "Medium";
 };
 
 const formatDate = (value: string | null) => {
@@ -575,7 +566,7 @@ const mapTemplateToCard = (template: TaskTemplate, index: number): ViewCard => (
   desc: template.description || "Template siap pakai untuk mempercepat perencanaan tugas.",
   level: template.is_official ? "OFFICIAL" : (template.level ?? "Medium").toUpperCase(),
   subtasks: template.total_items,
-  type: ["All", template.visibility === "private" ? "Private" : "Public"],
+  type: [template.is_official ? "Official" : template.visibility === "private" ? "Private" : "Public"],
   previewItems: template.preview_items ?? template.items ?? [],
   createdBy: template.created_by?.display_name || template.created_by?.email || (template.is_official ? "BenToDo Official" : "Unknown"),
   usage: `${(template.usage_count ?? 0).toLocaleString("en-US")} times`,
@@ -602,7 +593,7 @@ const getDisplayName = () => {
 export default function DashboardPage() {
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<"Daily" | "Weekly" | "Monthly" | "Yearly">("Weekly");
-  const [templateFilter, setTemplateFilter] = useState<"All" | "Public" | "Private">("All");
+  const [templateFilter, setTemplateFilter] = useState<TemplateFilter>("Official");
   const [searchTask, setSearchTask] = useState("");
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
@@ -642,19 +633,12 @@ export default function DashboardPage() {
   const [newSubtaskText, setNewSubtaskText] = useState("");
   const [localTaskMeta, setLocalTaskMeta] = useState<Record<string, { description: string; subtasks: { text: string; done: boolean }[] }>>({});
 
-  const [newTemplate, setNewTemplate] = useState({
-    title: "",
-    desc: "",
-    deadline: "",
-    category: "WORK",
-    priority: "MIDLE",
-    status: "TO DO",
-    label: "PRIVATE",
-    tasks: [] as { name: string; level: "EASY" | "MEDIUM" | "HARD" }[],
-  });
-  const [newTaskName, setNewTaskName] = useState("");
-  const [newTaskLevel, setNewTaskLevel] = useState<"EASY" | "MEDIUM" | "HARD">("EASY");
-  const [expandedTaskIdx, setExpandedTaskIdx] = useState<number | null>(null);
+  const [templateFormError, setTemplateFormError] = useState<string | null>(null);
+  const [createdTemplateSummary, setCreatedTemplateSummary] = useState<{
+    title: string;
+    label: TemplateFilter;
+    taskCount: number;
+  } | null>(null);
 
   const loadDashboardData = useCallback(async (silent = false) => {
     if (!hasActiveSession()) {
@@ -758,44 +742,28 @@ export default function DashboardPage() {
   const upcomingDeadlineCount = deadlineStats.upcoming;
   const overdueCount = deadlineStats.overdue;
 
-  const handleCreateCustomTemplate = async () => {
-    if (!newTemplate.title.trim()) {
-      setNotice("Nama template wajib diisi.");
-      return;
-    }
-
-    const validTasks = newTemplate.tasks
-      .map((task) => ({
-        ...task,
-        name: task.name.trim(),
-      }))
-      .filter((task) => task.name);
-
-    if (!validTasks.length) {
-      setNotice("Minimal tambahkan 1 task template.");
-      return;
-    }
-
+  const handleCreateCustomTemplate = async (payload: CreateTemplateModalPayload) => {
     setIsActionLoading(true);
-    setNotice(null);
+    setTemplateFormError(null);
 
     try {
       await createTemplate({
-        name: newTemplate.title.trim(),
-        description: newTemplate.desc.trim(),
-        visibility: newTemplate.label === "PRIVATE" ? "private" : "public",
-        level: mapTemplatePriorityToLevel(newTemplate.priority),
-        items: validTasks.map((task) => ({
-          title: task.name,
-          description: "",
-          energy_weight: mapTemplateTaskLevelToEnergy(task.level),
-        })),
+        name: payload.name,
+        description: payload.description,
+        visibility: payload.visibility ?? "private",
+        level: payload.level,
+        items: payload.items,
       });
 
       await loadDashboardData(true);
+      setCreatedTemplateSummary({
+        title: payload.name,
+        label: payload.visibility === "public" ? "Public" : "Private",
+        taskCount: payload.items.length,
+      });
       setTemplateView("success");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Gagal membuat template.");
+      setTemplateFormError(error instanceof Error ? error.message : "Gagal membuat template.");
     } finally {
       setIsActionLoading(false);
     }
@@ -1316,7 +1284,7 @@ export default function DashboardPage() {
                       </button>
                     ))
                   ) : (
-                    (["All", "Public", "Private"] as const).map((t) => (
+                    (["Official", "Public", "Private"] as const).map((t) => (
                       <button
                         key={t}
                         onClick={() => setTemplateFilter(t)}
@@ -2128,7 +2096,7 @@ export default function DashboardPage() {
           )}
 
           {/* ── Template View ── */}
-          {activeMenu === "template" && templateView === "list" && (
+          {activeMenu === "template" && templateView !== "detail" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "clamp(28px, 3vw, 44px)", alignItems: "start" }}>
                 {templatesList
@@ -2573,372 +2541,20 @@ export default function DashboardPage() {
           )}
 
 
-          {/* ── Create Template Pop-up ── */}
-          {activeMenu === "template" && templateView === "create" && (
-            <div style={{
-              position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.35)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              zIndex: 100, padding: "20px",
-              animation: "dashNotifPop 0.25s ease-out forwards",
-            }}>
-              <div style={{
-                backgroundColor: "#ffffff", borderRadius: "16px",
-                width: "100%", maxWidth: "640px", padding: "32px 36px 36px",
-                position: "relative", maxHeight: "90vh", overflowY: "auto",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-              }}>
-                {/* Close Button */}
-                <button
-                  onClick={() => setTemplateView("list")}
-                  style={{
-                    position: "absolute", top: "24px", right: "24px",
-                    background: "none", border: "none", cursor: "pointer",
-                    color: "#6b7280", padding: "4px", display: "flex",
-                    transition: "color 0.15s",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "#111827"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+          <CreateTemplateModal
+            key={templateView === "create" ? "template-create-open" : "template-create-closed"}
+            mode="user"
+            open={activeMenu === "template" && templateView === "create"}
+            isSubmitting={isActionLoading}
+            error={templateFormError}
+            onClose={() => {
+              setTemplateFormError(null);
+              setTemplateView("list");
+            }}
+            onSubmit={handleCreateCustomTemplate}
+          />
 
-                {/* Title */}
-                <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>Create Template</h2>
-                <p style={{ fontSize: "13px", color: "#9ca3af", margin: "0 0 28px" }}>Create a template according to your needs.</p>
-
-                {/* GENERAL INFORMATION */}
-                <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em", marginBottom: "16px" }}>GENERAL INFORMATION</div>
-
-                {/* Template Name */}
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#111827", marginBottom: "8px" }}>
-                    Template Name <span style={{ color: "#dc2626" }}>*</span>
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", display: "flex" }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      value={newTemplate.title}
-                      onChange={(e) => {
-                        if (e.target.value.length <= 100) setNewTemplate({ ...newTemplate, title: e.target.value });
-                      }}
-                      placeholder="Skripsi"
-                      maxLength={100}
-                      style={{
-                        width: "100%", height: "44px", borderRadius: "8px", border: "1px solid #e5e7eb",
-                        padding: "0 50px 0 40px", fontSize: "14px", fontFamily: "inherit", outline: "none",
-                        boxSizing: "border-box", transition: "border-color 0.2s",
-                      }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = COLOR.primary; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                    />
-                    <span style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "#16a34a" }}>
-                      {newTemplate.title.length}/100
-                    </span>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div style={{ marginBottom: "24px" }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#111827", marginBottom: "8px" }}>Description</label>
-                  <div style={{ position: "relative" }}>
-                    <div style={{ position: "absolute", left: "14px", top: "14px", color: "#9ca3af", display: "flex" }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="18" x2="15" y2="18" />
-                      </svg>
-                    </div>
-                    <textarea
-                      value={newTemplate.desc}
-                      onChange={(e) => {
-                        if (e.target.value.length <= 500) setNewTemplate({ ...newTemplate, desc: e.target.value });
-                      }}
-                      placeholder="Organize your thesis workflow efficiently with structured tasks, milestone tracking, deadlines, and progress monitoring from research proposal to final defense."
-                      maxLength={500}
-                      rows={3}
-                      style={{
-                        width: "100%", borderRadius: "8px", border: "1px solid #e5e7eb",
-                        padding: "12px 14px 12px 40px", fontSize: "13px", fontFamily: "inherit", outline: "none",
-                        boxSizing: "border-box", resize: "vertical", lineHeight: 1.5,
-                        transition: "border-color 0.2s",
-                      }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = COLOR.primary; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                    />
-                    <span style={{ position: "absolute", right: "14px", bottom: "10px", fontSize: "11px", color: "#16a34a" }}>
-                      {newTemplate.desc.length}/500
-                    </span>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div style={{ height: "1px", backgroundColor: "#f0f0f0", margin: "0 0 24px" }} />
-
-                {/* TEMPLATE TASKS */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em" }}>
-                    TEMPLATE TASKS ({newTemplate.tasks.length})
-                  </span>
-                  <button
-                    onClick={() => {
-                      setNewTemplate({
-                        ...newTemplate,
-                        tasks: [...newTemplate.tasks, { name: "", level: "EASY" }],
-                      });
-                      setExpandedTaskIdx(newTemplate.tasks.length);
-                    }}
-                    style={{
-                      background: "none", border: "none", cursor: "pointer",
-                      color: "#16a34a", fontSize: "13px", fontWeight: 600, fontFamily: "inherit",
-                      display: "flex", alignItems: "center", gap: "4px",
-                    }}
-                  >
-                    + Add Task
-                  </button>
-                </div>
-
-                {/* Tasks List */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
-                  {newTemplate.tasks.map((task, idx) => (
-                    <div key={idx} style={{
-                      border: "1px solid #e5e7eb", borderRadius: "10px",
-                      overflow: "hidden", transition: "box-shadow 0.2s",
-                    }}>
-                      {/* Task Header */}
-                      <div
-                        style={{
-                          display: "flex", alignItems: "center", gap: "10px",
-                          padding: "12px 16px", backgroundColor: "#fafafa",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => setExpandedTaskIdx(expandedTaskIdx === idx ? null : idx)}
-                      >
-                        {/* Drag handle icon */}
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#9ca3af">
-                          <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-                          <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-                          <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-                        </svg>
-                        <span style={{ flex: 1, fontSize: "14px", fontWeight: 600, color: "#111827" }}>
-                          {task.name || `Task ${idx + 1}`}
-                        </span>
-                        <span style={{
-                          fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em",
-                          padding: "3px 10px", borderRadius: "4px",
-                          backgroundColor: task.level === "EASY" ? "#dcfce7" : task.level === "MEDIUM" ? "#fef3c7" : "#fee2e2",
-                          color: task.level === "EASY" ? "#166534" : task.level === "MEDIUM" ? "#92400e" : "#991b1b",
-                        }}>
-                          {task.level}
-                        </span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"
-                          style={{ transition: "transform 0.2s", transform: expandedTaskIdx === idx ? "rotate(180deg)" : "rotate(0)" }}>
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                      </div>
-
-                      {/* Expanded: Edit Task */}
-                      {expandedTaskIdx === idx && (
-                        <div style={{ padding: "16px", borderTop: "1px solid #f0f0f0", backgroundColor: "#ffffff" }}>
-                          <div style={{ marginBottom: "12px" }}>
-                            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>Task Name</label>
-                            <input
-                              type="text"
-                              value={task.name}
-                              onChange={(e) => {
-                                const updated = [...newTemplate.tasks];
-                                updated[idx] = { ...updated[idx], name: e.target.value };
-                                setNewTemplate({ ...newTemplate, tasks: updated });
-                              }}
-                              placeholder="Enter task name"
-                              style={{
-                                width: "100%", height: "36px", borderRadius: "6px", border: "1px solid #e5e7eb",
-                                padding: "0 12px", fontSize: "13px", fontFamily: "inherit", outline: "none",
-                                boxSizing: "border-box",
-                              }}
-                            />
-                          </div>
-                          <div style={{ marginBottom: "12px" }}>
-                            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#6b7280", marginBottom: "6px" }}>Difficulty</label>
-                            <div style={{ display: "flex", gap: "8px" }}>
-                              {(["EASY", "MEDIUM", "HARD"] as const).map((lvl) => (
-                                <button
-                                  key={lvl}
-                                  onClick={() => {
-                                    const updated = [...newTemplate.tasks];
-                                    updated[idx] = { ...updated[idx], level: lvl };
-                                    setNewTemplate({ ...newTemplate, tasks: updated });
-                                  }}
-                                  style={{
-                                    padding: "5px 14px", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
-                                    letterSpacing: "0.04em", cursor: "pointer",
-                                    border: task.level === lvl ? "2px solid" : "1px solid #e5e7eb",
-                                    borderColor: task.level === lvl
-                                      ? (lvl === "EASY" ? "#16a34a" : lvl === "MEDIUM" ? "#d97706" : "#dc2626")
-                                      : "#e5e7eb",
-                                    backgroundColor: task.level === lvl
-                                      ? (lvl === "EASY" ? "#dcfce7" : lvl === "MEDIUM" ? "#fef3c7" : "#fee2e2")
-                                      : "#f9fafb",
-                                    color: task.level === lvl
-                                      ? (lvl === "EASY" ? "#166534" : lvl === "MEDIUM" ? "#92400e" : "#991b1b")
-                                      : "#6b7280",
-                                    transition: "all 0.15s",
-                                  }}
-                                >
-                                  {lvl}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              const updated = newTemplate.tasks.filter((_, i) => i !== idx);
-                              setNewTemplate({ ...newTemplate, tasks: updated });
-                              setExpandedTaskIdx(null);
-                            }}
-                            style={{
-                              background: "none", border: "none", cursor: "pointer",
-                              color: "#dc2626", fontSize: "12px", fontWeight: 600, fontFamily: "inherit",
-                              padding: "4px 0", display: "flex", alignItems: "center", gap: "4px",
-                            }}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                            Remove Task
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {newTemplate.tasks.length === 0 && (
-                    <div style={{
-                      padding: "20px", textAlign: "center", color: "#9ca3af", fontSize: "13px",
-                      border: "1px dashed #e5e7eb", borderRadius: "10px", backgroundColor: "#fafafa",
-                    }}>
-                      No tasks added yet. Click &quot;+ Add Task&quot; to get started.
-                    </div>
-                  )}
-                </div>
-
-                {/* Divider */}
-                <div style={{ height: "1px", backgroundColor: "#f0f0f0", margin: "0 0 24px" }} />
-
-                {/* VISIBILITY LABEL */}
-                <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em", marginBottom: "16px" }}>
-                  VISIBILITY LABEL <span style={{ color: "#dc2626" }}>*</span>
-                </div>
-
-                <div style={{ display: "flex", gap: "12px", marginBottom: "32px" }}>
-                  {/* Public Option */}
-                  <div
-                    onClick={() => setNewTemplate({ ...newTemplate, label: "PUBLIC" })}
-                    style={{
-                      flex: 1, padding: "16px", borderRadius: "10px", cursor: "pointer",
-                      border: newTemplate.label === "PUBLIC" ? "2px solid #166534" : "1px solid #e5e7eb",
-                      backgroundColor: newTemplate.label === "PUBLIC" ? "#f0fdf4" : "#ffffff",
-                      transition: "all 0.2s", display: "flex", alignItems: "center", gap: "12px",
-                    }}
-                  >
-                    <div style={{
-                      width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#f3f4f6",
-                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                    }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="2" y1="12" x2="22" y2="12" />
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "14px", fontWeight: 700, color: "#111827", marginBottom: "2px" }}>Public</div>
-                      <div style={{ fontSize: "11px", color: "#9ca3af", lineHeight: 1.4 }}>Anyone in your workspace can view and use</div>
-                    </div>
-                    <div style={{
-                      width: "18px", height: "18px", borderRadius: "50%",
-                      border: newTemplate.label === "PUBLIC" ? `5px solid #166534` : "2px solid #d1d5db",
-                      backgroundColor: "#ffffff", flexShrink: 0, transition: "all 0.2s",
-                    }} />
-                  </div>
-
-                  {/* Custom (Private) Option */}
-                  <div
-                    onClick={() => setNewTemplate({ ...newTemplate, label: "PRIVATE" })}
-                    style={{
-                      flex: 1, padding: "16px", borderRadius: "10px", cursor: "pointer",
-                      border: newTemplate.label === "PRIVATE" ? "2px solid #166534" : "1px solid #e5e7eb",
-                      backgroundColor: newTemplate.label === "PRIVATE" ? "#f0fdf4" : "#ffffff",
-                      transition: "all 0.2s", display: "flex", alignItems: "center", gap: "12px",
-                    }}
-                  >
-                    <div style={{
-                      width: "36px", height: "36px", borderRadius: "50%",
-                      backgroundColor: newTemplate.label === "PRIVATE" ? "#dcfce7" : "#f3f4f6",
-                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                    }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={newTemplate.label === "PRIVATE" ? "#166534" : "#6b7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "14px", fontWeight: 700, color: "#111827", marginBottom: "2px" }}>Custom (Private)</div>
-                      <div style={{ fontSize: "11px", color: "#9ca3af", lineHeight: 1.4 }}>Only you and people you invite can view and use</div>
-                    </div>
-                    <div style={{
-                      width: "18px", height: "18px", borderRadius: "50%",
-                      border: newTemplate.label === "PRIVATE" ? `5px solid #166534` : "2px solid #d1d5db",
-                      backgroundColor: "#ffffff", flexShrink: 0, transition: "all 0.2s",
-                    }} />
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-                  <button
-                    onClick={() => setTemplateView("list")}
-                    style={{
-                      padding: "10px 32px", borderRadius: "8px", backgroundColor: "#ffffff",
-                      color: "#111827", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb",
-                      cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f9fafb"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ffffff"; }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    disabled={isActionLoading}
-                    onClick={() => {
-                      void handleCreateCustomTemplate();
-                    }}
-                    style={{
-                      padding: "10px 32px", borderRadius: "8px", backgroundColor: "#166534",
-                      color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none",
-                      cursor: isActionLoading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
-                      opacity: isActionLoading ? 0.7 : 1,
-                    }}
-                    onMouseEnter={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
-                    onMouseLeave={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
-                  >
-                    {isActionLoading ? "Menyimpan..." : "Create Template"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Success Pop-up ── */}
+{/* ── Success Pop-up ── */}
           {activeMenu === "template" && templateView === "success" && (
             <div style={{
               position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
@@ -2993,7 +2609,7 @@ export default function DashboardPage() {
                   {/* Title with check */}
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
                     <CheckCircleSolidIcon />
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>{newTemplate.title || "Untitled"}</span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>{createdTemplateSummary?.title || "Untitled"}</span>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -3006,10 +2622,10 @@ export default function DashboardPage() {
                           <line x1="8" y1="2" x2="8" y2="6" />
                           <line x1="3" y1="10" x2="21" y2="10" />
                         </svg>
-                        <span style={{ fontSize: "13px" }}>Deadline</span>
+                        <span style={{ fontSize: "13px" }}>Task</span>
                       </div>
                       <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{newTemplate.deadline || "June 22, 2025"}</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{createdTemplateSummary?.taskCount ?? 0} tasks</span>
                     </div>
 
                     {/* Level Task */}
@@ -3019,10 +2635,10 @@ export default function DashboardPage() {
                           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                           <line x1="4" y1="22" x2="4" y2="15" />
                         </svg>
-                        <span style={{ fontSize: "13px" }}>Level Task</span>
+                        <span style={{ fontSize: "13px" }}>Type</span>
                       </div>
                       <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{newTemplate.priority === "HIGH" ? "High" : newTemplate.priority === "LOW" ? "Low" : "Medium"}</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>Custom Template</span>
                     </div>
 
                     {/* Label */}
@@ -3035,7 +2651,7 @@ export default function DashboardPage() {
                         <span style={{ fontSize: "13px" }}>Label</span>
                       </div>
                       <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{newTemplate.label === "PRIVATE" ? "Custom" : "Public"}</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{createdTemplateSummary?.label === "Private" ? "Private" : "Public"}</span>
                     </div>
                   </div>
                 </div>
@@ -3043,7 +2659,7 @@ export default function DashboardPage() {
                 {/* View Template Button */}
                 <button
                   onClick={() => {
-                    setTemplateFilter(newTemplate.label === "PRIVATE" ? "Private" : "Public");
+                    setTemplateFilter(createdTemplateSummary?.label ?? "Private");
                     setTemplateView("list");
                   }}
                   style={{

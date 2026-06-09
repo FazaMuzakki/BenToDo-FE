@@ -124,7 +124,7 @@ export type ApplyTemplateResponse = {
 export type CreateTemplatePayload = {
   name: string;
   description?: string;
-  visibility: "public" | "private";
+  visibility?: "public" | "private";
   level: "Low" | "Medium" | "High";
   items: {
     title: string;
@@ -383,6 +383,13 @@ export const getTemplates = () => {
 
 export const createTemplate = (payload: CreateTemplatePayload) => {
   return authRequest<{ data: TaskTemplate }>("/templates", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
+export const createAdminTemplate = (payload: CreateTemplatePayload) => {
+  return authRequest<{ data: TaskTemplate }>("/admin/templates", {
     method: "POST",
     body: JSON.stringify(payload),
   });
