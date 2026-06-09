@@ -30,9 +30,16 @@ export type CreateTemplateModalPayload = {
   }[];
 };
 
+export type CreateTemplateModalInitialValue = CreateTemplateModalPayload;
+
 type CreateTemplateModalProps = {
   mode: "user" | "admin";
   open: boolean;
+  title?: string;
+  subtitle?: string;
+  submitLabel?: string;
+  submittingLabel?: string;
+  initialValue?: CreateTemplateModalInitialValue;
   isSubmitting?: boolean;
   error?: string | null;
   onClose: () => void;
@@ -63,6 +70,12 @@ const taskLevelToEnergy = (level: DraftTaskLevel): EnergyWeight => {
   if (level === "HARD") return "Berat";
   if (level === "MEDIUM") return "Sedang";
   return "Ringan";
+};
+
+const energyToTaskLevel = (energyWeight: EnergyWeight): DraftTaskLevel => {
+  if (energyWeight === "Berat") return "HARD";
+  if (energyWeight === "Sedang") return "MEDIUM";
+  return "EASY";
 };
 
 const deriveTemplateLevel = (tasks: DraftTask[]): TemplateLevel => {
@@ -153,15 +166,26 @@ const ShieldIcon = () => (
 export default function CreateTemplateModal({
   mode,
   open,
+  title = "Create Template",
+  subtitle = "Create a template according to your needs.",
+  submitLabel = "Create Template",
+  submittingLabel = "Creating...",
+  initialValue,
   isSubmitting = false,
   error,
   onClose,
   onSubmit,
 }: CreateTemplateModalProps) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>("private");
-  const [tasks, setTasks] = useState<DraftTask[]>([]);
+  const [name, setName] = useState(initialValue?.name ?? "");
+  const [description, setDescription] = useState(initialValue?.description ?? "");
+  const [visibility, setVisibility] = useState<Visibility>(initialValue?.visibility ?? "private");
+  const [tasks, setTasks] = useState<DraftTask[]>(
+    initialValue?.items.map((item) => ({
+      title: item.title,
+      description: item.description ?? "",
+      level: energyToTaskLevel(item.energy_weight),
+    })) ?? [],
+  );
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -288,7 +312,7 @@ export default function CreateTemplateModal({
             padding: "4px",
             display: "flex",
           }}
-          aria-label="Close create template modal"
+          aria-label="Close template modal"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -297,10 +321,10 @@ export default function CreateTemplateModal({
         </button>
 
         <h2 style={{ margin: "0 0 4px", color: COLORS.text, fontSize: "24px", lineHeight: 1.15, fontWeight: 800 }}>
-          Create Template
+          {title}
         </h2>
         <p style={{ margin: "0 0 22px", color: COLORS.mutedDark, fontSize: "13px", lineHeight: 1.4 }}>
-          Create a template according to your needs.
+          {subtitle}
         </p>
 
         {shownError && (
@@ -778,7 +802,7 @@ export default function CreateTemplateModal({
               if (canSubmit) event.currentTarget.style.backgroundColor = COLORS.primary;
             }}
           >
-            {isSubmitting ? "Creating..." : "Create Template"}
+            {isSubmitting ? submittingLabel : submitLabel}
           </button>
         </div>
       </div>
