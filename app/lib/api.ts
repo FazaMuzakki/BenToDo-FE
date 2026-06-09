@@ -93,6 +93,7 @@ export type TaskTemplate = {
   level?: "Low" | "Medium" | "High";
   visibility?: "public" | "private";
   is_official?: boolean;
+  created_by_user_id?: string | null;
   usage_count?: number;
   created_by?: {
     id: string;
@@ -385,6 +386,25 @@ export const createTemplate = (payload: CreateTemplatePayload) => {
   return authRequest<{ data: TaskTemplate }>("/templates", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+};
+
+export const updateTemplate = (templateId: string, payload: CreateTemplatePayload) => {
+  return authRequest<{ data: TaskTemplate }>(`/templates/${templateId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+};
+
+export const deleteTemplate = (templateId: string) => {
+  return authRequest(`/templates/${templateId}`, {
+    method: "DELETE",
+  });
+};
+
+export const saveTemplateAsPrivate = (templateKey: string) => {
+  return authRequest<{ data: TaskTemplate }>(`/templates/save-private/${templateKey}`, {
+    method: "POST",
   });
 };
 

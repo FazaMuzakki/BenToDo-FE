@@ -15,6 +15,9 @@ import {
   startFocusSession,
   updateTask,
   deleteTask,
+  updateTemplate as updateCustomTemplate,
+  deleteTemplate as deleteCustomTemplate,
+  saveTemplateAsPrivate,
   createTask,
   createTemplate,
 } from "../lib/api";
@@ -516,15 +519,20 @@ type DetailTaskData = ViewTask & {
   description?: string;
 };
 
-type TemplateFilter = "Official" | "Public" | "Private";
+type TemplateFilter = "Official" | "Public" | "Private" | "My Template";
 
 type ViewCard = {
   id: number;
+  templateId?: string;
   backendKey?: string;
   taskId?: string;
   title: string;
   desc: string;
   level: string;
+  templateLabel?: "OFFICIAL" | "PUBLIC" | "PRIVATE";
+  visibility?: "public" | "private";
+  isOfficial?: boolean;
+  ownerId?: string | null;
   subtasks: number;
   type: string[];
   previewItems?: TaskTemplate["preview_items"];
@@ -561,10 +569,15 @@ const mapTaskToViewTask = (task: Task): ViewTask => ({
 
 const mapTemplateToCard = (template: TaskTemplate, index: number): ViewCard => ({
   id: index + 1,
+  templateId: template.id,
   backendKey: template.key,
   title: template.name,
   desc: template.description || "Template siap pakai untuk mempercepat perencanaan tugas.",
-  level: template.is_official ? "OFFICIAL" : (template.level ?? "Medium").toUpperCase(),
+  level: (template.level ?? "Medium").toUpperCase(),
+  templateLabel: template.is_official ? "OFFICIAL" : template.visibility === "private" ? "PRIVATE" : "PUBLIC",
+  visibility: template.visibility ?? "public",
+  isOfficial: template.is_official ?? false,
+  ownerId: template.created_by_user_id ?? template.created_by?.id ?? null,
   subtasks: template.total_items,
   type: [template.is_official ? "Official" : template.visibility === "private" ? "Private" : "Public"],
   previewItems: template.preview_items ?? template.items ?? [],
@@ -597,7 +610,7 @@ export default function DashboardPage() {
   const [searchTask, setSearchTask] = useState("");
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
-  const [templateView, setTemplateView] = useState<"list" | "detail" | "create" | "success">("list");
+  const [templateView, setTemplateView] = useState<"list" | "detail" | "create" | "edit" | "success">("list");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [taskDetailCopied, setTaskDetailCopied] = useState(false);
   const [templatesList, setTemplatesList] = useState<ViewCard[]>(templatesData);
@@ -634,6 +647,8 @@ export default function DashboardPage() {
   const [localTaskMeta, setLocalTaskMeta] = useState<Record<string, { description: string; subtasks: { text: string; done: boolean }[] }>>({});
 
   const [templateFormError, setTemplateFormError] = useState<string | null>(null);
+  const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
+  const [expandedDetailTaskIndex, setExpandedDetailTaskIndex] = useState<number | null>(null);
   const [createdTemplateSummary, setCreatedTemplateSummary] = useState<{
     title: string;
     label: TemplateFilter;
@@ -738,6 +753,17 @@ export default function DashboardPage() {
 
   const cardItems = activeMenu === "task" ? taskCards : templatesList;
   const selectedCard = templatesList.find((item) => item.id === selectedTemplateId) ?? null;
+  const editingTemplate = templatesList.find((item) => item.id === editingTemplateId) ?? null;
+  const currentUserId = getStoredUser()?.id ?? null;
+  const visibleTemplateCards = templatesList.filter((item) =>
+    templateFilter === "My Template"
+      ? item.ownerId === currentUserId && !item.isOfficial
+      : item.type.includes(templateFilter),
+  );
+  const selectedCardTasks = selectedCard?.previewItems ?? [];
+  const canSaveSelectedTemplateAsPrivate = !!selectedCard && (
+    selectedCard.visibility !== "private" || selectedCard.ownerId !== currentUserId
+  );
   const completedCount = apiTasks.filter((task) => task.status === "done").length;
   const upcomingDeadlineCount = deadlineStats.upcoming;
   const overdueCount = deadlineStats.overdue;
@@ -764,6 +790,80 @@ export default function DashboardPage() {
       setTemplateView("success");
     } catch (error) {
       setTemplateFormError(error instanceof Error ? error.message : "Gagal membuat template.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const buildTemplateFormValue = (item: ViewCard): CreateTemplateModalPayload => ({
+    name: item.title,
+    description: item.desc,
+    visibility: item.visibility ?? "private",
+    level: item.level === "HIGH" ? "High" : item.level === "LOW" ? "Low" : "Medium",
+    items: (item.previewItems ?? []).map((task) => ({
+      title: task.title,
+      description: task.description ?? "",
+      energy_weight: task.energy_weight,
+    })),
+  });
+
+  const handleUpdateCustomTemplate = async (payload: CreateTemplateModalPayload) => {
+    if (!editingTemplate?.templateId) return;
+
+    setIsActionLoading(true);
+    setTemplateFormError(null);
+
+    try {
+      await updateCustomTemplate(editingTemplate.templateId, {
+        name: payload.name,
+        description: payload.description,
+        visibility: payload.visibility ?? "private",
+        level: payload.level,
+        items: payload.items,
+      });
+
+      await loadDashboardData(true);
+      setTemplateFilter("My Template");
+      setTemplateView("list");
+      setEditingTemplateId(null);
+      setNotice("Template berhasil diperbarui.");
+    } catch (error) {
+      setTemplateFormError(error instanceof Error ? error.message : "Gagal memperbarui template.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleDeleteCustomTemplate = async (item: ViewCard) => {
+    if (!item.templateId) return;
+    if (!window.confirm(`Hapus template "${item.title}"?`)) return;
+
+    setIsActionLoading(true);
+    try {
+      await deleteCustomTemplate(item.templateId);
+      await loadDashboardData(true);
+      setTemplateFilter("My Template");
+      setNotice("Template berhasil dihapus.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Gagal menghapus template.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleSaveTemplateAsPrivate = async (item: ViewCard) => {
+    if (!item.backendKey) return;
+
+    setIsActionLoading(true);
+    try {
+      await saveTemplateAsPrivate(item.backendKey);
+      await loadDashboardData(true);
+      setTemplateFilter("My Template");
+      setTemplateView("list");
+      setSelectedTemplateId(null);
+      setNotice(`Template ${item.title} berhasil disimpan sebagai private.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Gagal menyimpan template sebagai private.");
     } finally {
       setIsActionLoading(false);
     }
@@ -1240,7 +1340,7 @@ export default function DashboardPage() {
           )}
 
           {/* Welcome + Time Range + Focus Timer */}
-          {(activeMenu === "dashboard" || (activeMenu === "template" && templateView === "list") || (activeMenu === "task" && !selectedTaskId)) && (
+          {(activeMenu === "dashboard" || (activeMenu === "template" && templateView !== "success") || (activeMenu === "task" && !selectedTaskId)) && (
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", width: "100%", marginBottom: "32px", gap: "24px" }}>
               <div>
                 <h2 style={{ fontSize: "26px", fontWeight: 700, color: COLOR.text, margin: "0 0 6px", lineHeight: 1.15 }}>
@@ -1284,12 +1384,12 @@ export default function DashboardPage() {
                       </button>
                     ))
                   ) : (
-                    (["Official", "Public", "Private"] as const).map((t) => (
+                    (["Official", "Public", "Private", "My Template"] as const).map((t) => (
                       <button
                         key={t}
                         onClick={() => setTemplateFilter(t)}
                         style={{
-                          width: "64px",
+                          width: t === "My Template" ? "92px" : "64px",
                           height: "32px",
                           fontSize: "11px",
                           fontWeight: templateFilter === t ? 600 : 400,
@@ -2096,12 +2196,21 @@ export default function DashboardPage() {
           )}
 
           {/* ── Template View ── */}
-          {activeMenu === "template" && templateView !== "detail" && (
+          {activeMenu === "template" && templateView !== "success" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "clamp(28px, 3vw, 44px)", alignItems: "start" }}>
-                {templatesList
-                  .filter((item) => item.type.includes(templateFilter))
-                  .map((item) => (
+                {visibleTemplateCards
+                  .map((item) => {
+                    const badgeLabel = item.templateLabel ?? item.level;
+                    const badgeTone =
+                      badgeLabel === "PUBLIC"
+                        ? { bg: "#DCFCE7", color: "#008B1F" }
+                        : badgeLabel === "PRIVATE"
+                          ? { bg: "#E5DEFF", color: "#4F46E5" }
+                          : { bg: "#F1F1F1", color: "#4B4B4B" };
+                    const isOwnTemplate = item.ownerId === currentUserId && !item.isOfficial;
+
+                    return (
                     <div key={item.id} style={{
                       width: "100%",
                       minHeight: "258px",
@@ -2123,9 +2232,10 @@ export default function DashboardPage() {
                         </div>
                         <span style={{
                           display: "inline-block", fontSize: "11px", fontWeight: 700,
-                          color: COLOR.mutedDark, backgroundColor: "#F1F1F1", borderRadius: "999px", padding: "4px 13px",
+                          color: badgeTone.color, backgroundColor: badgeTone.bg, borderRadius: "999px", padding: "4px 13px",
+                          letterSpacing: "0.04em",
                         }}>
-                          {item.level}
+                          {badgeLabel}
                         </span>
                       </div>
 
@@ -2137,8 +2247,8 @@ export default function DashboardPage() {
                         {item.desc}
                       </p>
                       {item.createdBy && (
-                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "-12px 0 18px" }}>
-                          Dibuat oleh {item.createdBy}
+                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "-12px 0 18px", fontWeight: 600 }}>
+                          Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
                         </p>
                       )}
 
@@ -2148,13 +2258,13 @@ export default function DashboardPage() {
                           display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
                           backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
                         }}>
-                          <SubtaskIcon /> {item.subtasks} Subtasks
+                          <SubtaskIcon /> {item.subtasks} Task
                         </span>
                         <span style={{
                           display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
                           backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
                         }}>
-                          <CalendarSmIcon /> No due date
+                          <TemplateIcon /> {item.isOfficial ? "Official" : item.visibility === "private" ? "Private" : "Public"}
                         </span>
                       </div>
 
@@ -2177,6 +2287,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => {
                             setSelectedTemplateId(item.id);
+                            setExpandedDetailTaskIndex(null);
                             setTemplateView("detail");
                           }}
                           style={{
@@ -2185,10 +2296,53 @@ export default function DashboardPage() {
                           }}>
                           <EyeOutlineIcon />
                         </button>
+                        {isOwnTemplate && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingTemplateId(item.id);
+                                setTemplateFormError(null);
+                                setTemplateView("edit");
+                              }}
+                              style={{
+                                width: "40px", height: "40px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface,
+                                display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLOR.mutedDark
+                              }}>
+                              <PenIcon />
+                            </button>
+                            <button
+                              onClick={() => {
+                                void handleDeleteCustomTemplate(item);
+                              }}
+                              style={{
+                                width: "40px", height: "40px", borderRadius: "7px", border: "1px solid #FECACA", backgroundColor: "#FFF5F6",
+                                display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#DC2626"
+                              }}>
+                              <TrashIcon />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
               </div>
+
+              {visibleTemplateCards.length === 0 && (
+                <div style={{
+                  border: `1px dashed ${COLOR.border}`,
+                  borderRadius: "8px",
+                  padding: "28px",
+                  textAlign: "center",
+                  color: COLOR.mutedDark,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                }}>
+                  {templateFilter === "My Template"
+                    ? "Belum ada template buatan kamu."
+                    : "Template tidak ditemukan."}
+                </div>
+              )}
 
               {/* Pagination */}
               <div style={{ display: "none", justifyContent: "center", gap: "8px", marginTop: "16px" }}>
@@ -2379,6 +2533,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => {
                     setSelectedTemplateId(null);
+                    setExpandedDetailTaskIndex(null);
                     setTemplateView("list");
                   }}
                   style={{
@@ -2399,13 +2554,10 @@ export default function DashboardPage() {
                 {/* Header: Icon + Title + Badge + Description */}
                 <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", marginBottom: "28px" }}>
                   <div style={{
-                    width: "56px", height: "56px", borderRadius: "12px", backgroundColor: "#f3f4f6",
+                    width: "56px", height: "56px", borderRadius: "12px", backgroundColor: "#E5DEFF",
                     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                   }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg>
+                    <CompassIcon />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
@@ -2431,19 +2583,71 @@ export default function DashboardPage() {
                     padding: "24px", backgroundColor: "#ffffff",
                   }}>
                     <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 24px" }}>Template Tasks</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                      {(selectedCard.previewItems?.map((item) => item.title) ?? ["Belum ada preview task"]).map((task, idx) => (
-                        <div key={idx} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                          <div style={{
-                            width: "28px", height: "28px", borderRadius: "50%", backgroundColor: "#166534",
-                            color: "#ffffff", fontSize: "12px", fontWeight: 700,
-                            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {(selectedCardTasks.length ? selectedCardTasks : [{ title: "Belum ada task", description: "", energy_weight: "Ringan" as EnergyWeight }]).map((task, idx) => {
+                        const isOpen = expandedDetailTaskIndex === idx;
+                        const levelLabel = task.energy_weight === "Berat" ? "HIGH" : task.energy_weight === "Sedang" ? "MEDIUM" : "EASY";
+
+                        return (
+                          <div key={`${task.title}-${idx}`} style={{
+                            border: `1px solid ${isOpen ? "#008B1F" : "#E5E7EB"}`,
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            transition: "border-color 180ms ease, box-shadow 180ms ease",
+                            boxShadow: isOpen ? "0 0 0 1px rgba(0,139,31,0.08)" : "none",
                           }}>
-                            {idx + 1}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedDetailTaskIndex(isOpen ? null : idx)}
+                              style={{
+                                width: "100%",
+                                border: "none",
+                                background: "#ffffff",
+                                minHeight: "44px",
+                                padding: "10px 14px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                              }}
+                            >
+                              <span style={{
+                                width: "24px", height: "24px", borderRadius: "50%", backgroundColor: "#166534",
+                                color: "#ffffff", fontSize: "11px", fontWeight: 800,
+                                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                              }}>
+                                {idx + 1}
+                              </span>
+                              <span style={{ flex: 1, minWidth: 0, textAlign: "left", fontSize: "13px", color: "#111827", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {task.title}
+                              </span>
+                              <span style={{
+                                fontSize: "9px",
+                                fontWeight: 800,
+                                color: levelLabel === "HIGH" ? "#DC2626" : levelLabel === "MEDIUM" ? "#F97316" : "#008B1F",
+                                backgroundColor: levelLabel === "HIGH" ? "#FEE2E2" : levelLabel === "MEDIUM" ? "#FFEDD5" : "#DCFCE7",
+                                borderRadius: "5px",
+                                padding: "3px 8px",
+                              }}>
+                                {levelLabel}
+                              </span>
+                            </button>
+                            <div style={{
+                              maxHeight: isOpen ? "180px" : "0px",
+                              opacity: isOpen ? 1 : 0,
+                              overflow: "hidden",
+                              transition: "max-height 240ms ease, opacity 180ms ease",
+                            }}>
+                              <div style={{ borderTop: "1px solid #E5E7EB", padding: "12px 14px 14px 50px" }}>
+                                <p style={{ margin: 0, color: "#6B7280", fontSize: "12px", lineHeight: 1.5, maxHeight: "96px", overflowY: "auto" }}>
+                                  {task.description || "Belum ada deskripsi task."}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <span style={{ fontSize: "14px", color: "#374151", fontWeight: 500 }}>{task}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -2516,23 +2720,28 @@ export default function DashboardPage() {
                         </svg>
                         Use Template
                       </button>
-                      <button
-                        onClick={() => setNotice("Fitur private custom template perlu endpoint backend tambahan.")}
-                        style={{
-                          width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "#ffffff",
-                          color: "#111827", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb",
-                          cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f9fafb"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ffffff"; }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        Save Template as Private
-                      </button>
+                      {canSaveSelectedTemplateAsPrivate && (
+                        <button
+                          onClick={() => {
+                            void handleSaveTemplateAsPrivate(selectedCard);
+                          }}
+                          disabled={isActionLoading}
+                          style={{
+                            width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "#ffffff",
+                            color: "#111827", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb",
+                            cursor: isActionLoading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                          }}
+                          onMouseEnter={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f9fafb"; }}
+                          onMouseLeave={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ffffff"; }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                          Save Template as Private
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2553,6 +2762,27 @@ export default function DashboardPage() {
             }}
             onSubmit={handleCreateCustomTemplate}
           />
+
+          {editingTemplate && (
+            <CreateTemplateModal
+              key={`template-edit-${editingTemplate.templateId ?? editingTemplate.id}`}
+              mode="user"
+              title="Edit Template"
+              subtitle="Update template pribadi sesuai kebutuhan kamu."
+              submitLabel="Save Template"
+              submittingLabel="Saving..."
+              initialValue={buildTemplateFormValue(editingTemplate)}
+              open={activeMenu === "template" && templateView === "edit"}
+              isSubmitting={isActionLoading}
+              error={templateFormError}
+              onClose={() => {
+                setTemplateFormError(null);
+                setEditingTemplateId(null);
+                setTemplateView("list");
+              }}
+              onSubmit={handleUpdateCustomTemplate}
+            />
+          )}
 
 {/* ── Success Pop-up ── */}
           {activeMenu === "template" && templateView === "success" && (
