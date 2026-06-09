@@ -89,7 +89,7 @@ export default function SignInPage() {
         saveAuthSession(data.data, rememberMe);
       }
 
-      router.push("/dashboard");
+      router.push(data.data?.user?.role === "admin" ? "/admin" : "/dashboard");
     } catch (error) {
       setError(
         error instanceof Error

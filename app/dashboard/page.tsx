@@ -16,6 +16,7 @@ import {
   updateTask,
   deleteTask,
   createTask,
+  createTemplate,
 } from "../lib/api";
 import { LOGO_SRC } from "../lib/assets";
 import type { EnergyWeight, Task, TaskStatus, TaskTemplate } from "../lib/api";
@@ -510,6 +511,10 @@ type ViewTask = {
   status?: TaskStatus;
 };
 
+type DetailTaskData = ViewTask & {
+  description?: string;
+};
+
 type ViewCard = {
   id: number;
   backendKey?: string;
@@ -520,12 +525,27 @@ type ViewCard = {
   subtasks: number;
   type: string[];
   previewItems?: TaskTemplate["preview_items"];
+  createdBy?: string;
+  usage?: string;
+  updatedAt?: string;
 };
 
 const mapEnergyToLevel = (energyWeight: EnergyWeight): PriorityLevel => {
   if (energyWeight === "Berat") return "HIGH";
   if (energyWeight === "Sedang") return "MEDIUM";
   return "LOW";
+};
+
+const mapTemplateTaskLevelToEnergy = (level: "EASY" | "MEDIUM" | "HARD"): EnergyWeight => {
+  if (level === "HARD") return "Berat";
+  if (level === "MEDIUM") return "Sedang";
+  return "Ringan";
+};
+
+const mapTemplatePriorityToLevel = (priority: string): "Low" | "Medium" | "High" => {
+  if (priority === "HIGH") return "High";
+  if (priority === "LOW") return "Low";
+  return "Medium";
 };
 
 const formatDate = (value: string | null) => {
@@ -552,11 +572,14 @@ const mapTemplateToCard = (template: TaskTemplate, index: number): ViewCard => (
   id: index + 1,
   backendKey: template.key,
   title: template.name,
-  desc: template.description,
-  level: "OFFICIAL",
+  desc: template.description || "Template siap pakai untuk mempercepat perencanaan tugas.",
+  level: template.is_official ? "OFFICIAL" : (template.level ?? "Medium").toUpperCase(),
   subtasks: template.total_items,
-  type: ["All", "Public"],
-  previewItems: template.preview_items,
+  type: ["All", template.visibility === "private" ? "Private" : "Public"],
+  previewItems: template.preview_items ?? template.items ?? [],
+  createdBy: template.created_by?.display_name || template.created_by?.email || (template.is_official ? "BenToDo Official" : "Unknown"),
+  usage: `${(template.usage_count ?? 0).toLocaleString("en-US")} times`,
+  updatedAt: template.updated_at ? formatDate(template.updated_at) : "-",
 });
 
 const mapTaskToCard = (task: Task, index: number): ViewCard => ({
@@ -608,7 +631,7 @@ export default function DashboardPage() {
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
 
   const [isDetailTaskModalOpen, setIsDetailTaskModalOpen] = useState(false);
-  const [detailTaskData, setDetailTaskData] = useState<any>(null);
+  const [detailTaskData, setDetailTaskData] = useState<DetailTaskData | null>(null);
 
   const [isDeleteTaskModalOpen, setIsDeleteTaskModalOpen] = useState(false);
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
@@ -734,6 +757,49 @@ export default function DashboardPage() {
   const completedCount = apiTasks.filter((task) => task.status === "done").length;
   const upcomingDeadlineCount = deadlineStats.upcoming;
   const overdueCount = deadlineStats.overdue;
+
+  const handleCreateCustomTemplate = async () => {
+    if (!newTemplate.title.trim()) {
+      setNotice("Nama template wajib diisi.");
+      return;
+    }
+
+    const validTasks = newTemplate.tasks
+      .map((task) => ({
+        ...task,
+        name: task.name.trim(),
+      }))
+      .filter((task) => task.name);
+
+    if (!validTasks.length) {
+      setNotice("Minimal tambahkan 1 task template.");
+      return;
+    }
+
+    setIsActionLoading(true);
+    setNotice(null);
+
+    try {
+      await createTemplate({
+        name: newTemplate.title.trim(),
+        description: newTemplate.desc.trim(),
+        visibility: newTemplate.label === "PRIVATE" ? "private" : "public",
+        level: mapTemplatePriorityToLevel(newTemplate.priority),
+        items: validTasks.map((task) => ({
+          title: task.name,
+          description: "",
+          energy_weight: mapTemplateTaskLevelToEnergy(task.level),
+        })),
+      });
+
+      await loadDashboardData(true);
+      setTemplateView("success");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Gagal membuat template.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
 
   const handleSignOut = () => {
     clearAuthSession();
@@ -1140,17 +1206,17 @@ export default function DashboardPage() {
                         <div style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text }}>Task Completed</div>
                         <div style={{ width: "8px", height: "8px", backgroundColor: COLOR.primary, borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
                       </div>
-                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>You completed "Design Homepage UI". Great job!</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>You completed &ldquo;Design Homepage UI&rdquo;. Great job!</div>
                       <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>10 mins ago</div>
                     </div>
                     <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}`, backgroundColor: "#ffffff" }}>
                       <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>New Task Added</div>
-                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>"Submit Invoice" has been added to your dashboard.</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>&ldquo;Submit Invoice&rdquo; has been added to your dashboard.</div>
                       <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>1 hour ago</div>
                     </div>
                     <div style={{ padding: "16px", backgroundColor: "#ffffff" }}>
                       <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>Template Created</div>
-                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>"Weekly Report" template was successfully saved.</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>&ldquo;Weekly Report&rdquo; template was successfully saved.</div>
                       <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>Yesterday</div>
                     </div>
                   </div>
@@ -2102,6 +2168,11 @@ export default function DashboardPage() {
                       <p style={{ fontSize: "14px", color: "#4B4B4B", lineHeight: 1.45, marginBottom: "22px" }}>
                         {item.desc}
                       </p>
+                      {item.createdBy && (
+                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "-12px 0 18px" }}>
+                          Dibuat oleh {item.createdBy}
+                        </p>
+                      )}
 
                       {/* Tags */}
                       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
@@ -2426,7 +2497,7 @@ export default function DashboardPage() {
                           </svg>
                           <span style={{ fontSize: "13px", fontWeight: 500 }}>Created by</span>
                         </div>
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>BenToDo Official</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{selectedCard.createdBy ?? "BenToDo Official"}</span>
                       </div>
 
                       {/* Used */}
@@ -2438,7 +2509,7 @@ export default function DashboardPage() {
                           </svg>
                           <span style={{ fontSize: "13px", fontWeight: 500 }}>Used</span>
                         </div>
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>1.2k times</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{selectedCard.usage ?? "0 times"}</span>
                       </div>
 
                       {/* Last updated */}
@@ -2452,7 +2523,7 @@ export default function DashboardPage() {
                           </svg>
                           <span style={{ fontSize: "13px", fontWeight: 500 }}>Last updated</span>
                         </div>
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>May 12, 2025</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{selectedCard.updatedAt ?? "-"}</span>
                       </div>
                     </div>
 
@@ -2847,27 +2918,20 @@ export default function DashboardPage() {
                     Cancel
                   </button>
                   <button
+                    disabled={isActionLoading}
                     onClick={() => {
-                      const newCard: ViewCard = {
-                        id: templatesList.length + 1,
-                        title: newTemplate.title || "Untitled",
-                        desc: newTemplate.desc || "No description",
-                        level: newTemplate.priority,
-                        subtasks: newTemplate.tasks.length || 6,
-                        type: newTemplate.label === "PRIVATE" ? ["All", "Private"] : ["All", "Public"]
-                      };
-                      setTemplatesList([newCard, ...templatesList]);
-                      setTemplateView("success");
+                      void handleCreateCustomTemplate();
                     }}
                     style={{
                       padding: "10px 32px", borderRadius: "8px", backgroundColor: "#166534",
                       color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none",
-                      cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                      cursor: isActionLoading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
+                      opacity: isActionLoading ? 0.7 : 1,
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
+                    onMouseEnter={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
+                    onMouseLeave={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
                   >
-                    Create Template
+                    {isActionLoading ? "Menyimpan..." : "Create Template"}
                   </button>
                 </div>
               </div>

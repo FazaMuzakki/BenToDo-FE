@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LOGO_SRC } from "../lib/assets";
+import {
+  clearAuthSession,
+  createTemplate as createTemplateRequest,
+  deleteAdminTemplate,
+  getAdminDashboard,
+  getAdminTemplates,
+  getStoredUser,
+  hasActiveSession,
+} from "../lib/api";
+import type { AdminDashboardData, EnergyWeight, TaskTemplate } from "../lib/api";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 
@@ -315,18 +325,29 @@ const CHART_DATA: Record<ChartRange, { labels: string[]; data: number[] }> = {
   },
 };
 
-function UserActivityChart({ range = "week" }: { range?: ChartRange }) {
-  const { labels, data } = CHART_DATA[range];
+function UserActivityChart({
+  range = "week",
+  activity,
+}: {
+  range?: ChartRange;
+  activity?: AdminDashboardData["activity"] | null;
+}) {
+  const chartSource = activity?.labels?.length && activity.data?.length
+    ? activity
+    : CHART_DATA[range];
+  const { labels, data } = chartSource;
   const width = 680;
   const height = 260;
   const padX = 40;
   const padY = 30;
-  const maxVal = Math.ceil(Math.max(...data)) + 2;
+  const safeData = data.length ? data : [0];
+  const maxVal = Math.max(6, Math.ceil(Math.max(...safeData)) + 2);
   const chartW = width - padX * 2;
   const chartH = height - padY * 2;
 
   const points = data.map((v, i) => {
-    const x = padX + (i / (data.length - 1)) * chartW;
+    const ratio = data.length === 1 ? 0.5 : i / (data.length - 1);
+    const x = padX + ratio * chartW;
     const y = padY + chartH - (v / maxVal) * chartH;
     return `${x},${y}`;
   });
@@ -337,8 +358,7 @@ function UserActivityChart({ range = "week" }: { range?: ChartRange }) {
     `${width - padX},${height - padY}`,
   ].join(" ");
 
-  const ySteps = maxVal + 1;
-  const yLabels = Array.from({ length: ySteps }, (_, i) => i);
+  const yLabels = Array.from({ length: 7 }, (_, i) => Math.round((maxVal / 6) * i));
 
   const lineLength = points.reduce((acc, _, i, arr) => {
     if (i === 0) return 0;
@@ -368,7 +388,8 @@ function UserActivityChart({ range = "week" }: { range?: ChartRange }) {
 
       {/* X axis labels */}
       {labels.map((d, i) => {
-        const x = padX + (i / (labels.length - 1)) * chartW;
+        const ratio = labels.length === 1 ? 0.5 : i / (labels.length - 1);
+        const x = padX + ratio * chartW;
         return (
           <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="10" fill={COLOR.text}
             style={{ animation: `adminFadeIn 0.4s ease ${0.2 + i * 0.04}s both` }}>{d}</text>
@@ -405,7 +426,7 @@ function UserActivityChart({ range = "week" }: { range?: ChartRange }) {
 // ─── Sample Data ───────────────────────────────────────────────────────────────
 
 type TemplateItem = {
-  id: number;
+  id: string;
   name: string;
   createdAt: string;
   createdBy: string;
@@ -416,13 +437,13 @@ type TemplateItem = {
 };
 
 const INITIAL_TEMPLATES: TemplateItem[] = [
-  { id: 1, name: "Onboarding Journey", createdAt: "Oct 24, 2023", createdBy: "Jane Doe", usage: "1,402 Users", level: "High", description: "A comprehensive onboarding template designed to guide new users through the platform. Includes step-by-step walkthroughs, resource links, and milestone checkpoints to ensure smooth adoption.", label: "Public" },
-  { id: 2, name: "Weekly Sprint Plan", createdAt: "Nov 12, 2023", createdBy: "Jane Doe", usage: "987 Users", level: "High", description: "Organize your weekly sprint cycles with structured task breakdowns, daily standups tracking, and retrospective notes. Perfect for agile teams managing iterative development.", label: "Custom" },
-  { id: 3, name: "Project Kickoff", createdAt: "Dec 5, 2023", createdBy: "Jane Doe", usage: "2,145 Users", level: "High", description: "Start any new project on the right foot with stakeholder identification, scope definition, timeline planning, and resource allocation templates built in.", label: "Public" },
-  { id: 4, name: "Research Pipeline", createdAt: "Jan 15, 2024", createdBy: "Jane Doe", usage: "654 Users", level: "High", description: "Streamline your research workflow from hypothesis formation to data collection, analysis, and presentation. Includes templates for literature review and methodology documentation.", label: "Custom" },
-  { id: 5, name: "Content Calendar", createdAt: "Feb 28, 2024", createdBy: "Jane Doe", usage: "1,823 Users", level: "High", description: "Plan and schedule content across multiple channels with this comprehensive calendar template. Track drafts, reviews, approvals, and publication dates all in one place.", label: "Public" },
-  { id: 6, name: "Bug Triage Workflow", createdAt: "Mar 10, 2024", createdBy: "Jane Doe", usage: "1,102 Users", level: "High", description: "Efficiently manage and prioritize bug reports with severity classification, assignment workflows, and resolution tracking. Integrates with development sprints seamlessly.", label: "Public" },
-  { id: 7, name: "Team Retrospective", createdAt: "Apr 2, 2024", createdBy: "Jane Doe", usage: "756 Users", level: "High", description: "Facilitate productive team retrospectives with structured formats for what went well, what needs improvement, and action items. Includes voting and priority ranking features.", label: "Custom" },
+  { id: "sample-1", name: "Onboarding Journey", createdAt: "Oct 24, 2023", createdBy: "Jane Doe", usage: "1,402 Users", level: "High", description: "A comprehensive onboarding template designed to guide new users through the platform. Includes step-by-step walkthroughs, resource links, and milestone checkpoints to ensure smooth adoption.", label: "Public" },
+  { id: "sample-2", name: "Weekly Sprint Plan", createdAt: "Nov 12, 2023", createdBy: "Jane Doe", usage: "987 Users", level: "High", description: "Organize your weekly sprint cycles with structured task breakdowns, daily standups tracking, and retrospective notes. Perfect for agile teams managing iterative development.", label: "Custom" },
+  { id: "sample-3", name: "Project Kickoff", createdAt: "Dec 5, 2023", createdBy: "Jane Doe", usage: "2,145 Users", level: "High", description: "Start any new project on the right foot with stakeholder identification, scope definition, timeline planning, and resource allocation templates built in.", label: "Public" },
+  { id: "sample-4", name: "Research Pipeline", createdAt: "Jan 15, 2024", createdBy: "Jane Doe", usage: "654 Users", level: "High", description: "Streamline your research workflow from hypothesis formation to data collection, analysis, and presentation. Includes templates for literature review and methodology documentation.", label: "Custom" },
+  { id: "sample-5", name: "Content Calendar", createdAt: "Feb 28, 2024", createdBy: "Jane Doe", usage: "1,823 Users", level: "High", description: "Plan and schedule content across multiple channels with this comprehensive calendar template. Track drafts, reviews, approvals, and publication dates all in one place.", label: "Public" },
+  { id: "sample-6", name: "Bug Triage Workflow", createdAt: "Mar 10, 2024", createdBy: "Jane Doe", usage: "1,102 Users", level: "High", description: "Efficiently manage and prioritize bug reports with severity classification, assignment workflows, and resolution tracking. Integrates with development sprints seamlessly.", label: "Public" },
+  { id: "sample-7", name: "Team Retrospective", createdAt: "Apr 2, 2024", createdBy: "Jane Doe", usage: "756 Users", level: "High", description: "Facilitate productive team retrospectives with structured formats for what went well, what needs improvement, and action items. Includes voting and priority ranking features.", label: "Custom" },
 ];
 
 // ─── Main Admin Dashboard ──────────────────────────────────────────────────────
@@ -432,6 +453,48 @@ type AdminMenu = "dashboard" | "template";
 type TaskLevel = "Low" | "Medium" | "High";
 type LabelType = "Public" | "Custom";
 
+const formatAdminDate = (value?: string) => {
+  if (!value) {
+    return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const formatNumber = (value?: number) => (value ?? 0).toLocaleString("en-US");
+
+const formatUsage = (value?: number) => `${formatNumber(value)} Users`;
+
+const getErrorText = (error: unknown, fallback: string) => {
+  return error instanceof Error ? error.message : fallback;
+};
+
+const mapTaskLevelToEnergy = (level: TaskLevel): EnergyWeight => {
+  if (level === "High") return "Berat";
+  if (level === "Medium") return "Sedang";
+  return "Ringan";
+};
+
+const mapTemplateToAdminItem = (template: TaskTemplate): TemplateItem => ({
+  id: template.id,
+  name: template.name,
+  createdAt: formatAdminDate(template.created_at),
+  createdBy:
+    template.created_by?.display_name ||
+    template.created_by?.email ||
+    (template.is_official ? "Bento-do" : "Unknown"),
+  usage: formatUsage(template.usage_count),
+  level: template.level || "Medium",
+  description: template.description || "No description provided.",
+  label: template.visibility === "private" ? "Custom" : "Public",
+});
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState<AdminMenu>("dashboard");
@@ -440,6 +503,10 @@ export default function AdminDashboardPage() {
   const [timeRange, setTimeRange] = useState<"Daily" | "Weekly" | "Monthly" | "Yearly">("Weekly");
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [adminName, setAdminName] = useState("Admin");
+  const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   // ─── Templates List (stateful for deletion) ────────────────────────────────
   const [templates, setTemplates] = useState<TemplateItem[]>(INITIAL_TEMPLATES);
@@ -451,47 +518,128 @@ export default function AdminDashboardPage() {
   const [templateDesc, setTemplateDesc] = useState("");
   const [templateLevel, setTemplateLevel] = useState<TaskLevel>("Medium");
   const [templateLabel, setTemplateLabel] = useState<LabelType>("Public");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
 
   // ─── Detail & Delete Modal State ────────────────────────────────────────────
   const [detailTemplate, setDetailTemplate] = useState<TemplateItem | null>(null);
   const [deleteTemplate, setDeleteTemplate] = useState<TemplateItem | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAdminData = async () => {
+      const storedUser = getStoredUser();
+
+      if (!hasActiveSession() || !storedUser) {
+        router.replace("/login");
+        return;
+      }
+
+      if (storedUser.role && storedUser.role !== "admin") {
+        router.replace("/dashboard");
+        return;
+      }
+
+      setAdminName(storedUser.display_name || storedUser.email?.split("@")[0] || "Admin");
+      setIsLoadingData(true);
+      setPageError(null);
+
+      try {
+        const [dashboardResponse, templatesResponse] = await Promise.all([
+          getAdminDashboard(),
+          getAdminTemplates(),
+        ]);
+
+        if (!isMounted) return;
+
+        setDashboardData(dashboardResponse.data);
+        setTemplates(templatesResponse.data.map(mapTemplateToAdminItem));
+      } catch (error) {
+        if (!isMounted) return;
+
+        setPageError(getErrorText(error, "Gagal memuat data admin."));
+      } finally {
+        if (isMounted) {
+          setIsLoadingData(false);
+        }
+      }
+    };
+
+    void loadAdminData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const handleOpenCreateModal = () => {
     setTemplateName("");
     setTemplateDesc("");
     setTemplateLevel("Medium");
     setTemplateLabel("Public");
+    setFormError(null);
     setShowCreateModal(true);
   };
 
-  const handleCreateTemplate = () => {
+  const handleCreateTemplate = async () => {
     if (!templateName.trim()) return;
-    const newTmpl: TemplateItem = {
-      id: Date.now(),
-      name: templateName,
-      createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      createdBy: "Admin",
-      usage: "0 Users",
-      level: templateLevel,
-      description: templateDesc,
-      label: templateLabel,
-    };
-    setTemplates((prev) => [newTmpl, ...prev]);
-    setShowCreateModal(false);
-    setShowSuccessModal(true);
+
+    setIsSavingTemplate(true);
+    setFormError(null);
+
+    try {
+      const response = await createTemplateRequest({
+        name: templateName.trim(),
+        description: templateDesc.trim(),
+        visibility: templateLabel === "Custom" ? "private" : "public",
+        level: templateLevel,
+        items: [
+          {
+            title: templateName.trim(),
+            description: templateDesc.trim(),
+            energy_weight: mapTaskLevelToEnergy(templateLevel),
+          },
+        ],
+      });
+
+      setTemplates((prev) => [mapTemplateToAdminItem(response.data), ...prev]);
+      setShowCreateModal(false);
+      setShowSuccessModal(true);
+    } catch (error) {
+      setFormError(getErrorText(error, "Gagal membuat template."));
+    } finally {
+      setIsSavingTemplate(false);
+    }
   };
 
   const handleCloseSuccess = () => {
     setShowSuccessModal(false);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteTemplate) return;
-    setTemplates((prev) => prev.filter((t) => t.id !== deleteTemplate.id));
-    setDeleteTemplate(null);
+
+    setIsDeletingTemplate(true);
+    setPageError(null);
+
+    try {
+      if (!deleteTemplate.id.startsWith("sample-")) {
+        await deleteAdminTemplate(deleteTemplate.id);
+      }
+
+      setTemplates((prev) => prev.filter((t) => t.id !== deleteTemplate.id));
+      setDeleteTemplate(null);
+    } catch (error) {
+      setPageError(getErrorText(error, "Gagal menghapus template."));
+    } finally {
+      setIsDeletingTemplate(false);
+    }
   };
 
   const handleSignOut = () => {
+    clearAuthSession();
     router.push("/login");
   };
 
@@ -504,34 +652,13 @@ export default function AdminDashboardPage() {
 
   // ─── Stat Cards Data ───────────────────────────────────────────────────────
 
-  const STAT_DATA = {
-    Daily: [
-      { label: "Guest Users", value: "18", icon: <GuestUserIcon />, trend: "+5%", up: true },
-      { label: "Users", value: "5", icon: <UsersGroupIcon />, trend: "+2%", up: true },
-      { label: "Task", value: "120", icon: <TaskClipIcon />, trend: "-1%", up: false },
-      { label: "Templates", value: "15", icon: <TemplatesIcon />, trend: "+10%", up: true },
-    ],
-    Weekly: [
-      { label: "Guest Users", value: "128", icon: <GuestUserIcon />, trend: "+10%", up: true },
-      { label: "Users", value: "50", icon: <UsersGroupIcon />, trend: "+10%", up: true },
-      { label: "Task", value: "9000", icon: <TaskClipIcon />, trend: "-10%", up: false },
-      { label: "Templates", value: "9000", icon: <TemplatesIcon />, trend: "-10%", up: false },
-    ],
-    Monthly: [
-      { label: "Guest Users", value: "540", icon: <GuestUserIcon />, trend: "+25%", up: true },
-      { label: "Users", value: "210", icon: <UsersGroupIcon />, trend: "+15%", up: true },
-      { label: "Task", value: "35000", icon: <TaskClipIcon />, trend: "+5%", up: true },
-      { label: "Templates", value: "32000", icon: <TemplatesIcon />, trend: "+8%", up: true },
-    ],
-    Yearly: [
-      { label: "Guest Users", value: "6480", icon: <GuestUserIcon />, trend: "+45%", up: true },
-      { label: "Users", value: "2500", icon: <UsersGroupIcon />, trend: "+30%", up: true },
-      { label: "Task", value: "420000", icon: <TaskClipIcon />, trend: "+20%", up: true },
-      { label: "Templates", value: "380000", icon: <TemplatesIcon />, trend: "+22%", up: true },
-    ]
-  };
-
-  const statCards = STAT_DATA[timeRange];
+  const stats = dashboardData?.stats;
+  const statCards = [
+    { label: "Guest Users", value: formatNumber(stats?.guest_users), icon: <GuestUserIcon />, trend: "+10%", up: true },
+    { label: "Users", value: formatNumber(stats?.users), icon: <UsersGroupIcon />, trend: "+10%", up: true },
+    { label: "Task", value: formatNumber(stats?.tasks), icon: <TaskClipIcon />, trend: "-10%", up: false },
+    { label: "Templates", value: formatNumber(stats?.templates), icon: <TemplatesIcon />, trend: "-10%", up: false },
+  ];
   
   const timeRangeText = {
     Daily: "from yesterday",
@@ -805,10 +932,10 @@ export default function AdminDashboardPage() {
                   border: "2px solid #e0e0e0",
                 }}
               >
-                A
+                {adminName.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.2 }}>Admin</div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.2 }}>{adminName}</div>
                 <div style={{ fontSize: "10px", color: COLOR.muted, lineHeight: 1.3 }}>SuperAdmin</div>
               </div>
             </div>
@@ -817,6 +944,39 @@ export default function AdminDashboardPage() {
 
         {/* ── Scrollable Content ── */}
         <div style={{ flex: 1, padding: "28px 36px 40px", overflowY: "auto", overflowX: "hidden", backgroundColor: "#FAFAFA" }}>
+          {pageError && (
+            <div
+              style={{
+                marginBottom: "16px",
+                padding: "12px 14px",
+                borderRadius: "8px",
+                border: `1px solid ${COLOR.dangerSoft}`,
+                backgroundColor: "#FFF5F6",
+                color: "#B91C1C",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              {pageError}
+            </div>
+          )}
+
+          {isLoadingData && (
+            <div
+              style={{
+                marginBottom: "16px",
+                padding: "12px 14px",
+                borderRadius: "8px",
+                border: `1px solid ${COLOR.borderSoft}`,
+                backgroundColor: COLOR.surface,
+                color: COLOR.mutedDark,
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              Loading admin data...
+            </div>
+          )}
 
           {/* ═══════════════════════════════════════
               DASHBOARD VIEW
@@ -971,7 +1131,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
                 <div style={{ width: "100%", minHeight: "290px" }} key={chartRange}>
-                  <UserActivityChart range={chartRange} />
+                  <UserActivityChart range={chartRange} activity={dashboardData?.activity} />
                 </div>
               </div>
 
@@ -1501,32 +1661,35 @@ export default function AdminDashboardPage() {
               <button
                 id="admin-delete-confirm"
                 onClick={handleConfirmDelete}
+                disabled={isDeletingTemplate}
                 style={{
                   flex: 1,
                   height: "44px",
                   borderRadius: "8px",
                   border: "none",
-                  backgroundColor: "#EF4444",
+                  backgroundColor: isDeletingTemplate ? COLOR.muted : "#EF4444",
                   color: "#ffffff",
                   fontSize: "13px",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: isDeletingTemplate ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
                   transition: "all 0.2s ease",
-                  boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
+                  boxShadow: isDeletingTemplate ? "none" : "0 2px 8px rgba(239,68,68,0.3)",
                 }}
                 onMouseEnter={(e) => {
+                  if (isDeletingTemplate) return;
                   e.currentTarget.style.backgroundColor = "#DC2626";
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow = "0 4px 16px rgba(239,68,68,0.4)";
                 }}
                 onMouseLeave={(e) => {
+                  if (isDeletingTemplate) return;
                   e.currentTarget.style.backgroundColor = "#EF4444";
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "0 2px 8px rgba(239,68,68,0.3)";
                 }}
               >
-                Yes, Delete
+                {isDeletingTemplate ? "Deleting..." : "Yes, Delete"}
               </button>
             </div>
           </div>
@@ -1595,6 +1758,23 @@ export default function AdminDashboardPage() {
                 <CloseIcon />
               </button>
             </div>
+
+            {formError && (
+              <div
+                style={{
+                  marginBottom: "18px",
+                  padding: "11px 13px",
+                  borderRadius: "8px",
+                  border: `1px solid ${COLOR.dangerSoft}`,
+                  backgroundColor: "#FFF5F6",
+                  color: "#B91C1C",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                }}
+              >
+                {formError}
+              </div>
+            )}
 
             {/* Template Name */}
             <div style={{ marginBottom: "24px" }}>
@@ -1846,35 +2026,35 @@ export default function AdminDashboardPage() {
               <button
                 id="admin-create-modal-submit"
                 onClick={handleCreateTemplate}
-                disabled={!templateName.trim()}
+                disabled={!templateName.trim() || isSavingTemplate}
                 style={{
                   height: "44px",
                   padding: "0 28px",
                   borderRadius: "8px",
                   border: "none",
-                  backgroundColor: !templateName.trim() ? COLOR.muted : COLOR.primary,
+                  backgroundColor: !templateName.trim() || isSavingTemplate ? COLOR.muted : COLOR.primary,
                   color: "#ffffff",
                   fontSize: "13px",
                   fontWeight: 600,
-                  cursor: !templateName.trim() ? "not-allowed" : "pointer",
+                  cursor: !templateName.trim() || isSavingTemplate ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
                   transition: "all 0.2s ease",
-                  boxShadow: !templateName.trim() ? "none" : "0 2px 8px rgba(0,139,31,0.25)",
+                  boxShadow: !templateName.trim() || isSavingTemplate ? "none" : "0 2px 8px rgba(0,139,31,0.25)",
                 }}
                 onMouseEnter={(e) => {
-                  if (templateName.trim()) {
+                  if (templateName.trim() && !isSavingTemplate) {
                     e.currentTarget.style.backgroundColor = COLOR.primaryHover;
                     e.currentTarget.style.transform = "translateY(-1px)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (templateName.trim()) {
+                  if (templateName.trim() && !isSavingTemplate) {
                     e.currentTarget.style.backgroundColor = COLOR.primary;
                     e.currentTarget.style.transform = "translateY(0)";
                   }
                 }}
               >
-                Create Template
+                {isSavingTemplate ? "Creating..." : "Create Template"}
               </button>
             </div>
           </div>

@@ -15,6 +15,7 @@ export type AuthUser = {
   id: string;
   email: string;
   display_name: string;
+  role?: "user" | "admin";
   current_energy?: number;
   max_energy?: number;
   created_at?: string;
@@ -77,16 +78,32 @@ export type DashboardZenResponse = {
 };
 
 export type TemplatePreviewItem = {
+  id?: string;
   title: string;
+  description?: string | null;
   energy_weight: EnergyWeight;
+  level?: "Low" | "Medium" | "High";
 };
 
 export type TaskTemplate = {
+  id: string;
   key: string;
   name: string;
-  description: string;
+  description: string | null;
+  level?: "Low" | "Medium" | "High";
+  visibility?: "public" | "private";
+  is_official?: boolean;
+  usage_count?: number;
+  created_by?: {
+    id: string;
+    display_name: string | null;
+    email: string;
+  } | null;
+  created_at?: string;
+  updated_at?: string;
   total_items: number;
   preview_items: TemplatePreviewItem[];
+  items?: TemplatePreviewItem[];
 };
 
 export type TemplateListResponse = {
@@ -102,6 +119,32 @@ export type ApplyTemplateResponse = {
   };
   inserted_count: number;
   data: Task[];
+};
+
+export type CreateTemplatePayload = {
+  name: string;
+  description?: string;
+  visibility: "public" | "private";
+  level: "Low" | "Medium" | "High";
+  items: {
+    title: string;
+    description?: string;
+    energy_weight: EnergyWeight;
+  }[];
+};
+
+export type AdminDashboardData = {
+  stats: {
+    guest_users: number;
+    users: number;
+    tasks: number;
+    templates: number;
+  };
+  activity: {
+    labels: string[];
+    data: number[];
+  };
+  recent_templates: TaskTemplate[];
 };
 
 export type Notification = {
@@ -338,9 +381,30 @@ export const getTemplates = () => {
   return authRequest<TemplateListResponse>("/templates");
 };
 
+export const createTemplate = (payload: CreateTemplatePayload) => {
+  return authRequest<{ data: TaskTemplate }>("/templates", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
 export const applyTemplate = (templateKey: string) => {
   return authRequest<ApplyTemplateResponse>(`/templates/apply/${templateKey}`, {
     method: "POST",
+  });
+};
+
+export const getAdminDashboard = () => {
+  return authRequest<{ data: AdminDashboardData }>("/admin/dashboard");
+};
+
+export const getAdminTemplates = () => {
+  return authRequest<TemplateListResponse>("/admin/templates");
+};
+
+export const deleteAdminTemplate = (templateId: string) => {
+  return authRequest(`/admin/templates/${templateId}`, {
+    method: "DELETE",
   });
 };
 
