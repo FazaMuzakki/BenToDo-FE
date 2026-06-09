@@ -13,6 +13,7 @@ import {
   isGuestSession,
   type ActiveFocusSession,
   type Task,
+  type TaskStatus,
   type EnergySummary
 } from "../lib/api";
 
@@ -104,21 +105,47 @@ export default function FocusTimerPage() {
     loadData();
   }, []);
 
+  async function handleTimerComplete() {
+    setIsActive(false);
+
+    if (mode === "focus") {
+      if (session) {
+        try {
+          await stopFocusSession(session.id, "completed");
+          setSession(null);
+        } catch (error) {
+          console.error("Failed to stop focus session", error);
+        }
+      }
+      setMode("break");
+      setTimeLeft(BREAK_DURATION);
+    } else {
+      setMode("focus");
+      setTimeLeft(FOCUS_DURATION);
+    }
+  }
+
   // Timer tick effect
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-
     if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
+      const interval = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
+
+      return () => {
+        clearInterval(interval);
+      };
     } else if (isActive && timeLeft === 0) {
-      handleTimerComplete();
+      const timeout = setTimeout(() => {
+        void handleTimerComplete();
+      }, 0);
+
+      return () => {
+        clearTimeout(timeout);
+      };
     }
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, timeLeft]);
 
@@ -138,26 +165,6 @@ export default function FocusTimerPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [activePopup]);
-
-  const handleTimerComplete = async () => {
-    setIsActive(false);
-
-    if (mode === "focus") {
-      if (session) {
-        try {
-          await stopFocusSession(session.id, "completed");
-          setSession(null);
-        } catch (error) {
-          console.error("Failed to stop focus session", error);
-        }
-      }
-      setMode("break");
-      setTimeLeft(BREAK_DURATION);
-    } else {
-      setMode("focus");
-      setTimeLeft(FOCUS_DURATION);
-    }
-  };
 
   const togglePlayPause = () => {
     setIsActive(!isActive);
@@ -196,8 +203,8 @@ export default function FocusTimerPage() {
 
   const handleToggleTaskStatus = async (taskId: string, currentStatus: string) => {
     try {
-      const newStatus = currentStatus === "done" ? "pending" : "done";
-      await updateTask(taskId, { status: newStatus as any });
+      const newStatus: TaskStatus = currentStatus === "done" ? "pending" : "done";
+      await updateTask(taskId, { status: newStatus });
       setTasks(prev => prev.filter(t => t.id !== taskId));
     } catch (error) {
       console.error("Failed to update task", error);
