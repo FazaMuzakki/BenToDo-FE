@@ -1,23 +1,31 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   getActiveFocusSession,
-  stopFocusSession,
-  getTasks,
   getEnergySummary,
-  updateTask,
+  getTasks,
   hasActiveSession,
   isGuestSession,
+  startFocusSession,
+  stopFocusSession,
   type ActiveFocusSession,
+  type EnergySummary,
+  type EnergyWeight,
   type Task,
-  type TaskStatus,
-  type EnergySummary
 } from "../lib/api";
 
-type PopupType = "task" | "timer" | "energy" | null;
+const COLOR = {
+  green: "#008B1F",
+  greenDark: "#0F6E31",
+  greenSoft: "#DDFBE5",
+  surface: "#FFFFFF",
+  dark: "#111513",
+  text: "#111827",
+  muted: "#6B7280",
+  border: "#DADADA",
+};
 
 const GUEST_ENERGY_SUMMARY: EnergySummary = {
   current_energy: 100,
@@ -25,507 +33,934 @@ const GUEST_ENERGY_SUMMARY: EnergySummary = {
   is_critical_energy: false,
 };
 
-export default function FocusTimerPage() {
+type ExitIntent = "complete" | "exit" | null;
+
+type FocusResult = {
+  title: string;
+  elapsedSeconds: number;
+  endReason: "completed" | "escaped";
+  energy: EnergySummary | null;
+};
+
+const levelRank: Record<EnergyWeight, number> = {
+  Ringan: 1,
+  Sedang: 2,
+  Berat: 3,
+};
+
+const levelLabel: Record<EnergyWeight, string> = {
+  Ringan: "LOW",
+  Sedang: "MEDIUM",
+  Berat: "HIGH",
+};
+
+const levelTone: Record<EnergyWeight, { bg: string; color: string; border: string }> = {
+  Ringan: { bg: "#DCFCE7", color: "#008B1F", border: "#BBF7D0" },
+  Sedang: { bg: "#FFEDD5", color: "#EA580C", border: "#FED7AA" },
+  Berat: { bg: "#FFE4E6", color: "#E11D48", border: "#FECDD3" },
+};
+
+const exitReasons = [
+  "Task finished",
+  "Interrupted",
+  "Need a break",
+  "Switching task",
+  "Other reason",
+];
+
+const formatDuration = (seconds: number) => {
+  const safeSeconds = Math.max(0, seconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const secs = safeSeconds % 60;
+  const pad = (num: number) => String(num).padStart(2, "0");
+
+  if (hours > 0) {
+    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+  }
+
+  return `${pad(minutes)}:${pad(secs)}`;
+};
+
+const formatDueDate = (value: string | null) => {
+  if (!value) return "No due date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No due date";
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
+const getDeadlineTime = (task: Task) => {
+  if (!task.deadline) return Number.MAX_SAFE_INTEGER;
+  const time = new Date(task.deadline).getTime();
+  return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  return error instanceof Error ? error.message : fallback;
+};
+
+function LevelBadge({ level }: { level: EnergyWeight }) {
+  const tone = levelTone[level];
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "999px",
+        border: `1px solid ${tone.border}`,
+        backgroundColor: tone.bg,
+        color: tone.color,
+        fontSize: "11px",
+        fontWeight: 800,
+        letterSpacing: "0.04em",
+        padding: "3px 10px",
+        lineHeight: "16px",
+      }}
+    >
+      {levelLabel[level]}
+    </span>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+function ArrowLeftIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m12 19-7-7 7-7" />
+      <path d="M19 12H5" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
+function FocusTimerPage() {
   const router = useRouter();
-
-  const [mode, setMode] = useState<"focus" | "break">("focus");
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [session, setSession] = useState<ActiveFocusSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Popup states
-  const [activePopup, setActivePopup] = useState<PopupType>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [session, setSession] = useState<ActiveFocusSession | null>(null);
   const [energyData, setEnergyData] = useState<EnergySummary | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [showTaskPicker, setShowTaskPicker] = useState(false);
+  const [exitIntent, setExitIntent] = useState<ExitIntent>(null);
+  const [exitReason, setExitReason] = useState(exitReasons[0]);
+  const [exitNote, setExitNote] = useState("");
+  const [result, setResult] = useState<FocusResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Custom Timer Form State
-  const [customMinutes, setCustomMinutes] = useState("");
-  const [customHours, setCustomHours] = useState("");
+  const activeTasks = useMemo(() => {
+    return tasks.filter((task) => task.status !== "done");
+  }, [tasks]);
 
-  const popupRef = useRef<HTMLDivElement>(null);
+  const priorityTasks = useMemo(() => {
+    return [...activeTasks]
+      .sort((a, b) => {
+        const byDeadline = getDeadlineTime(a) - getDeadlineTime(b);
+        if (byDeadline !== 0) return byDeadline;
+        return levelRank[b.energy_weight] - levelRank[a.energy_weight];
+      })
+      .slice(0, 3);
+  }, [activeTasks]);
 
-  // Constants
-  const FOCUS_DURATION = 25 * 60;
-  const BREAK_DURATION = 5 * 60;
+  const selectedTask = useMemo(() => {
+    return activeTasks.find((task) => task.id === selectedTaskId) ?? null;
+  }, [activeTasks, selectedTaskId]);
+
+  const energyPercent = useMemo(() => {
+    if (!energyData?.max_energy) return 100;
+    return Math.max(
+      0,
+      Math.min(100, Math.round((energyData.current_energy / energyData.max_energy) * 100)),
+    );
+  }, [energyData]);
+
+  const startTask = useCallback(async (taskId: string, auto = false) => {
+    if (!taskId) return;
+
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await startFocusSession(taskId);
+      setSession(response.data);
+      setSelectedTaskId(taskId);
+      setElapsedSeconds(0);
+      setShowTaskPicker(false);
+      setResult(null);
+    } catch (startError) {
+      const message = getErrorMessage(startError, "Failed to start focus session.");
+      const activeSessionExists = message.toLowerCase().includes("sesi fokus aktif") || message.toLowerCase().includes("active");
+
+      if (activeSessionExists) {
+        const active = await getActiveFocusSession();
+        if (active.active_session) {
+          const startedAt = new Date(active.active_session.started_at).getTime();
+          setSession(active.active_session);
+          setSelectedTaskId(active.active_session.task_id);
+          setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+          setShowTaskPicker(false);
+          return;
+        }
+      }
+
+      setError(message);
+      if (auto) setShowTaskPicker(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Initial load - check for active focus session & data
-    const loadData = async () => {
+    let isCancelled = false;
+
+    const loadFocusData = async () => {
       if (!hasActiveSession()) {
         router.replace("/login");
         return;
       }
 
+      setIsLoading(true);
+      setError(null);
+
       try {
         const guest = isGuestSession();
-        const [sessionRes, tasksRes, energyRes] = await Promise.all([
-          guest
-            ? Promise.resolve({
-              active_session: null,
-              auto_stopped_session: null,
-            })
-            : getActiveFocusSession(),
-          getTasks(1, 10),
-          guest ? Promise.resolve({ data: GUEST_ENERGY_SUMMARY }) : getEnergySummary()
+        const [activeRes, tasksRes, energyRes] = await Promise.all([
+          getActiveFocusSession().catch(() => ({
+            active_session: null,
+            auto_stopped_session: null,
+          })),
+          getTasks(1, 50),
+          guest ? Promise.resolve({ data: GUEST_ENERGY_SUMMARY }) : getEnergySummary(),
         ]);
 
-        if (sessionRes.active_session) {
-          const s = sessionRes.active_session;
-          setSession(s);
-          setMode("focus");
+        if (isCancelled) return;
 
-          const startedAt = new Date(s.started_at).getTime();
-          const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-          const limitSeconds = s.session_limit_minutes * 60;
-          let remaining = limitSeconds - elapsedSeconds;
-          if (remaining < 0) remaining = 0;
+        const activeList = tasksRes.data.filter((task) => task.status !== "done");
+        const directTaskId = new URLSearchParams(window.location.search).get("taskId");
+        const directTask = directTaskId ? activeList.find((task) => task.id === directTaskId) : null;
+        const defaultTask = [...activeList].sort((a, b) => getDeadlineTime(a) - getDeadlineTime(b))[0] ?? null;
 
-          setTimeLeft(remaining);
-          setIsActive(true);
-        } else {
-          setTimeLeft(FOCUS_DURATION);
+        setTasks(tasksRes.data);
+        setEnergyData(energyRes.data);
+
+        if (activeRes.active_session) {
+          const startedAt = new Date(activeRes.active_session.started_at).getTime();
+          setSession(activeRes.active_session);
+          setSelectedTaskId(activeRes.active_session.task_id);
+          setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+          setShowTaskPicker(false);
+          return;
         }
 
-        if (tasksRes.data) {
-          setTasks(tasksRes.data.filter(t => t.status !== "done"));
+        if (directTask) {
+          setSelectedTaskId(directTask.id);
+          setShowTaskPicker(false);
+          await startTask(directTask.id, true);
+          return;
         }
 
-        if (energyRes.data) {
-          setEnergyData(energyRes.data);
+        setSelectedTaskId(defaultTask?.id ?? null);
+        setShowTaskPicker(true);
+      } catch (loadError) {
+        if (!isCancelled) {
+          setError(getErrorMessage(loadError, "Failed to load focus data."));
         }
-      } catch (error) {
-        console.error("Failed to fetch data", error);
-        setTimeLeft(FOCUS_DURATION);
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) setIsLoading(false);
       }
     };
 
-    loadData();
-  }, []);
+    void loadFocusData();
 
-  async function handleTimerComplete() {
-    setIsActive(false);
-
-    if (mode === "focus") {
-      if (session) {
-        try {
-          await stopFocusSession(session.id, "completed");
-          setSession(null);
-        } catch (error) {
-          console.error("Failed to stop focus session", error);
-        }
-      }
-      setMode("break");
-      setTimeLeft(BREAK_DURATION);
-    } else {
-      setMode("focus");
-      setTimeLeft(FOCUS_DURATION);
-    }
-  }
-
-  // Timer tick effect
-  useEffect(() => {
-    if (isActive && timeLeft > 0) {
-      const interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-
-      return () => {
-        clearInterval(interval);
-      };
-    } else if (isActive && timeLeft === 0) {
-      const timeout = setTimeout(() => {
-        void handleTimerComplete();
-      }, 0);
-
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
-
-    return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, timeLeft]);
-
-  // Click outside popup to close
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-        // Also ensure we didn't click on the trigger buttons (handled via propagation if needed)
-        setActivePopup(null);
-      }
-    }
-
-    if (activePopup) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      isCancelled = true;
     };
-  }, [activePopup]);
+  }, [router, startTask]);
 
-  const togglePlayPause = () => {
-    setIsActive(!isActive);
-  };
+  useEffect(() => {
+    if (!session) return;
 
-  const resetTimer = () => {
-    setIsActive(false);
-    setTimeLeft(mode === "focus" ? FOCUS_DURATION : BREAK_DURATION);
-  };
+    const startedAt = new Date(session.started_at).getTime();
+    const tick = () => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+    };
 
-  const switchMode = async () => {
-    setIsActive(false);
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [session]);
 
-    if (mode === "focus" && session) {
-      try {
-        await stopFocusSession(session.id, "escaped");
-        setSession(null);
-      } catch (error) {
-        console.error("Failed to stop focus session", error);
-      }
+  const handleBackRequest = () => {
+    if (session) {
+      setExitIntent("exit");
+      setExitReason("Interrupted");
+      return;
     }
 
-    if (mode === "focus") {
-      setMode("break");
-      setTimeLeft(BREAK_DURATION);
-    } else {
-      setMode("focus");
-      setTimeLeft(FOCUS_DURATION);
+    router.push("/dashboard");
+  };
+
+  const handleConfirmStop = async () => {
+    if (!session) {
+      router.push("/dashboard");
+      return;
     }
-  };
 
-  const togglePopup = (type: PopupType, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActivePopup(prev => prev === type ? null : type);
-  };
+    const endReason = exitIntent === "complete" ? "completed" : "escaped";
+    const currentTitle = session.task_title || selectedTask?.title || "Selected task";
+    const currentElapsed = elapsedSeconds;
 
-  const handleToggleTaskStatus = async (taskId: string, currentStatus: string) => {
+    setIsSubmitting(true);
+    setError(null);
+
     try {
-      const newStatus: TaskStatus = currentStatus === "done" ? "pending" : "done";
-      await updateTask(taskId, { status: newStatus });
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-    } catch (error) {
-      console.error("Failed to update task", error);
+      const response = await stopFocusSession(session.id, endReason);
+      const nextEnergy = response.energy ?? energyData;
+      setEnergyData(nextEnergy ?? energyData);
+      setResult({
+        title: currentTitle,
+        elapsedSeconds: currentElapsed,
+        endReason,
+        energy: nextEnergy ?? energyData,
+      });
+      setSession(null);
+      setExitIntent(null);
+      setExitNote("");
+      setShowTaskPicker(false);
+    } catch (stopError) {
+      setError(getErrorMessage(stopError, "Failed to stop focus session."));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const applyCustomTimer = () => {
-    let totalSeconds = 0;
-    const h = parseInt(customHours) || 0;
-    const m = parseInt(customMinutes) || 0;
-
-    if (h === 0 && m === 0) return;
-
-    totalSeconds = (h * 3600) + (m * 60);
-    setTimeLeft(totalSeconds);
-    setIsActive(false);
-    setActivePopup(null);
-    setCustomHours("");
-    setCustomMinutes("");
-  };
-
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
-    const s = (seconds % 60).toString().padStart(2, "0");
-    if (h > 0) {
-      return { m: `${h.toString().padStart(2, "0")}:${m}`, s };
-    }
-    return { m, s };
-  };
-
-  const { m, s } = formatTime(timeLeft);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#161816] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#0F8C2A] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  const dotColor = "#0F8C2A";
-  const buttonColor = "#0F8C2A";
-  const textColor = "#E8F5E9";
-
-  const energyPercentage = energyData
-    ? Math.min(100, Math.round((energyData.current_energy / energyData.max_energy) * 100))
-    : 0;
+  const selectedTitle = session?.task_title || selectedTask?.title || "Choose a priority task";
+  const energyLossPreview = Math.floor(elapsedSeconds / 60);
 
   return (
     <main
-      className="min-h-screen text-white font-sans overflow-hidden flex flex-col relative"
       style={{
-        backgroundColor: "#161816",
-        backgroundImage: `
-          radial-gradient(circle at center, #1e2b1f 0%, #161816 70%),
-          linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)
-        `,
-        backgroundSize: "100% 100%, 40px 40px, 40px 40px",
-        backgroundPosition: "center, center, center"
+        minHeight: "100vh",
+        color: "#E8F8EC",
+        background:
+          "radial-gradient(circle at 50% 42%, rgba(0,139,31,0.22), rgba(8,24,14,0.94) 42%, #111513 100%)",
+        position: "relative",
+        overflow: "hidden",
+        fontFamily: "inherit",
       }}
     >
-      {/* Header */}
-      <header className="flex justify-between items-center p-8 z-10 relative">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-white/80 hover:text-white transition"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-          <span className="text-[15px]">Back To Dashboard</span>
-        </Link>
+      <style>{`
+        @keyframes focusGridDrift {
+          0% { transform: translate3d(0, 0, 0); opacity: 0.42; }
+          50% { opacity: 0.72; }
+          100% { transform: translate3d(-24px, -24px, 0); opacity: 0.42; }
+        }
+        @keyframes focusPulse {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(1.04); opacity: 0.9; }
+        }
+        .focus-grid::before {
+          content: "";
+          position: absolute;
+          inset: -80px;
+          background-image:
+            linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+          background-size: 48px 48px;
+          animation: focusGridDrift 14s linear infinite;
+          pointer-events: none;
+        }
+        .focus-orbit {
+          position: absolute;
+          width: min(58vw, 720px);
+          aspect-ratio: 1;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          border-radius: 999px;
+          border: 1px solid rgba(156,255,173,0.16);
+          box-shadow: 0 0 90px rgba(0,139,31,0.22) inset;
+          animation: focusPulse 6s ease-in-out infinite;
+          pointer-events: none;
+        }
+      `}</style>
 
-        <div className="flex gap-4">
+      <div className="focus-grid" style={{ position: "absolute", inset: 0 }} />
+      <div className="focus-orbit" />
+
+      <header
+        style={{
+          position: "relative",
+          zIndex: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "28px 36px",
+        }}
+      >
+        <button
+          onClick={handleBackRequest}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            border: "none",
+            background: "transparent",
+            color: "#CFEFD6",
+            fontFamily: "inherit",
+            fontSize: "13px",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          <ArrowLeftIcon />
+          Back To Dashboard
+        </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span
+            style={{
+              border: "1px solid rgba(255,255,255,0.14)",
+              borderRadius: "999px",
+              padding: "8px 12px",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "#D7FBE1",
+              backgroundColor: "rgba(255,255,255,0.06)",
+            }}
+          >
+            Energy {energyPercent}%
+          </span>
         </div>
       </header>
 
-      {/* Center content */}
-      <div className="flex-1 flex flex-col items-center justify-center z-10 -mt-16">
-        {/* Mode Pill */}
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-[#1e231e]/50 backdrop-blur-sm mb-6">
+      <section
+        style={{
+          position: "relative",
+          zIndex: 2,
+          minHeight: "calc(100vh - 102px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px 24px",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ width: "min(760px, 100%)" }}>
           <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: dotColor, boxShadow: `0 0 8px ${dotColor}` }}
-          ></div>
-          <span className="text-[14px] text-white/90">
-            {mode === "focus" ? "Fokus Mode" : "Break Mode"}
-          </span>
-        </div>
-
-        {/* Status Text */}
-        <h2 className="text-[20px] tracking-[0.2em] font-medium text-white/70 mb-2 uppercase">
-          {mode === "focus" ? "BEING FOCUSED..." : "TAKING A BREAK..."}
-        </h2>
-
-        {/* Timer */}
-        <div className="flex items-center text-[160px] font-bold tracking-tight leading-none drop-shadow-lg mb-10" style={{ color: textColor }}>
-          <span className="tabular-nums">{m}</span>
-          <span className="mx-4 pb-4 animate-pulse">:</span>
-          <span className="tabular-nums">{s}</span>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center gap-6">
-          <button
-            onClick={togglePlayPause}
-            className="w-[64px] h-[64px] rounded-full flex items-center justify-center shadow-lg transition transform hover:scale-105 active:scale-95"
-            style={{ backgroundColor: buttonColor }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              borderRadius: "999px",
+              border: "1px solid rgba(156,255,173,0.3)",
+              backgroundColor: "rgba(0,139,31,0.18)",
+              color: "#BDFCC8",
+              padding: "6px 12px",
+              fontSize: "12px",
+              fontWeight: 700,
+              marginBottom: "18px",
+            }}
           >
-            {isActive ? (
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16" rx="1" />
-                <rect x="14" y="4" width="4" height="16" rx="1" />
-              </svg>
+            <span style={{ width: "7px", height: "7px", borderRadius: "999px", backgroundColor: COLOR.green }} />
+            Focus Mode
+          </div>
+
+          <p style={{ margin: "0 0 10px", color: "#CFEFD6", fontSize: "14px", fontWeight: 800, letterSpacing: "0.14em" }}>
+            BEING FOCUSED...
+          </p>
+
+          <h1
+            style={{
+              margin: "0 auto 18px",
+              maxWidth: "720px",
+              color: "#F4FFF6",
+              fontSize: "clamp(22px, 4vw, 36px)",
+              lineHeight: 1.18,
+              fontWeight: 800,
+              overflowWrap: "anywhere",
+            }}
+          >
+            {selectedTitle}
+          </h1>
+
+          <div
+            style={{
+              fontSize: "clamp(72px, 14vw, 142px)",
+              lineHeight: 0.95,
+              fontWeight: 900,
+              color: "#E2FBE7",
+              letterSpacing: "0",
+              textShadow: "0 18px 58px rgba(0,0,0,0.28)",
+              marginBottom: "26px",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {formatDuration(elapsedSeconds)}
+          </div>
+
+          {error && (
+            <div
+              style={{
+                margin: "0 auto 18px",
+                maxWidth: "560px",
+                border: "1px solid rgba(248,113,113,0.35)",
+                backgroundColor: "rgba(127,29,29,0.28)",
+                borderRadius: "10px",
+                color: "#FECACA",
+                padding: "12px 14px",
+                fontSize: "13px",
+                fontWeight: 700,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            {!session ? (
+              <button
+                disabled={isLoading || isSubmitting || activeTasks.length === 0}
+                onClick={() => {
+                  if (selectedTaskId) {
+                    void startTask(selectedTaskId);
+                  } else {
+                    setShowTaskPicker(true);
+                  }
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  minWidth: "150px",
+                  height: "44px",
+                  borderRadius: "999px",
+                  border: "none",
+                  backgroundColor: COLOR.green,
+                  color: "#ffffff",
+                  fontFamily: "inherit",
+                  fontWeight: 800,
+                  fontSize: "14px",
+                  cursor: isLoading || isSubmitting ? "not-allowed" : "pointer",
+                  opacity: isLoading || isSubmitting ? 0.72 : 1,
+                }}
+              >
+                <PlayIcon />
+                Start
+              </button>
             ) : (
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="ml-1">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
+              <>
+                <button
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setExitIntent("complete");
+                    setExitReason("Task finished");
+                  }}
+                  style={{
+                    minWidth: "150px",
+                    height: "44px",
+                    borderRadius: "999px",
+                    border: "none",
+                    backgroundColor: COLOR.green,
+                    color: "#ffffff",
+                    fontFamily: "inherit",
+                    fontWeight: 800,
+                    fontSize: "14px",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Finish Task
+                </button>
+                <button
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setExitIntent("exit");
+                    setExitReason("Interrupted");
+                  }}
+                  style={{
+                    minWidth: "130px",
+                    height: "44px",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    backgroundColor: "rgba(255,255,255,0.06)",
+                    color: "#DDFBE5",
+                    fontFamily: "inherit",
+                    fontWeight: 800,
+                    fontSize: "14px",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Exit Focus
+                </button>
+              </>
             )}
-          </button>
-
-          <button
-            onClick={resetTimer}
-            className="w-[54px] h-[54px] rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 transition"
-          >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <polyline points="3 3 3 8 8 8" />
-            </svg>
-          </button>
-
-          <button
-            onClick={switchMode}
-            className="px-8 py-[14px] rounded-full bg-[#2a2e2a] hover:bg-[#343a34] text-white/90 font-semibold tracking-wide transition border border-white/5"
-          >
-            switch
-          </button>
-        </div>
-      </div>
-
-      {/* Popups Overlay (Only covers screen for centering the Timer Modal, otherwise just container) */}
-      {activePopup === "timer" && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex items-center justify-center">
-          <div ref={popupRef} className="bg-[#1C1C1C] border border-white/10 rounded-2xl w-[480px] p-8 shadow-2xl flex flex-col items-center">
-            <div className="flex items-center gap-3 text-white mb-2">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <h3 className="text-[20px] font-semibold">Timer Setting</h3>
-            </div>
-            <p className="text-white/50 text-[14px] mb-8">Set your custom timer.</p>
-
-            <div className="flex w-full gap-4 mb-4">
-              <div className="flex-1 relative">
-                <input
-                  type="number"
-                  value={customMinutes}
-                  onChange={(e) => setCustomMinutes(e.target.value)}
-                  className="w-full bg-[#2B2B2B] border border-white/20 rounded-xl px-4 py-4 text-center text-white focus:outline-none focus:border-[#0F8C2A] transition"
-                  placeholder="Minutes"
-                />
-              </div>
-              <div className="flex-1 relative">
-                <input
-                  type="number"
-                  value={customHours}
-                  onChange={(e) => setCustomHours(e.target.value)}
-                  className="w-full bg-[#2B2B2B] border border-white/20 rounded-xl px-4 py-4 text-center text-white focus:outline-none focus:border-[#0F8C2A] transition"
-                  placeholder="Hours"
-                />
-              </div>
-            </div>
-            <div className="w-full mb-8">
-              <input
-                type="text"
-                className="w-full bg-[#2B2B2B] border border-white/20 rounded-xl px-4 py-4 text-white placeholder:text-white/40 focus:outline-none focus:border-[#0F8C2A] transition"
-                placeholder="Custom Your Timer"
-              />
-            </div>
-
-            <div className="flex w-full gap-4">
-              <button
-                onClick={() => setActivePopup(null)}
-                className="flex-1 py-3.5 rounded-xl bg-[#A10000] hover:bg-[#800000] text-white font-medium transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={applyCustomTimer}
-                className="flex-1 py-3.5 rounded-xl bg-[#0F8C2A] hover:bg-[#0c7322] text-white font-medium transition"
-              >
-                Apply
-              </button>
-            </div>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* Popovers anchored to Bottom Left */}
-      <div className="absolute bottom-[90px] left-8 z-40 flex flex-col items-start gap-4">
-        {/* Task Popup */}
-        {activePopup === "task" && (
-          <div ref={popupRef} className="bg-[#595959] border border-white/10 rounded-2xl w-[400px] shadow-2xl p-4 origin-bottom-left animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F8C2A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
-              <h3 className="text-white text-[16px] font-medium">Task</h3>
-            </div>
-
-            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              {tasks.length > 0 ? tasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-3 p-3.5 bg-[#2B2B2B] rounded-xl hover:bg-[#333333] transition cursor-pointer">
-                  <button
-                    onClick={() => handleToggleTaskStatus(task.id, task.status)}
-                    className="w-5 h-5 rounded border border-white/40 flex-shrink-0 hover:border-[#0F8C2A] transition"
-                  ></button>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="flex-shrink-0">
-                    <polygon points="5 3 19 12 5 21 5 3" />
-                  </svg>
-                  <span className="text-white/90 text-[14px] truncate">{task.title}</span>
-                </div>
-              )) : (
-                <div className="text-white/50 text-[13px] px-2 py-4 text-center">Belum ada task aktif.</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Energy Popup */}
-        {activePopup === "energy" && (
-          <div ref={popupRef} className="bg-[#595959] border border-white/10 rounded-2xl w-[320px] shadow-2xl p-5 origin-bottom-left animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-8 h-8 rounded-lg border-2 border-[#0F8C2A] flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F8C2A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
-              </div>
-              <h3 className="text-white text-[18px] font-medium">Energy</h3>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-4 bg-black rounded-full overflow-hidden border border-black/20">
-                <div
-                  className="h-full bg-[#0F8C2A] rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${energyPercentage}%` }}
-                ></div>
-              </div>
-              <span className="text-white text-[14px] font-medium w-10 text-right">{energyPercentage}%</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Footer Icons */}
-      <footer className="absolute bottom-8 left-8 right-8 flex justify-between items-end z-30">
-        <div className="flex items-center gap-2 p-1.5 rounded-xl border border-white/10 backdrop-blur-md" style={{ backgroundColor: "rgba(30, 35, 30, 0.6)" }}>
-          {/* Task Icon (Clipboard) */}
-          <button
-            onClick={(e) => togglePopup("task", e)}
-            className={`w-[46px] h-[46px] flex items-center justify-center rounded-lg transition ${activePopup === "task" ? "bg-white/20" : "hover:bg-white/10"}`}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
-          </button>
-
-          {/* Timer Settings Icon (Replaced Music with Stopwatch) */}
-          <button
-            onClick={(e) => togglePopup("timer", e)}
-            className={`w-[46px] h-[46px] flex items-center justify-center rounded-lg transition ${activePopup === "timer" ? "bg-white/20" : "hover:bg-white/10"}`}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          </button>
-
-          {/* Energy Icon (Lightning) */}
-          <button
-            onClick={(e) => togglePopup("energy", e)}
-            className={`w-[46px] h-[46px] flex items-center justify-center rounded-lg transition ${activePopup === "energy" ? "bg-white/20" : "hover:bg-white/10"}`}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-          </button>
+      <aside
+        style={{
+          position: "fixed",
+          left: "28px",
+          bottom: "28px",
+          zIndex: 2,
+          width: "260px",
+          borderRadius: "8px",
+          border: "1px solid rgba(255,255,255,0.12)",
+          backgroundColor: "rgba(255,255,255,0.08)",
+          padding: "14px",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+          <span style={{ color: "#DDFBE5", fontSize: "12px", fontWeight: 800 }}>Energy</span>
+          <span style={{ color: "#DDFBE5", fontSize: "12px", fontWeight: 800 }}>{energyPercent}%</span>
         </div>
+        <div style={{ height: "8px", borderRadius: "999px", backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
+          <div style={{ width: `${energyPercent}%`, height: "100%", backgroundColor: COLOR.green, borderRadius: "999px" }} />
+        </div>
+      </aside>
 
-        {/* Fullscreen Icon */}
-        <button
-          className="w-[46px] h-[46px] flex items-center justify-center rounded-xl border border-white/10 backdrop-blur-md hover:bg-white/10 transition"
-          style={{ backgroundColor: "rgba(30, 35, 30, 0.6)" }}
-          onClick={() => {
-            if (!document.fullscreenElement) {
-              document.documentElement.requestFullscreen().catch(err => console.error(err));
-            } else {
-              document.exitFullscreen();
-            }
+      {(showTaskPicker || exitIntent || result) && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            backgroundColor: "rgba(0, 0, 0, 0.54)",
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-            <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-            <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-          </svg>
-        </button>
-      </footer>
+          {showTaskPicker && !session && !result && (
+            <div
+              style={{
+                width: "min(520px, 100%)",
+                borderRadius: "12px",
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
+                boxShadow: "0 26px 70px rgba(0,0,0,0.35)",
+                padding: "26px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800 }}>Choose Priority Task</h2>
+                  <p style={{ margin: "6px 0 0", color: COLOR.muted, fontSize: "13px", lineHeight: 1.5 }}>
+                    Pick one of your closest-deadline tasks before entering focus.
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  style={{ border: "none", background: "transparent", color: COLOR.muted, cursor: "pointer" }}
+                  aria-label="Close task picker"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                {priorityTasks.length === 0 ? (
+                  <div style={{ border: `1px dashed ${COLOR.border}`, borderRadius: "8px", padding: "18px", color: COLOR.muted, fontSize: "13px", fontWeight: 700 }}>
+                    No active task is available. Add a task first from the task menu.
+                  </div>
+                ) : (
+                  priorityTasks.map((task, index) => {
+                    const active = selectedTaskId === task.id;
+                    return (
+                      <button
+                        key={task.id}
+                        onClick={() => setSelectedTaskId(task.id)}
+                        style={{
+                          width: "100%",
+                          border: `1px solid ${active ? COLOR.green : COLOR.border}`,
+                          backgroundColor: active ? "#F0FFF4" : "#FFFFFF",
+                          borderRadius: "8px",
+                          padding: "14px",
+                          display: "grid",
+                          gridTemplateColumns: "32px 1fr auto",
+                          gap: "12px",
+                          alignItems: "center",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "999px",
+                            backgroundColor: active ? COLOR.green : "#F3F4F6",
+                            color: active ? "#FFFFFF" : COLOR.text,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "12px",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {index + 1}
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: "block", color: COLOR.text, fontSize: "14px", fontWeight: 800, lineHeight: 1.35, overflowWrap: "anywhere" }}>
+                            {task.title}
+                          </span>
+                          <span style={{ display: "block", color: COLOR.muted, fontSize: "12px", fontWeight: 600, marginTop: "4px" }}>
+                            {formatDueDate(task.deadline)}
+                          </span>
+                        </span>
+                        <LevelBadge level={task.energy_weight} />
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              <button
+                disabled={!selectedTaskId || isSubmitting || priorityTasks.length === 0}
+                onClick={() => selectedTaskId && void startTask(selectedTaskId)}
+                style={{
+                  width: "100%",
+                  height: "46px",
+                  borderRadius: "7px",
+                  border: "none",
+                  backgroundColor: COLOR.green,
+                  color: "#FFFFFF",
+                  fontFamily: "inherit",
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  cursor: !selectedTaskId || isSubmitting ? "not-allowed" : "pointer",
+                  opacity: !selectedTaskId || isSubmitting ? 0.72 : 1,
+                }}
+              >
+                {isSubmitting ? "Starting..." : "Start Focus"}
+              </button>
+            </div>
+          )}
+
+          {exitIntent && session && (
+            <div
+              style={{
+                width: "min(520px, 100%)",
+                borderRadius: "12px",
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
+                boxShadow: "0 26px 70px rgba(0,0,0,0.35)",
+                padding: "26px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800 }}>
+                    {exitIntent === "complete" ? "Finish this focus?" : "Why are you leaving focus?"}
+                  </h2>
+                  <p style={{ margin: "6px 0 0", color: COLOR.muted, fontSize: "13px", lineHeight: 1.5 }}>
+                    Elapsed time is {formatDuration(elapsedSeconds)}. Energy will be reduced by about {energyLossPreview} point{energyLossPreview === 1 ? "" : "s"}.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setExitIntent(null)}
+                  style={{ border: "none", background: "transparent", color: COLOR.muted, cursor: "pointer" }}
+                  aria-label="Close exit dialog"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px", marginBottom: "14px" }}>
+                {exitReasons.map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => setExitReason(reason)}
+                    style={{
+                      minHeight: "40px",
+                      borderRadius: "7px",
+                      border: `1px solid ${exitReason === reason ? COLOR.green : COLOR.border}`,
+                      backgroundColor: exitReason === reason ? "#F0FFF4" : "#FFFFFF",
+                      color: exitReason === reason ? COLOR.greenDark : COLOR.text,
+                      fontFamily: "inherit",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={exitNote}
+                onChange={(event) => setExitNote(event.target.value.slice(0, 240))}
+                placeholder="Optional note"
+                style={{
+                  width: "100%",
+                  minHeight: "92px",
+                  resize: "vertical",
+                  borderRadius: "7px",
+                  border: `1px solid ${COLOR.border}`,
+                  padding: "12px",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                  fontSize: "13px",
+                  lineHeight: 1.5,
+                  outline: "none",
+                  marginBottom: "18px",
+                }}
+              />
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                <button
+                  disabled={isSubmitting}
+                  onClick={() => setExitIntent(null)}
+                  style={{
+                    minWidth: "110px",
+                    height: "42px",
+                    borderRadius: "7px",
+                    border: `1px solid ${COLOR.border}`,
+                    backgroundColor: "#FFFFFF",
+                    color: COLOR.text,
+                    fontFamily: "inherit",
+                    fontWeight: 800,
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={isSubmitting}
+                  onClick={() => void handleConfirmStop()}
+                  style={{
+                    minWidth: "150px",
+                    height: "42px",
+                    borderRadius: "7px",
+                    border: "none",
+                    backgroundColor: COLOR.green,
+                    color: "#FFFFFF",
+                    fontFamily: "inherit",
+                    fontWeight: 800,
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isSubmitting ? "Saving..." : exitIntent === "complete" ? "Finish Task" : "Exit Focus"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {result && (
+            <div
+              style={{
+                width: "min(480px, 100%)",
+                borderRadius: "12px",
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
+                boxShadow: "0 26px 70px rgba(0,0,0,0.35)",
+                padding: "30px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  borderRadius: "999px",
+                  border: `5px solid ${COLOR.greenDark}`,
+                  color: COLOR.greenDark,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "34px",
+                  fontWeight: 900,
+                  marginBottom: "18px",
+                }}
+              >
+                OK
+              </div>
+              <h2 style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: 900 }}>
+                {result.endReason === "completed" ? "Focus completed!" : "Focus session ended"}
+              </h2>
+              <p style={{ margin: "0 0 18px", color: COLOR.muted, fontSize: "13px", lineHeight: 1.5 }}>
+                {result.title} was focused for {formatDuration(result.elapsedSeconds)}.
+              </p>
+              <div style={{ border: `1px solid ${COLOR.border}`, borderRadius: "8px", padding: "14px", marginBottom: "20px", textAlign: "left" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: 800 }}>
+                  <span style={{ color: COLOR.muted }}>Energy now</span>
+                  <span>{result.energy ? Math.round((result.energy.current_energy / result.energy.max_energy) * 100) : energyPercent}%</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  style={{
+                    flex: 1,
+                    height: "44px",
+                    borderRadius: "7px",
+                    border: `1px solid ${COLOR.border}`,
+                    backgroundColor: "#FFFFFF",
+                    color: COLOR.text,
+                    fontFamily: "inherit",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    setResult(null);
+                    setShowTaskPicker(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    height: "44px",
+                    borderRadius: "7px",
+                    border: "none",
+                    backgroundColor: COLOR.green,
+                    color: "#FFFFFF",
+                    fontFamily: "inherit",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  Focus Again
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
+
+export default FocusTimerPage;
