@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   applyTemplate,
   clearAuthSession,
-  getDashboardZen,
-  getEnergySummary,
+  getDashboardHistory,
+  getDashboardOverview,
   getStoredUser,
+  getTaskById,
   getTasks,
   getTemplates,
   hasActiveSession,
@@ -22,7 +23,18 @@ import {
 } from "../lib/api";
 import CreateTemplateModal, { type CreateTemplateModalPayload } from "../components/CreateTemplateModal";
 import { LOGO_SRC } from "../lib/assets";
-import type { EnergyWeight, Task, TaskStatus, TaskTemplate } from "../lib/api";
+import type {
+  DashboardHistoryResponse,
+  DashboardHistoryType,
+  DashboardMetric,
+  DashboardOverviewData,
+  DashboardPeriod,
+  EnergyWeight,
+  ProductivityPoint,
+  Task,
+  TaskStatus,
+  TaskTemplate,
+} from "../lib/api";
 
 const COLOR = {
   primary: "#008B1F",
@@ -38,12 +50,6 @@ const COLOR = {
   mutedDark: "#666666",
   danger: "#FF6B76",
   dangerSoft: "#FFCDD2",
-};
-
-const GUEST_ENERGY_SUMMARY = {
-  current_energy: 100,
-  max_energy: 100,
-  is_critical_energy: false,
 };
 
 const CARD_STYLE = {
@@ -82,6 +88,14 @@ const TemplateIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
+const HistoryIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 0 3-6.7" />
+    <path d="M3 3v6h6" />
+    <path d="M12 7v5l3 2" />
   </svg>
 );
 
@@ -397,35 +411,26 @@ function TaskStatusBadge({ status }: { status: TaskViewStatus }) {
 
 // ─── Mini Line Chart (SVG) ────────────────────────────────────────────────────
 
-type ChartRange = "week" | "month" | "year";
+type ChartRange = DashboardPeriod;
 
-const CHART_DATA: Record<ChartRange, { labels: string[]; data: number[] }> = {
-  week: {
-    labels: ["1 Jun", "2 Jun", "3 Jun", "4 Jun", "5 Jun", "6 Jun", "7 Jun"],
-    data: [3, 4, 2, 3, 3, 4, 1],
-  },
-  month: {
-    labels: ["W1", "W2", "W3", "W4"],
-    data: [8, 12, 6, 10],
-  },
-  year: {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    data: [15, 20, 12, 18, 22, 14, 19, 25, 17, 21, 16, 23],
-  },
-};
-
-function ProductivityChart({ range = "week" }: { range?: ChartRange }) {
-  const { labels, data } = CHART_DATA[range];
+function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const chartData = data.length
+    ? data
+    : [{ label: "No data", date: "", completed: 0, overdue: 0, total: 0 }];
+  const labels = chartData.map((point) => point.label);
+  const values = chartData.map((point) => point.total);
   const width = 520;
   const height = 220;
   const padX = 40;
   const padY = 20;
-  const maxVal = Math.max(...data) + 2;
+  const maxVal = Math.max(6, Math.ceil(Math.max(...values)) + 2);
   const chartW = width - padX * 2;
   const chartH = height - padY * 2;
 
-  const points = data.map((v, i) => {
-    const x = padX + (i / (data.length - 1)) * chartW;
+  const points = values.map((v, i) => {
+    const ratio = values.length === 1 ? 0.5 : i / (values.length - 1);
+    const x = padX + ratio * chartW;
     const y = padY + chartH - (v / maxVal) * chartH;
     return `${x},${y}`;
   });
@@ -464,7 +469,8 @@ function ProductivityChart({ range = "week" }: { range?: ChartRange }) {
       })}
       {/* X axis labels */}
       {labels.map((d, i) => {
-        const x = padX + (i / (labels.length - 1)) * chartW;
+        const ratio = labels.length === 1 ? 0.5 : i / (labels.length - 1);
+        const x = padX + ratio * chartW;
         return (
           <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}
             style={{ animation: `fadeIn 0.4s ease ${0.2 + i * 0.04}s both` }}>{d}</text>
@@ -484,11 +490,66 @@ function ProductivityChart({ range = "week" }: { range?: ChartRange }) {
         style={{ animation: `drawLine 1.2s ease-out 0.3s both` }}
       />
       {/* Animated Dots */}
-      {data.map((v, i) => {
-        const x = padX + (i / (data.length - 1)) * chartW;
+      {chartData.map((point, i) => {
+        const ratio = chartData.length === 1 ? 0.5 : i / (chartData.length - 1);
+        const x = padX + ratio * chartW;
+        const v = point.total;
         const y = padY + chartH - (v / maxVal) * chartH;
-        return <circle key={i} cx={x} cy={y} r="3" fill={COLOR.primary}
-          style={{ animation: `popIn 0.4s ease ${0.5 + i * 0.1}s both` }} />;
+        const isHovered = hoveredIndex === i;
+        const tooltipX = Math.max(8, Math.min(width - 142, x - 64));
+        const tooltipY = Math.max(8, y - 74);
+        const tooltip = point.tooltip ?? {
+          title: point.label,
+          completed: point.completed,
+          overdue: point.overdue,
+        };
+
+        return (
+          <g
+            key={`${point.label}-${i}`}
+            onMouseEnter={() => setHoveredIndex(i)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            style={{ cursor: "pointer" }}
+          >
+            {isHovered && (
+              <g>
+                <rect
+                  x={tooltipX}
+                  y={tooltipY}
+                  width="134"
+                  height="62"
+                  rx="8"
+                  fill="#FFFFFF"
+                  stroke="#E5E7EB"
+                  filter="drop-shadow(0 8px 18px rgba(0,0,0,0.16))"
+                />
+                <text x={tooltipX + 12} y={tooltipY + 19} fontSize="9" fontWeight="700" fill={COLOR.mutedDark}>
+                  {tooltip.title.toUpperCase()} PRODUCTIVITY
+                </text>
+                <circle cx={tooltipX + 16} cy={tooltipY + 35} r="3" fill="#22C55E" />
+                <text x={tooltipX + 26} y={tooltipY + 38} fontSize="10" fill={COLOR.text}>Completed</text>
+                <text x={tooltipX + 118} y={tooltipY + 38} fontSize="10" fontWeight="700" fill={COLOR.text} textAnchor="end">
+                  {tooltip.completed} tasks
+                </text>
+                <circle cx={tooltipX + 16} cy={tooltipY + 51} r="3" fill="#DC2626" />
+                <text x={tooltipX + 26} y={tooltipY + 54} fontSize="10" fill={COLOR.text}>Overdue</text>
+                <text x={tooltipX + 118} y={tooltipY + 54} fontSize="10" fontWeight="700" fill={COLOR.text} textAnchor="end">
+                  {tooltip.overdue} tasks
+                </text>
+              </g>
+            )}
+            <circle
+              cx={x}
+              cy={y}
+              r={isHovered ? 5 : 3}
+              fill={COLOR.primary}
+              stroke={isHovered ? "#FFFFFF" : "transparent"}
+              strokeWidth="2"
+              style={{ animation: `popIn 0.4s ease ${0.5 + i * 0.1}s both` }}
+            />
+            <circle cx={x} cy={y} r="12" fill="transparent" />
+          </g>
+        );
       })}
     </svg>
   );
@@ -522,16 +583,6 @@ function isSameDay(a: Date, b: Date) {
 
 // ─── Template Data ────────────────────────────────────────────────────────────
 
-const templatesData = [
-  { id: 1, title: "Weekly Design Sprint", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "OFFICIAL", subtasks: 2, type: ["Official"] },
-  { id: 2, title: "Proyek Kelompok", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "MEDIUM", subtasks: 4, type: ["Private"] },
-  { id: 3, title: "Rencana Belajar Semester", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "LOW", subtasks: 3, type: ["Public"] },
-  { id: 4, title: "Menulis Skripsi", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "HIGH", subtasks: 4, type: ["Private"] },
-  { id: 5, title: "Persiapan Ujian", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "OFFICIAL", subtasks: 2, type: ["Official"] },
-  { id: 6, title: "Persiapan Presentasi", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "MEDIUM", subtasks: 5, type: ["Public"] },
-  { id: 7, title: "Project PKM Mahasiswa", desc: "A collaborative 5-day process for answering critical business questions through design, prototyping, and testing.", level: "HIGH", subtasks: 4, type: ["Private"] },
-];
-
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 type PriorityLevel = "HIGH" | "MEDIUM" | "LOW";
@@ -545,6 +596,7 @@ const TASK_DESCRIPTION_MAX = 500;
 type ViewTask = {
   id?: string;
   title: string;
+  description?: string;
   level: PriorityLevel;
   subtask: string;
   date: string;
@@ -552,6 +604,8 @@ type ViewTask = {
   status?: TaskStatus;
   deadlineRaw?: string | null;
   createdAt?: string;
+  focusSummary?: Task["focus_summary"];
+  latestFocusSession?: Task["latest_focus_session"];
 };
 
 type DetailTaskData = ViewTask & {
@@ -608,6 +662,28 @@ const formatTaskDate = (value: string | null) => {
   }).format(new Date(value));
 };
 
+const formatDateOnlyValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const formatDateTimeShort = (value: string | null | undefined) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
 const toDatetimeLocalValue = (value: string | null | undefined) => {
   if (!value) return "";
   const date = new Date(value);
@@ -623,9 +699,40 @@ const toIsoDeadline = (value: string) => {
   return date.toISOString();
 };
 
+const mapTimeRangeToPeriod = (value: "Daily" | "Weekly" | "Monthly" | "Yearly"): DashboardPeriod => {
+  if (value === "Daily") return "daily";
+  if (value === "Monthly") return "monthly";
+  if (value === "Yearly") return "yearly";
+  return "weekly";
+};
+
+const chartRangeLabels: Record<ChartRange, string> = {
+  daily: "Today",
+  weekly: "This Week",
+  monthly: "This Month",
+  yearly: "This Year",
+};
+
+const periodToTimeRange: Record<ChartRange, "Daily" | "Weekly" | "Monthly" | "Yearly"> = {
+  daily: "Daily",
+  weekly: "Weekly",
+  monthly: "Monthly",
+  yearly: "Yearly",
+};
+
+const formatMetricTrend = (metric?: DashboardMetric | null) => {
+  if (!metric || metric.trend_percent === 0 || metric.trend_direction === "flat") return "0%";
+  const sign = metric.trend_percent > 0 ? "+" : "";
+  return `${sign}${metric.trend_percent}%`;
+};
+
+const isTrendUp = (metric?: DashboardMetric | null) =>
+  metric?.trend_direction !== "down";
+
 const mapTaskToViewTask = (task: Task): ViewTask => ({
   id: task.id,
   title: task.title,
+  description: task.description ?? "",
   level: mapEnergyToLevel(task.energy_weight),
   subtask: task.source_template ? `Template: ${task.source_template}` : task.status,
   date: formatTaskDate(task.deadline),
@@ -633,6 +740,8 @@ const mapTaskToViewTask = (task: Task): ViewTask => ({
   status: task.status,
   deadlineRaw: task.deadline,
   createdAt: task.created_at,
+  focusSummary: task.focus_summary,
+  latestFocusSession: task.latest_focus_session,
 });
 
 const mapTemplateToCard = (template: TaskTemplate, index: number): ViewCard => ({
@@ -689,21 +798,27 @@ export default function DashboardPage() {
   const [taskSortOpen, setTaskSortOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [searchTask, setSearchTask] = useState("");
-  const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [activeMenu, setActiveMenu] = useState<"dashboard" | "task" | "template" | "history">("dashboard");
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [templateView, setTemplateView] = useState<"list" | "detail" | "create" | "edit" | "success">("list");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [taskDetailCopied, setTaskDetailCopied] = useState(false);
-  const [templatesList, setTemplatesList] = useState<ViewCard[]>(templatesData);
+  const [templatesList, setTemplatesList] = useState<ViewCard[]>([]);
   const [apiTasks, setApiTasks] = useState<Task[]>([]);
+  const [dashboardOverview, setDashboardOverview] = useState<DashboardOverviewData | null>(null);
+  const [historyType, setHistoryType] = useState<DashboardHistoryType>("all");
+  const [historyData, setHistoryData] = useState<DashboardHistoryResponse | null>(null);
+  const [historySearch, setHistorySearch] = useState("");
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [displayName, setDisplayName] = useState("User");
   const [energyData, setEnergyData] = useState({ current: 0, max: 240, percent: 0, isCritical: false });
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [deadlineStats, setDeadlineStats] = useState({ upcoming: 0, overdue: 0 });
-  const [chartRange, setChartRange] = useState<ChartRange>("week");
+  const [chartRange, setChartRange] = useState<ChartRange>("weekly");
   const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
   const [calendarRef, setCalendarRef] = useState(() => new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
 
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
@@ -767,16 +882,17 @@ export default function DashboardPage() {
 
     try {
       const guest = isGuestSession();
-      const [tasksResult, zenResult, templatesResult, energyResult] =
+      const calendarMonth = formatDateOnlyValue(new Date(calendarRef.getFullYear(), calendarRef.getMonth(), 1));
+      const [tasksResult, overviewResult, templatesResult] =
         await Promise.all([
           getTasks(1, 50),
-          getDashboardZen(),
+          getDashboardOverview(chartRange, selectedCalendarDate, calendarMonth),
           guest ? Promise.resolve({ data: [] }) : getTemplates(),
-          guest ? Promise.resolve({ data: GUEST_ENERGY_SUMMARY }) : getEnergySummary(),
         ]);
 
       setDisplayName(getDisplayName());
       setApiTasks(tasksResult.data);
+      setDashboardOverview(overviewResult.data);
       setTemplatesList(templatesResult.data.map(mapTemplateToCard));
       const currentTime = Date.now();
       setDeadlineStats({
@@ -792,14 +908,14 @@ export default function DashboardPage() {
         }).length,
       });
       setEnergyData({
-        current: energyResult.data.current_energy,
-        max: energyResult.data.max_energy,
-        percent: Math.round((energyResult.data.current_energy / energyResult.data.max_energy) * 100),
-        isCritical: energyResult.data.is_critical_energy,
+        current: overviewResult.data.metrics.energy.value,
+        max: overviewResult.data.metrics.energy.max_value,
+        percent: overviewResult.data.metrics.energy.percentage,
+        isCritical: overviewResult.data.metrics.energy.is_critical_energy,
       });
 
-      if (zenResult.hidden_message) {
-        setNotice(zenResult.hidden_message);
+      if (overviewResult.data.priority_tasks.hidden_message) {
+        setNotice(overviewResult.data.priority_tasks.hidden_message);
       }
     } catch (error) {
       setNotice(
@@ -808,7 +924,7 @@ export default function DashboardPage() {
           : "Gagal memuat data dashboard.",
       );
     }
-  }, [router]);
+  }, [calendarRef, chartRange, router, selectedCalendarDate]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -817,6 +933,33 @@ export default function DashboardPage() {
 
     return () => window.clearTimeout(timer);
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (activeMenu !== "history") return;
+
+    let isMounted = true;
+
+    const loadHistory = async () => {
+      setIsHistoryLoading(true);
+
+      try {
+        const response = await getDashboardHistory(historyType, 1, 20);
+        if (isMounted) setHistoryData(response);
+      } catch (error) {
+        if (isMounted) {
+          setNotice(error instanceof Error ? error.message : "Gagal memuat history task.");
+        }
+      } finally {
+        if (isMounted) setIsHistoryLoading(false);
+      }
+    };
+
+    void loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeMenu, historyType]);
 
   const filteredTasks = useMemo(() => {
     const keyword = searchTask.trim().toLowerCase();
@@ -830,6 +973,10 @@ export default function DashboardPage() {
   }, [apiTasks, searchTask]);
 
   const priorityTaskItems = useMemo<ViewTask[]>(() => {
+    if (dashboardOverview?.priority_tasks.data) {
+      return dashboardOverview.priority_tasks.data.slice(0, 3).map(mapTaskToViewTask);
+    }
+
     const activeTasks = apiTasks
       .filter((task) => task.status !== "done")
       .sort((a, b) => {
@@ -842,12 +989,37 @@ export default function DashboardPage() {
       .map(mapTaskToViewTask);
 
     return activeTasks;
-  }, [apiTasks]);
+  }, [apiTasks, dashboardOverview]);
 
-  const recentTaskItems: ViewTask[] = filteredTasks;
-  const emptyRecentTaskMessage = searchTask.trim()
+  const recentTaskItems = useMemo<ViewTask[]>(() => {
+    const sourceTasks = dashboardOverview?.recent_tasks.data?.length
+      ? dashboardOverview.recent_tasks.data.map(mapTaskToViewTask)
+      : filteredTasks;
+    const keyword = searchTask.trim().toLowerCase();
+
+    if (!keyword) return sourceTasks;
+
+    return sourceTasks.filter((task) =>
+      `${task.title} ${task.subtask} ${task.date}`.toLowerCase().includes(keyword),
+    );
+  }, [dashboardOverview, filteredTasks, searchTask]);
+
+  const emptyRecentTaskMessage = selectedCalendarDate
+    ? "Tidak ada task pada tanggal ini."
+    : searchTask.trim()
     ? "Task tidak ditemukan"
     : "Belum ada task";
+
+  const filteredHistoryItems = useMemo(() => {
+    const keyword = historySearch.trim().toLowerCase();
+    const items = historyData?.data ?? [];
+
+    if (!keyword) return items;
+
+    return items.filter((item) =>
+      `${item.title} ${item.description ?? ""} ${item.task_status} ${item.item_type}`.toLowerCase().includes(keyword),
+    );
+  }, [historyData, historySearch]);
   const taskListItems = useMemo<ViewTask[]>(() => {
     const levelRank: Record<PriorityLevel, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
     const byFilter = filteredTasks.filter((task) => {
@@ -892,9 +1064,18 @@ export default function DashboardPage() {
   const canSaveSelectedTemplateAsPrivate = !!selectedCard && (
     selectedCard.visibility !== "private" || selectedCard.ownerId !== currentUserId
   );
-  const completedCount = apiTasks.filter((task) => task.status === "done").length;
-  const upcomingDeadlineCount = deadlineStats.upcoming;
-  const overdueCount = deadlineStats.overdue;
+  const completedMetric = dashboardOverview?.metrics.task_completed;
+  const upcomingMetric = dashboardOverview?.metrics.upcoming_deadlines;
+  const overdueMetric = dashboardOverview?.metrics.overdue_tasks;
+  const completedCount = completedMetric?.value ?? apiTasks.filter((task) => task.status === "done").length;
+  const upcomingDeadlineCount = upcomingMetric?.value ?? deadlineStats.upcoming;
+  const overdueCount = overdueMetric?.value ?? deadlineStats.overdue;
+  const timeRangeText = {
+    Daily: "from yesterday",
+    Weekly: "from last week",
+    Monthly: "from last month",
+    Yearly: "from last year",
+  }[timeRange];
 
   const handleCreateCustomTemplate = async (payload: CreateTemplateModalPayload) => {
     setIsActionLoading(true);
@@ -1027,7 +1208,8 @@ export default function DashboardPage() {
   };
 
   const handleStartFocus = (taskId?: string) => {
-    router.push(taskId ? `/focus?taskId=${encodeURIComponent(taskId)}` : "/focus");
+    const safeTaskId = taskId?.trim();
+    router.push(safeTaskId ? `/focus?taskId=${encodeURIComponent(safeTaskId)}` : "/focus");
   };
 
   const handleUseCard = async (item: ViewCard) => {
@@ -1058,15 +1240,27 @@ export default function DashboardPage() {
   const openTaskEditModal = (task: ViewTask) => {
     setEditTaskId(task.id ?? null);
     setAddTaskTitle(task.title);
-    setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
+    setAddTaskDesc(task.description || localTaskMeta[task.id ?? ""]?.description || "");
     setAddTaskDeadline(toDatetimeLocalValue(task.deadlineRaw));
     setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
     setIsEditTaskModalOpen(true);
   };
 
-  const openTaskDetailModal = (task: ViewTask) => {
-    setDetailTaskData({ ...task, description: localTaskMeta[task.id ?? ""]?.description || "" });
+  const openTaskDetailModal = async (task: ViewTask) => {
+    setDetailTaskData({
+      ...task,
+      description: task.description || localTaskMeta[task.id ?? ""]?.description || "",
+    });
     setIsDetailTaskModalOpen(true);
+
+    if (!task.id) return;
+
+    try {
+      const response = await getTaskById(task.id);
+      setDetailTaskData(mapTaskToViewTask(response.data));
+    } catch {
+      // Keep the already-open safe local detail if the richer endpoint is unavailable.
+    }
   };
 
   const handleCreateTask = async () => {
@@ -1078,6 +1272,7 @@ export default function DashboardPage() {
     try {
       const result = await createTask({
         title: addTaskTitle,
+        description: addTaskDesc.trim() || null,
         energy_weight: addTaskEnergy,
         deadline: toIsoDeadline(addTaskDeadline),
       });
@@ -1116,6 +1311,7 @@ export default function DashboardPage() {
     try {
       await updateTask(editTaskId, {
         title: addTaskTitle,
+        description: addTaskDesc.trim() || null,
         energy_weight: addTaskEnergy,
         deadline: toIsoDeadline(addTaskDeadline),
       });
@@ -1234,17 +1430,19 @@ export default function DashboardPage() {
 
         {/* Nav Items */}
         <nav style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "0 24px" }}>
-          {[
+          {([
             { key: "dashboard", label: "DashBoard", icon: <DashboardIcon /> },
             { key: "task", label: "Task", icon: <TaskIcon /> },
             { key: "template", label: "Template", icon: <TemplateIcon /> },
-          ].map(({ key, label, icon }) => (
+            { key: "history", label: "History Task", icon: <HistoryIcon /> },
+          ] as const).map(({ key, label, icon }) => (
             <button
               key={key}
               onClick={() => {
                 setActiveMenu(key);
                 setSelectedTemplateId(null);
                 setTemplateView("list");
+                setSelectedTaskId(null);
               }}
               style={{
                 display: "flex",
@@ -1327,7 +1525,8 @@ export default function DashboardPage() {
         >
           <h1 style={{ fontSize: "18px", fontWeight: 400, color: COLOR.text, margin: 0 }}>
             {activeMenu === "dashboard" ? "Dashboard" :
-              activeMenu === "task" ? (selectedTaskId ? "Detail Task" : "Task") : "Template"}
+              activeMenu === "task" ? (selectedTaskId ? "Detail Task" : "Task") :
+                activeMenu === "history" ? "History Task" : "Template"}
           </h1>
 
           {/* Search + Notification + Profile */}
@@ -1339,9 +1538,15 @@ export default function DashboardPage() {
               </span>
               <input
                 type="text"
-                placeholder={activeMenu === "template" ? "Search template" : "Search task"}
-                value={searchTask}
-                onChange={(e) => setSearchTask(e.target.value)}
+                placeholder={activeMenu === "template" ? "Search template" : activeMenu === "history" ? "Search history task" : "Search task"}
+                value={activeMenu === "history" ? historySearch : searchTask}
+                onChange={(e) => {
+                  if (activeMenu === "history") {
+                    setHistorySearch(e.target.value);
+                  } else {
+                    setSearchTask(e.target.value);
+                  }
+                }}
                 style={{
                   width: "260px",
                   height: "32px",
@@ -1408,24 +1613,35 @@ export default function DashboardPage() {
                     <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: COLOR.text }}>Notifications & History</h3>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", maxHeight: "300px", overflowY: "auto" }}>
-                    <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text }}>Task Completed</div>
-                        <div style={{ width: "8px", height: "8px", backgroundColor: COLOR.primary, borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
+                    {(dashboardOverview?.notifications.data ?? []).length === 0 ? (
+                      <div style={{ padding: "18px 16px", fontSize: "12px", fontWeight: 600, color: COLOR.mutedDark }}>
+                        Belum ada notifikasi.
                       </div>
-                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>You completed &ldquo;Design Homepage UI&rdquo;. Great job!</div>
-                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>10 mins ago</div>
-                    </div>
-                    <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}`, backgroundColor: "#ffffff" }}>
-                      <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>New Task Added</div>
-                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>&ldquo;Submit Invoice&rdquo; has been added to your dashboard.</div>
-                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>1 hour ago</div>
-                    </div>
-                    <div style={{ padding: "16px", backgroundColor: "#ffffff" }}>
-                      <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>Template Created</div>
-                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>&ldquo;Weekly Report&rdquo; template was successfully saved.</div>
-                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>Yesterday</div>
-                    </div>
+                    ) : (
+                      (dashboardOverview?.notifications.data ?? []).map((notification, index, arr) => (
+                        <div
+                          key={notification.id}
+                          style={{
+                            padding: "16px",
+                            borderBottom: index === arr.length - 1 ? "none" : `1px solid ${COLOR.borderSoft}`,
+                            backgroundColor: notification.is_read ? "#ffffff" : "#FAFFFE",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                            <div style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text }}>
+                              {notification.type.replaceAll("_", " ")}
+                            </div>
+                            {!notification.is_read && (
+                              <div style={{ width: "8px", height: "8px", backgroundColor: COLOR.primary, borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
+                            )}
+                          </div>
+                          <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>{notification.message}</div>
+                          <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>
+                            {formatDateTimeShort(notification.created_at)}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -1479,7 +1695,7 @@ export default function DashboardPage() {
           )}
 
           {/* Welcome + Time Range + Focus Timer */}
-          {(activeMenu === "dashboard" || (activeMenu === "template" && templateView !== "success") || (activeMenu === "task" && !selectedTaskId)) && (
+          {(activeMenu === "dashboard" || activeMenu === "history" || (activeMenu === "template" && templateView !== "success") || (activeMenu === "task" && !selectedTaskId)) && (
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", width: "100%", marginBottom: "32px", gap: "24px" }}>
               <div>
                 <h2 style={{ fontSize: "26px", fontWeight: 700, color: COLOR.text, margin: "0 0 6px", lineHeight: 1.15 }}>
@@ -1506,7 +1722,10 @@ export default function DashboardPage() {
                     (["Daily", "Weekly", "Monthly", "Yearly"] as const).map((t) => (
                       <button
                         key={t}
-                        onClick={() => setTimeRange(t)}
+                        onClick={() => {
+                          setTimeRange(t);
+                          setChartRange(mapTimeRangeToPeriod(t));
+                        }}
                         style={{
                           width: "64px",
                           height: "32px",
@@ -1521,6 +1740,28 @@ export default function DashboardPage() {
                         }}
                       >
                         {t}
+                      </button>
+                    ))
+                  ) : activeMenu === "history" ? (
+                    (["all", "task", "focus"] as DashboardHistoryType[]).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setHistoryType(type)}
+                        style={{
+                          width: "64px",
+                          height: "32px",
+                          fontSize: "11px",
+                          fontWeight: historyType === type ? 600 : 400,
+                          fontFamily: "inherit",
+                          color: COLOR.text,
+                          backgroundColor: historyType === type ? COLOR.surface : "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {type}
                       </button>
                     ))
                   ) : activeMenu === "template" ? (
@@ -1694,40 +1935,42 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Start Focus Timer Button */}
-                <button
-                  onClick={() => {
-                    if (activeMenu === "dashboard") {
-                      handleStartFocus();
-                    } else if (activeMenu === "task") {
-                      resetTaskForm();
-                      setIsEditTaskModalOpen(false);
-                      setIsAddTaskModalOpen(true);
-                    } else if (activeMenu === "template") {
-                      setTemplateView("create");
-                    }
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    minWidth: activeMenu === "dashboard" ? "158px" : "160px",
-                    height: "34px",
-                    padding: "0 16px",
-                    borderRadius: "4px",
-                    backgroundColor: COLOR.primary,
-                    color: "#ffffff",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    transition: "background-color 0.15s",
-                  }}
-                >
-                  {activeMenu === "dashboard" ? <PlayIcon /> : <span style={{ fontSize: "16px", fontWeight: "bold", lineHeight: 1 }}>+</span>}
-                  {activeMenu === "dashboard" ? "Start Focus Timer" : activeMenu === "task" ? "Add Task" : "Template Baru"}
-                </button>
+                {activeMenu !== "history" && (
+                  <button
+                    onClick={() => {
+                      if (activeMenu === "dashboard") {
+                        handleStartFocus();
+                      } else if (activeMenu === "task") {
+                        resetTaskForm();
+                        setIsEditTaskModalOpen(false);
+                        setIsAddTaskModalOpen(true);
+                      } else if (activeMenu === "template") {
+                        setTemplateView("create");
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      minWidth: activeMenu === "dashboard" ? "158px" : "160px",
+                      height: "34px",
+                      padding: "0 16px",
+                      borderRadius: "4px",
+                      backgroundColor: COLOR.primary,
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "background-color 0.15s",
+                    }}
+                  >
+                    {activeMenu === "dashboard" ? <PlayIcon /> : <span style={{ fontSize: "16px", fontWeight: "bold", lineHeight: 1 }}>+</span>}
+                    {activeMenu === "dashboard" ? "Start Focus Timer" : activeMenu === "task" ? "Add Task" : "Template Baru"}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1752,9 +1995,9 @@ export default function DashboardPage() {
                       <CheckSquareIcon color="currentColor" size={24} />
                     </div>
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{completedCount}</span>
-                    <TrendBadge value="+10%" up />
+                    <TrendBadge value={formatMetricTrend(completedMetric)} up={isTrendUp(completedMetric)} />
                   </div>
-                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>from last week</div>
+                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>{timeRangeText}</div>
                 </div>
 
                 {/* Upcoming Deadlines */}
@@ -1765,9 +2008,9 @@ export default function DashboardPage() {
                       <ClockAlertIcon color="currentColor" size={24} />
                     </div>
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{upcomingDeadlineCount}</span>
-                    <TrendBadge value="+10%" up />
+                    <TrendBadge value={formatMetricTrend(upcomingMetric)} up={isTrendUp(upcomingMetric)} />
                   </div>
-                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>from last week</div>
+                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>{timeRangeText}</div>
                 </div>
 
                 {/* Overdue Task */}
@@ -1778,9 +2021,9 @@ export default function DashboardPage() {
                       <AlertTriangleIcon color="currentColor" size={24} />
                     </div>
                     <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{overdueCount}</span>
-                    <TrendBadge value="-10%" up={false} />
+                    <TrendBadge value={formatMetricTrend(overdueMetric)} up={isTrendUp(overdueMetric)} />
                   </div>
-                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>from last week</div>
+                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>{timeRangeText}</div>
                 </div>
 
                 {/* Energy */}
@@ -1905,9 +2148,9 @@ export default function DashboardPage() {
                           borderColor: chartDropdownOpen ? COLOR.primary : COLOR.border,
                           boxShadow: chartDropdownOpen ? `0 0 0 2px ${COLOR.primaryPale}` : "none",
                         }}
-                      >
-                        <CalendarSmIcon />
-                        {chartRange === "week" ? "This Week" : chartRange === "month" ? "This Month" : "This Year"}
+                        >
+                          <CalendarSmIcon />
+                        {chartRangeLabels[chartRange]}
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                           style={{ transition: "transform 0.2s", transform: chartDropdownOpen ? "rotate(180deg)" : "rotate(0)" }}>
                           <polyline points="6 9 12 15 18 9" />
@@ -1921,10 +2164,14 @@ export default function DashboardPage() {
                           overflow: "hidden", minWidth: "130px",
                           animation: "fadeSlideDown 0.18s ease",
                         }}>
-                          {(["week", "month", "year"] as ChartRange[]).map((r) => (
+                          {(["daily", "weekly", "monthly", "yearly"] as ChartRange[]).map((r) => (
                             <button
                               key={r}
-                              onClick={() => { setChartRange(r); setChartDropdownOpen(false); }}
+                              onClick={() => {
+                                setChartRange(r);
+                                setTimeRange(periodToTimeRange[r]);
+                                setChartDropdownOpen(false);
+                              }}
                               style={{
                                 display: "flex", alignItems: "center", gap: "8px",
                                 width: "100%", padding: "9px 14px", border: "none",
@@ -1938,7 +2185,7 @@ export default function DashboardPage() {
                               onMouseLeave={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "transparent"; }}
                             >
                               {chartRange === r && <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: COLOR.primary }} />}
-                              {r === "week" ? "This Week" : r === "month" ? "This Month" : "This Year"}
+                              {chartRangeLabels[r]}
                             </button>
                           ))}
                         </div>
@@ -1946,7 +2193,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div style={{ width: "100%", flex: 1, minHeight: "300px" }} key={chartRange}>
-                    <ProductivityChart range={chartRange} />
+                    <ProductivityChart data={dashboardOverview?.productivity.data ?? []} />
                   </div>
                 </div>
 
@@ -1957,9 +2204,9 @@ export default function DashboardPage() {
                   const displayMonth = MONTH_NAMES[calendarRef.getMonth()];
                   const displayYear = calendarRef.getFullYear();
 
-                  const deadlineDates = apiTasks
-                    .filter((t) => t.deadline && t.status !== "done")
-                    .map((t) => new Date(t.deadline!));
+                  const calendarCounts = new Map(
+                    (dashboardOverview?.calendar.data ?? []).map((row) => [row.date, row]),
+                  );
 
                   return (
                     <div style={{ ...CARD_STYLE, width: "100%", padding: "12px 14px", minHeight: "86px", boxSizing: "border-box", gridColumn: "1" }}>
@@ -2009,14 +2256,16 @@ export default function DashboardPage() {
 
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", gap: "3px" }}>
                         {weekDates.map((dateObj, i) => {
+                          const dateKey = formatDateOnlyValue(dateObj);
                           const isToday = isSameDay(dateObj, today);
-                          const hasDot = deadlineDates.some((dl) => isSameDay(dl, dateObj));
+                          const isSelected = selectedCalendarDate === dateKey;
+                          const dayCount = calendarCounts.get(dateKey);
+                          const hasDot = (dayCount?.total_count ?? 0) > 0;
                           return (
                             <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
                               <div
                                 onClick={() => {
-                                  const formatted = formatDate(dateObj.toISOString());
-                                  setSearchTask(searchTask === formatted ? "" : formatted);
+                                  setSelectedCalendarDate((current) => current === dateKey ? null : dateKey);
                                   document.getElementById("recent-tasks-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
                                 }}
                                 style={{
@@ -2027,11 +2276,12 @@ export default function DashboardPage() {
                                   alignItems: "center",
                                   justifyContent: "center",
                                   fontSize: "10px",
-                                  fontWeight: isToday ? 700 : 500,
-                                  color: isToday ? COLOR.primary : COLOR.text,
-                                  backgroundColor: isToday ? COLOR.primarySoft : "transparent",
+                                  fontWeight: isToday || isSelected ? 700 : 500,
+                                  color: isSelected ? "#ffffff" : isToday ? COLOR.primary : COLOR.text,
+                                  backgroundColor: isSelected ? COLOR.primary : isToday ? COLOR.primarySoft : "transparent",
                                   cursor: "pointer",
                                   transition: "all 0.15s",
+                                  boxShadow: isSelected ? `0 0 0 3px ${COLOR.primaryPale}` : "none",
                                 }}
                               >
                                 {dateObj.getDate()}
@@ -2051,8 +2301,26 @@ export default function DashboardPage() {
               {/* ── Recent Tasks Table ── */}
               <div id="recent-tasks-section" style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "hidden" }}>
                 <div style={{ height: "64px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 30px" }}>
-                  <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Recent Tasks</span>
-                  <button style={{ background: "none", border: "none", color: "#3b82f6", fontSize: "14px", fontWeight: 600, cursor: "pointer", padding: 0 }}>View All</button>
+                  <div>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Recent Tasks</span>
+                    {selectedCalendarDate && (
+                      <span style={{ marginLeft: "10px", fontSize: "12px", fontWeight: 700, color: COLOR.primary }}>
+                        {formatDate(selectedCalendarDate)}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (selectedCalendarDate) {
+                        setSelectedCalendarDate(null);
+                      } else {
+                        setActiveMenu("task");
+                      }
+                    }}
+                    style={{ background: "none", border: "none", color: "#3b82f6", fontSize: "14px", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                  >
+                    {selectedCalendarDate ? "Clear Date" : "View All"}
+                  </button>
                 </div>
 
                 {/* Table */}
@@ -2163,7 +2431,7 @@ export default function DashboardPage() {
                                 <button onClick={() => {
                                   setEditTaskId(task.id ?? null);
                                   setAddTaskTitle(task.title);
-                                  setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
+                                  setAddTaskDesc(task.description || localTaskMeta[task.id ?? ""]?.description || "");
                                   setAddTaskDeadline(toDatetimeLocalValue(task.deadlineRaw));
                                   setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
                                   setIsEditTaskModalOpen(true);
@@ -2176,8 +2444,7 @@ export default function DashboardPage() {
                                   Edit Task
                                 </button>
                                 <button onClick={() => {
-                                  setDetailTaskData({ ...task, description: localTaskMeta[task.id ?? ""]?.description || "" });
-                                  setIsDetailTaskModalOpen(true);
+                                  void openTaskDetailModal(task);
                                   setOpenTaskMenuId(null);
                                 }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
@@ -2217,7 +2484,7 @@ export default function DashboardPage() {
                               onClick={() => {
                                 setEditTaskId(task.id ?? null);
                                 setAddTaskTitle(task.title);
-                                setAddTaskDesc(localTaskMeta[task.id ?? ""]?.description || "");
+                                setAddTaskDesc(task.description || localTaskMeta[task.id ?? ""]?.description || "");
                                 setAddTaskDeadline(toDatetimeLocalValue(task.deadlineRaw));
                                 setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
                                 setIsEditTaskModalOpen(true);
@@ -2286,6 +2553,130 @@ export default function DashboardPage() {
           )}
 
           {/* ── Task View (List) ── */}
+          {activeMenu === "history" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
+              <div style={{ ...CARD_STYLE, overflow: "hidden", boxShadow: "0 14px 36px rgba(17,24,39,0.06)" }}>
+                <div style={{ padding: "18px 22px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                  <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.mutedDark, letterSpacing: "0.04em" }}>TASK HISTORY</div>
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                  <colgroup>
+                    <col style={{ width: "28%" }} />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "17%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "18%" }} />
+                    <col style={{ width: "6%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr style={{ height: "42px", backgroundColor: "#F7F7FB", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      {["TASK", "TASK LEVEL", "DUE DATE", "STATUS", "COMPLETED AT", "ACTIONS"].map((h, i) => (
+                        <th key={h} style={{ fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark, textAlign: i === 0 ? "left" : "center", padding: "0 18px", whiteSpace: "nowrap" }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isHistoryLoading ? (
+                      <tr style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                        <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: COLOR.mutedDark }}>Loading history...</td>
+                      </tr>
+                    ) : filteredHistoryItems.length === 0 ? (
+                      <tr style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                        <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: COLOR.mutedDark }}>Belum ada history.</td>
+                      </tr>
+                    ) : filteredHistoryItems.slice(0, 8).map((item) => {
+                      const isFocusItem = item.item_type === "focus";
+                      const statusText = isFocusItem
+                        ? item.end_reason ? item.end_reason.replaceAll("_", " ") : "In Progress"
+                        : item.task_status === "done" ? "Completed" : item.task_status === "in_progress" ? "In Progress" : "Not Started";
+                      const statusTone = statusText === "Completed" || statusText === "completed"
+                        ? { bg: "#DDFBE5", color: COLOR.primary }
+                        : statusText === "In Progress"
+                          ? { bg: "#E0EAFF", color: "#1D4ED8" }
+                          : { bg: "#E5E7EB", color: "#4B5563" };
+                      const viewTask: ViewTask = {
+                        id: item.task_id,
+                        title: item.title,
+                        description: item.description ?? "",
+                        level: mapEnergyToLevel(item.energy_weight),
+                        subtask: item.item_type,
+                        date: formatTaskDate(item.deadline),
+                        done: item.task_status === "done",
+                        status: item.task_status,
+                        deadlineRaw: item.deadline,
+                        createdAt: item.event_at,
+                      };
+
+                      return (
+                        <tr key={`${item.item_type}-${item.id}`} style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                          <td style={{ padding: "0 18px", verticalAlign: "middle" }}>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+                            {isFocusItem && (
+                              <div style={{ marginTop: "3px", fontSize: "11px", fontWeight: 600, color: COLOR.mutedDark }}>
+                                Focus session
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: "0 18px", textAlign: "center" }}><PriorityBadge level={mapEnergyToLevel(item.energy_weight)} /></td>
+                          <td style={{ padding: "0 18px", textAlign: "center", fontSize: "12px", color: COLOR.text, fontWeight: 500 }}>{formatTaskDate(item.deadline)}</td>
+                          <td style={{ padding: "0 18px", textAlign: "center" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "86px", borderRadius: "999px", backgroundColor: statusTone.bg, color: statusTone.color, fontSize: "11px", fontWeight: 800, padding: "4px 10px", textTransform: "capitalize" }}>
+                              {statusText}
+                            </span>
+                          </td>
+                          <td style={{ padding: "0 18px", textAlign: "center", fontSize: "12px", color: COLOR.mutedDark, fontWeight: 600 }}>
+                            {isFocusItem ? formatDateTimeShort(item.ended_at ?? item.started_at) : formatDateTimeShort(item.completed_at)}
+                          </td>
+                          <td style={{ padding: "0 18px", textAlign: "center" }}>
+                            <button
+                              onClick={() => void openTaskDetailModal(viewTask)}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "inline-flex", padding: "4px", borderRadius: "4px" }}
+                              aria-label="Open history task detail"
+                            >
+                              <MoreDotsIcon />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {(historyData?.total_items ?? 0) > filteredHistoryItems.length && (
+                  <div style={{ height: "48px", display: "flex", alignItems: "center", justifyContent: "center", borderTop: `1px solid ${COLOR.borderSoft}`, fontSize: "12px", fontWeight: 600, color: COLOR.mutedDark }}>
+                    View More
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1.1fr repeat(4, minmax(150px, 1fr))", gap: "18px", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.mutedDark, letterSpacing: "0.04em", marginBottom: "8px" }}>FOCUS SUMMARY</div>
+                  <p style={{ margin: 0, maxWidth: "240px", color: COLOR.mutedDark, fontSize: "12px", lineHeight: 1.5 }}>
+                    Summary of your focus activity in the selected period.
+                  </p>
+                </div>
+                {[
+                  { label: "Total Focus Time", value: historyData?.summary.total_focus_time_label ?? "0h 0m", icon: <ClockAlertIcon color={COLOR.primary} size={16} /> },
+                  { label: "Total Sessions", value: String(historyData?.summary.total_sessions ?? 0), icon: <CheckCircleSolidIcon /> },
+                  { label: "Average Focus Score", value: `${historyData?.summary.average_focus_score ?? 0}%`, icon: <TrendUpIcon /> },
+                  { label: "Longest Session", value: `${historyData?.summary.longest_session_minutes ?? 0} min`, icon: <BatteryIcon /> },
+                ].map((item) => (
+                  <div key={item.label} style={{ ...CARD_STYLE, minHeight: "78px", padding: "16px", display: "flex", alignItems: "center", gap: "12px", boxShadow: "0 12px 28px rgba(17,24,39,0.06)" }}>
+                    <span style={{ width: "38px", height: "38px", borderRadius: "999px", backgroundColor: "#E8EEFF", color: COLOR.primary, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {item.icon}
+                    </span>
+                    <span>
+                      <span style={{ display: "block", fontSize: "11px", color: COLOR.mutedDark, marginBottom: "2px" }}>{item.label}</span>
+                      <span style={{ display: "block", fontSize: "16px", color: COLOR.text, fontWeight: 800 }}>{item.value}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeMenu === "task" && !selectedTaskId && templateView === "list" && (
             <div style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "visible" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
@@ -2359,7 +2750,7 @@ export default function DashboardPage() {
                       <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                         <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", position: "relative" }}>
                           <button
-                            onClick={() => openTaskDetailModal(task)}
+                            onClick={() => void openTaskDetailModal(task)}
                             style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                             aria-label="Detail task"
                           >
@@ -3454,7 +3845,14 @@ export default function DashboardPage() {
                 position: "relative", maxHeight: "90vh", overflowY: "auto",
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                  <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: COLOR.text }}>Task Details</h2>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: COLOR.text }}>Task Details</h2>
+                    {detailTaskData.status === "done" && (
+                      <span style={{ borderRadius: "999px", backgroundColor: "#DDFBE5", color: COLOR.primary, border: "1px solid #A7F3D0", padding: "4px 10px", fontSize: "12px", fontWeight: 700 }}>
+                        Completed
+                      </span>
+                    )}
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "16px", color: COLOR.text }}>
                     {detailTaskData.status !== "done" && (
                       <>
@@ -3485,23 +3883,74 @@ export default function DashboardPage() {
                   {detailTaskData.description || "No description provided."}
                 </p>
 
-                <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", marginBottom: "16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "bold" }}>!</span> Priority
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px", marginBottom: "20px" }}>
+                  <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", minHeight: "68px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: COLOR.mutedDark, marginBottom: "8px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "bold" }}>!</span> Priority
+                    </div>
+                    <PriorityBadge level={detailTaskData.level} />
                   </div>
-                  <PriorityBadge level={detailTaskData.level} />
+
+                  <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", minHeight: "68px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: COLOR.mutedDark, marginBottom: "8px" }}>
+                      <CalendarSmIcon /> Due Date
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: COLOR.text }}>{detailTaskData.date}</div>
+                  </div>
                 </div>
 
-                <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", marginBottom: "32px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
-                    <CalendarSmIcon /> Due Date
+                {(detailTaskData.latestFocusSession || (detailTaskData.focusSummary?.total_sessions ?? 0) > 0) && (
+                  <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", marginBottom: "24px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 700, color: COLOR.text, marginBottom: "14px" }}>
+                      <ClockAlertIcon color={COLOR.primary} size={16} /> Focus Timer
+                    </div>
+                    {detailTaskData.latestFocusSession && (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px", marginBottom: "12px" }}>
+                        <div style={{ border: "1px solid #CFF7DA", borderRadius: "8px", backgroundColor: "#FBFFFC", padding: "12px" }}>
+                          <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "4px" }}>Start Time</div>
+                          <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.text }}>{formatDateTimeShort(detailTaskData.latestFocusSession.started_at)}</div>
+                        </div>
+                        <div style={{ border: "1px solid #CFF7DA", borderRadius: "8px", backgroundColor: "#FBFFFC", padding: "12px" }}>
+                          <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "4px" }}>End Time</div>
+                          <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.text }}>{formatDateTimeShort(detailTaskData.latestFocusSession.ended_at)}</div>
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", overflow: "hidden" }}>
+                      <div style={{ padding: "12px", borderRight: `1px solid ${COLOR.borderSoft}` }}>
+                        <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "4px" }}>Focus Duration</div>
+                        <div style={{ fontSize: "14px", fontWeight: 800, color: COLOR.text }}>
+                          {detailTaskData.focusSummary?.total_focus_time_label ?? `${detailTaskData.latestFocusSession?.duration_minutes ?? 0} min`}
+                        </div>
+                      </div>
+                      <div style={{ padding: "12px" }}>
+                        <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "8px" }}>Focus Score</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ flex: 1, height: "6px", borderRadius: "999px", backgroundColor: "#E5E7EB", overflow: "hidden" }}>
+                            <div style={{ width: `${detailTaskData.focusSummary?.average_focus_score ?? 0}%`, height: "100%", backgroundColor: COLOR.primary }} />
+                          </div>
+                          <span style={{ fontSize: "12px", fontWeight: 800, color: COLOR.primary }}>{detailTaskData.focusSummary?.average_focus_score ?? 0}%</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: COLOR.text }}>{detailTaskData.date}</div>
-                </div>
+                )}
 
                 <div style={{ borderTop: `1px solid ${COLOR.borderSoft}`, margin: "0 -32px 24px" }} />
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {detailTaskData.id && (
+                    <button
+                      onClick={() => handleStartFocus(detailTaskData.id)}
+                      style={{
+                        height: "44px", width: "100%", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                        backgroundColor: COLOR.primary, color: "#ffffff",
+                        fontSize: "14px", fontWeight: 700, border: "none", cursor: "pointer"
+                      }}
+                    >
+                      <PlayIcon /> Start Focus Again
+                    </button>
+                  )}
                   {detailTaskData.status !== "done" && (
                     <button
                       onClick={() => {
@@ -3515,7 +3964,7 @@ export default function DashboardPage() {
                       }}
                       style={{
                         height: "44px", width: "100%", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                        backgroundColor: COLOR.primary, color: "#ffffff",
+                        backgroundColor: "#ffffff", color: COLOR.text,
                         fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer"
                       }}
                     >

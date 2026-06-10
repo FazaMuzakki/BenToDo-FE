@@ -36,12 +36,34 @@ type GuestSessionData = {
 
 export type EnergyWeight = "Ringan" | "Sedang" | "Berat";
 export type TaskStatus = "pending" | "in_progress" | "done";
+export type DashboardPeriod = "daily" | "weekly" | "monthly" | "yearly";
+export type TrendDirection = "up" | "down" | "flat";
+
+export type FocusSummary = {
+  total_sessions: number;
+  total_focus_minutes: number;
+  total_focus_time_label: string;
+  longest_session_minutes: number;
+  completed_sessions: number;
+  average_focus_score: number | null;
+};
+
+export type FocusSessionDetail = {
+  id: string;
+  task_id: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  end_reason: string | null;
+  focus_score?: number | null;
+};
 
 export type Task = {
   id: string;
   user_id: string | null;
   guest_session_id: string | null;
   title: string;
+  description?: string | null;
   energy_weight: EnergyWeight;
   deadline: string | null;
   status: TaskStatus;
@@ -51,6 +73,8 @@ export type Task = {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  focus_summary?: FocusSummary;
+  latest_focus_session?: FocusSessionDetail | null;
 };
 
 export type TaskListResponse = {
@@ -135,17 +159,137 @@ export type CreateTemplatePayload = {
 };
 
 export type AdminDashboardData = {
+  period?: DashboardPeriod;
   stats: {
     guest_users: number;
     users: number;
     tasks: number;
     templates: number;
   };
+  metrics?: {
+    guest_users: DashboardMetric;
+    users: DashboardMetric;
+    tasks: DashboardMetric;
+    templates: DashboardMetric;
+  };
   activity: {
     labels: string[];
     data: number[];
+    period?: DashboardPeriod;
+    items?: AdminActivityPoint[];
   };
   recent_templates: TaskTemplate[];
+};
+
+export type DashboardMetric = {
+  value: number;
+  current_period_value?: number;
+  previous_value: number;
+  trend_percent: number;
+  trend_direction: TrendDirection;
+};
+
+export type DashboardOverviewData = {
+  period: DashboardPeriod;
+  range: {
+    current_start: string;
+    current_end: string;
+    previous_start: string;
+    previous_end: string;
+  };
+  metrics: {
+    task_completed: DashboardMetric;
+    upcoming_deadlines: DashboardMetric;
+    overdue_tasks: DashboardMetric;
+    energy: {
+      value: number;
+      max_value: number;
+      percentage: number;
+      is_critical_energy: boolean;
+      energy_reset_at?: string | null;
+    };
+  };
+  priority_tasks: DashboardZenResponse;
+  productivity: {
+    period: DashboardPeriod;
+    data: ProductivityPoint[];
+  };
+  recent_tasks: {
+    selected_date: string | null;
+    data: Task[];
+  };
+  calendar: {
+    month: string;
+    selected_date: string | null;
+    data: CalendarTaskCount[];
+  };
+  focus_summary: FocusSummary;
+  notifications: {
+    unread_count: number;
+    data: Notification[];
+  };
+};
+
+export type ProductivityPoint = {
+  label: string;
+  date: string;
+  completed: number;
+  overdue: number;
+  total: number;
+  tooltip?: {
+    title: string;
+    completed: number;
+    overdue: number;
+  };
+};
+
+export type AdminActivityPoint = {
+  label: string;
+  date: string;
+  guest_users: number;
+  users: number;
+  total: number;
+};
+
+export type CalendarTaskCount = {
+  date: string;
+  total_count: number;
+  completed_count: number;
+  active_count: number;
+  overdue_count: number;
+};
+
+export type DashboardHistoryType = "all" | "task" | "focus";
+
+export type DashboardHistoryItem = {
+  item_type: "task" | "focus";
+  id: string;
+  task_id: string;
+  title: string;
+  description: string | null;
+  energy_weight: EnergyWeight;
+  deadline: string | null;
+  task_status: TaskStatus;
+  completed_at: string | null;
+  focus_session_id: string | null;
+  started_at: string | null;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  end_reason: string | null;
+  focus_score: number | null;
+  event_at: string;
+};
+
+export type DashboardHistoryResponse = {
+  type: DashboardHistoryType;
+  from: string | null;
+  to: string | null;
+  page: number;
+  limit: number;
+  total_items: number;
+  total_pages: number;
+  summary: FocusSummary;
+  data: DashboardHistoryItem[];
 };
 
 export type Notification = {
@@ -176,6 +320,7 @@ export type ActiveFocusSession = {
   guest_session_id: string | null;
   task_id: string;
   task_title: string;
+  task_description?: string | null;
   energy_weight: EnergyWeight;
   task_status: TaskStatus;
   started_at: string;
@@ -337,8 +482,13 @@ export const getTasks = (page = 1, limit = 50) => {
   return authRequest<TaskListResponse>(`/tasks?page=${page}&limit=${limit}`);
 };
 
+export const getTaskById = (taskId: string) => {
+  return authRequest<{ data: Task }>(`/tasks/${taskId}`);
+};
+
 export const createTask = (payload: {
   title: string;
+  description?: string | null;
   energy_weight: EnergyWeight;
   deadline?: string | null;
   source_template?: string | null;
@@ -353,6 +503,7 @@ export const updateTask = (
   taskId: string,
   payload: Partial<{
     title: string;
+    description: string | null;
     energy_weight: EnergyWeight;
     status: TaskStatus;
     deadline: string | null;
@@ -376,6 +527,46 @@ export const getDashboardZen = () => {
 
 export const getEnergySummary = () => {
   return authRequest<{ data: EnergySummary }>("/energy");
+};
+
+const buildQuery = (params: Record<string, string | number | null | undefined>) => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== "") {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  const query = searchParams.toString();
+
+  return query ? `?${query}` : "";
+};
+
+export const getDashboardOverview = (
+  period: DashboardPeriod = "weekly",
+  calendarDate?: string | null,
+  month?: string | null,
+) => {
+  return authRequest<{ data: DashboardOverviewData }>(
+    `/dashboard/overview${buildQuery({
+      period,
+      calendar_date: calendarDate,
+      month,
+    })}`,
+  );
+};
+
+export const getDashboardHistory = (
+  type: DashboardHistoryType = "all",
+  page = 1,
+  limit = 20,
+  from?: string | null,
+  to?: string | null,
+) => {
+  return authRequest<DashboardHistoryResponse>(
+    `/dashboard/history${buildQuery({ type, page, limit, from, to })}`,
+  );
 };
 
 export const getTemplates = () => {
@@ -421,12 +612,16 @@ export const applyTemplate = (templateKey: string) => {
   });
 };
 
-export const getAdminDashboard = () => {
-  return authRequest<{ data: AdminDashboardData }>("/admin/dashboard");
+export const getAdminDashboard = (period: DashboardPeriod = "weekly") => {
+  return authRequest<{ data: AdminDashboardData }>(
+    `/admin/dashboard${buildQuery({ period })}`,
+  );
 };
 
-export const getAdminTemplates = () => {
-  return authRequest<TemplateListResponse>("/admin/templates");
+export const getAdminTemplates = (page = 1, limit = 20) => {
+  return authRequest<TemplateListResponse>(
+    `/admin/templates${buildQuery({ page, limit })}`,
+  );
 };
 
 export const deleteAdminTemplate = (templateId: string) => {
