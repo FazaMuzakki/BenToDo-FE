@@ -339,20 +339,23 @@ function TrendBadge({ value, up }: { value: string; up: boolean }) {
 
 function PriorityBadge({ level }: { level: "HIGH" | "MEDIUM" | "LOW" }) {
   const map = {
-    HIGH: { bg: "#6D6D6D", text: "#fff" },
-    MEDIUM: { bg: "#7B7B7B", text: "#fff" },
-    LOW: { bg: "#8E8E8E", text: "#fff" },
+    HIGH: { bg: "#FFE4E6", text: "#E11D48", border: "#FECDD3" },
+    MEDIUM: { bg: "#FFEDD5", text: "#EA580C", border: "#FED7AA" },
+    LOW: { bg: "#DCFCE7", text: "#008B1F", border: "#BBF7D0" },
   };
-  const { bg, text } = map[level];
+  const { bg, text, border } = map[level];
   return (
     <span
       style={{
-        display: "inline-block",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
         fontSize: "11px",
-        fontWeight: 700,
+        fontWeight: 800,
         letterSpacing: "0.04em",
         color: text,
         backgroundColor: bg,
+        border: `1px solid ${border}`,
         borderRadius: "999px",
         padding: "3px 10px",
         lineHeight: "16px",
@@ -360,6 +363,35 @@ function PriorityBadge({ level }: { level: "HIGH" | "MEDIUM" | "LOW" }) {
       }}
     >
       {level}
+    </span>
+  );
+}
+
+function TaskStatusBadge({ status }: { status: TaskViewStatus }) {
+  const map = {
+    Active: { bg: "#ECFDF3", text: "#027A48", border: "#ABEFC6" },
+    Overdue: { bg: "#FEF3F2", text: "#B42318", border: "#FECDCA" },
+    Done: { bg: "#F2F4F7", text: "#344054", border: "#EAECF0" },
+  };
+  const { bg, text, border } = map[status];
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: "72px",
+        borderRadius: "999px",
+        border: `1px solid ${border}`,
+        backgroundColor: bg,
+        color: text,
+        fontSize: "11px",
+        fontWeight: 800,
+        lineHeight: "16px",
+        padding: "3px 10px",
+      }}
+    >
+      {status}
     </span>
   );
 }
@@ -505,6 +537,7 @@ const templatesData = [
 
 type PriorityLevel = "HIGH" | "MEDIUM" | "LOW";
 type TaskFilter = "All" | "Active" | "Overdue" | "Done";
+type TaskViewStatus = "Active" | "Overdue" | "Done";
 type TaskSort = "created_desc" | "created_asc" | "deadline_asc" | "deadline_desc" | "level_easy" | "level_hard";
 
 const TASK_TITLE_MAX = 80;
@@ -633,6 +666,15 @@ const mapTaskToCard = (task: Task, index: number): ViewCard => ({
   subtasks: task.used_timer ? task.timer_duration ?? 0 : 0,
   type: ["All", task.status === "done" ? "Public" : "Private"],
 });
+
+const getTaskViewStatus = (task: ViewTask, now: number): TaskViewStatus => {
+  if (task.status === "done") return "Done";
+
+  const deadlineTime = task.deadlineRaw ? new Date(task.deadlineRaw).getTime() : null;
+  if (now > 0 && deadlineTime !== null && deadlineTime < now) return "Overdue";
+
+  return "Active";
+};
 
 const getDisplayName = () => {
   const user = getStoredUser();
@@ -803,14 +845,12 @@ export default function DashboardPage() {
   const taskListItems = useMemo<ViewTask[]>(() => {
     const levelRank: Record<PriorityLevel, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
     const byFilter = filteredTasks.filter((task) => {
-      const isDone = task.status === "done";
-      const deadlineTime = task.deadlineRaw ? new Date(task.deadlineRaw).getTime() : null;
-      const isOverdue = !isDone && currentTime > 0 && deadlineTime !== null && deadlineTime < currentTime;
+      const viewStatus = getTaskViewStatus(task, currentTime);
 
-      if (taskFilter === "Done") return isDone;
-      if (taskFilter === "Overdue") return isOverdue;
-      if (taskFilter === "Active") return !isDone && !isOverdue;
-      return true;
+      if (taskFilter === "Done") return viewStatus === "Done";
+      if (taskFilter === "Overdue") return viewStatus === "Overdue";
+      if (taskFilter === "Active") return viewStatus === "Active";
+      return viewStatus !== "Done";
     });
 
     return [...byFilter].sort((a, b) => {
@@ -825,7 +865,7 @@ export default function DashboardPage() {
   const emptyTaskListMessage = searchTask.trim()
     ? "Task tidak ditemukan"
     : taskFilter === "All"
-      ? "Belum ada task"
+      ? "Belum ada task active atau overdue."
       : `Belum ada task ${taskFilter.toLowerCase()}.`;
 
   const taskCards = useMemo(() => {
@@ -954,6 +994,16 @@ export default function DashboardPage() {
   const handleSignOut = () => {
     clearAuthSession();
     router.push("/login");
+  };
+
+  const resetTaskForm = () => {
+    setEditTaskId(null);
+    setAddTaskTitle("");
+    setAddTaskDesc("");
+    setAddTaskDeadline("");
+    setAddTaskEnergy("Ringan");
+    setAddTaskSubtasks([]);
+    setNewSubtaskText("");
   };
 
   const handleToggleTaskStatus = async (task: ViewTask, checked: boolean) => {
@@ -1542,7 +1592,7 @@ export default function DashboardPage() {
                             cursor: "pointer",
                             color: COLOR.text,
                           }}
-                          aria-label="Sort task"
+                          aria-label="Filter and sort task"
                         >
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 6h18" />
@@ -1560,16 +1610,16 @@ export default function DashboardPage() {
                             borderRadius: "8px",
                             backgroundColor: "#ffffff",
                             boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-                            zIndex: 60,
+                            zIndex: 500,
                             padding: "6px",
                           }}>
                             {[
-                              { value: "created_desc", label: "Tanggal dibuat terbaru" },
-                              { value: "created_asc", label: "Tanggal dibuat terlama" },
-                              { value: "deadline_asc", label: "Tenggat terdekat" },
-                              { value: "deadline_desc", label: "Tenggat terjauh" },
-                              { value: "level_easy", label: "Tingkat termudah" },
-                              { value: "level_hard", label: "Tingkat tersulit" },
+                              { value: "created_desc", label: "Newest created" },
+                              { value: "created_asc", label: "Oldest created" },
+                              { value: "deadline_asc", label: "Nearest due date" },
+                              { value: "deadline_desc", label: "Farthest due date" },
+                              { value: "level_easy", label: "Difficulty: easy first" },
+                              { value: "level_hard", label: "Difficulty: hard first" },
                             ].map((item) => (
                               <button
                                 key={item.value}
@@ -1629,6 +1679,8 @@ export default function DashboardPage() {
                     if (activeMenu === "dashboard") {
                       void handleStartFocus(priorityTaskItems[0]?.id);
                     } else if (activeMenu === "task") {
+                      resetTaskForm();
+                      setIsEditTaskModalOpen(false);
                       setIsAddTaskModalOpen(true);
                     } else if (activeMenu === "template") {
                       setTemplateView("create");
@@ -1654,7 +1706,7 @@ export default function DashboardPage() {
                   }}
                 >
                   {activeMenu === "dashboard" ? <PlayIcon /> : <span style={{ fontSize: "16px", fontWeight: "bold", lineHeight: 1 }}>+</span>}
-                  {activeMenu === "dashboard" ? "Start Focus Timer" : activeMenu === "task" ? "Task Baru" : "Template Baru"}
+                  {activeMenu === "dashboard" ? "Start Focus Timer" : activeMenu === "task" ? "Add Task" : "Template Baru"}
                 </button>
               </div>
             </div>
@@ -2218,15 +2270,16 @@ export default function DashboardPage() {
             <div style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "visible" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                 <colgroup>
-                  <col style={{ width: "72px" }} />
+                  <col style={{ width: "64px" }} />
                   <col style={{ width: "auto" }} />
-                  <col style={{ width: "170px" }} />
-                  <col style={{ width: "220px" }} />
+                  <col style={{ width: "150px" }} />
+                  <col style={{ width: "130px" }} />
+                  <col style={{ width: "190px" }} />
                   <col style={{ width: "250px" }} />
                 </colgroup>
                 <thead>
                   <tr style={{ height: "42px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
-                    {["NO", "TASK", "TASK LEVEL", "DUE DATE", "ACTIONS"].map((h, i) => (
+                    {["NO", "TASK", "TASK LEVEL", "STATUS", "DUE DATE", "ACTIONS"].map((h, i) => (
                       <th
                         key={h}
                         style={{
@@ -2249,7 +2302,7 @@ export default function DashboardPage() {
                   {taskListItems.length === 0 ? (
                     <tr style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         style={{
                           padding: "0 12px",
                           textAlign: "center",
@@ -2262,7 +2315,11 @@ export default function DashboardPage() {
                         {emptyTaskListMessage}
                       </td>
                     </tr>
-                  ) : taskListItems.map((task, index) => (
+                  ) : taskListItems.map((task, index) => {
+                    const taskViewStatus = getTaskViewStatus(task, currentTime);
+                    const isDoneTask = taskViewStatus === "Done";
+
+                    return (
                     <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                       <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
                         {index + 1}
@@ -2272,6 +2329,9 @@ export default function DashboardPage() {
                       </td>
                       <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                         <PriorityBadge level={task.level} />
+                      </td>
+                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
+                        <TaskStatusBadge status={taskViewStatus} />
                       </td>
                       <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
                         {task.date}
@@ -2285,13 +2345,15 @@ export default function DashboardPage() {
                           >
                             <EyeOutlineIcon />
                           </button>
-                          <button onClick={() => {
-                            setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
-                          }} style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, color: COLOR.mutedDark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                          >
-                            <MoreDotsIcon />
-                          </button>
-                          {openTaskMenuId === task.id && (
+                          {!isDoneTask && (
+                            <button onClick={() => {
+                              setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
+                            }} style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, color: COLOR.mutedDark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                            >
+                              <MoreDotsIcon />
+                            </button>
+                          )}
+                          {!isDoneTask && openTaskMenuId === task.id && (
                             <div style={{
                               position: "absolute",
                               top: "40px",
@@ -2340,32 +2402,35 @@ export default function DashboardPage() {
                             </div>
                           )}
 
-                          <button
-                            onClick={() => setNotice("Fitur focus timer akan disambungkan di menu Focus.")}
-                            style={{
-                              height: "34px",
-                              minWidth: "92px",
-                              padding: "0 14px",
-                              borderRadius: "20px",
-                              border: "1px solid #d1d5db",
-                              backgroundColor: "#ffffff",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              color: COLOR.text,
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                              whiteSpace: "nowrap",
-                              transition: "all 0.15s",
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
-                          >
-                            Start Focus
-                          </button>
+                          {!isDoneTask && (
+                            <button
+                              onClick={() => setNotice("Fitur focus timer akan disambungkan di menu Focus.")}
+                              style={{
+                                height: "34px",
+                                minWidth: "92px",
+                                padding: "0 14px",
+                                borderRadius: "20px",
+                                border: "1px solid #d1d5db",
+                                backgroundColor: "#ffffff",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                color: COLOR.text,
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                whiteSpace: "nowrap",
+                                transition: "all 0.15s",
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
+                            >
+                              Start Focus
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2497,7 +2562,9 @@ export default function DashboardPage() {
                       padding: "24px",
                       boxSizing: "border-box",
                       display: "flex",
-                      flexDirection: "column"
+                      flexDirection: "column",
+                      overflow: "hidden",
+                      minWidth: 0,
                     }}>
                       {/* Icon & Badge */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
@@ -2521,9 +2588,9 @@ export default function DashboardPage() {
                         fontSize: "16px",
                         fontWeight: 700,
                         color: COLOR.text,
-                        marginBottom: "10px",
-                        marginTop: 0,
+                        margin: "0 0 10px",
                         lineHeight: 1.25,
+                        minHeight: "40px",
                         overflow: "hidden",
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
@@ -2537,10 +2604,11 @@ export default function DashboardPage() {
                         fontSize: "14px",
                         color: "#4B4B4B",
                         lineHeight: 1.45,
-                        marginBottom: "22px",
+                        height: "41px",
+                        margin: "0 0 10px",
                         overflow: "hidden",
                         display: "-webkit-box",
-                        WebkitLineClamp: 3,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
                         overflowWrap: "anywhere",
                         wordBreak: "break-word",
@@ -2548,13 +2616,13 @@ export default function DashboardPage() {
                         {item.desc}
                       </p>
                       {item.createdBy && (
-                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "-12px 0 18px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "0 0 14px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
                         </p>
                       )}
 
                       {/* Tags */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px", flexWrap: "wrap", overflow: "hidden" }}>
                         <span style={{
                           display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
                           backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
@@ -3366,28 +3434,32 @@ export default function DashboardPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                   <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: COLOR.text }}>Task Details</h2>
                   <div style={{ display: "flex", alignItems: "center", gap: "16px", color: COLOR.text }}>
-                    <button onClick={() => {
-                      setEditTaskId(detailTaskData.id ?? null);
-                      setAddTaskTitle(detailTaskData.title);
-                      setAddTaskDesc(detailTaskData.description || "");
-                      setAddTaskDeadline(toDatetimeLocalValue(detailTaskData.deadlineRaw));
-                      setAddTaskEnergy(detailTaskData.level === "LOW" ? "Ringan" : detailTaskData.level === "MEDIUM" ? "Sedang" : "Berat");
-                      setIsDetailTaskModalOpen(false);
-                      setIsEditTaskModalOpen(true);
-                    }} style={{ ...buttonReset, cursor: "pointer", display: "flex" }}>
-                      <PenIcon />
-                    </button>
-                    <button onClick={() => {
-                      setIsDetailTaskModalOpen(false);
-                      setOpenTaskMenuId(detailTaskData.id ?? null);
-                    }} style={{ ...buttonReset, cursor: "pointer", display: "flex" }}>
-                      <MoreDotsIcon />
-                    </button>
+                    {detailTaskData.status !== "done" && (
+                      <>
+                        <button onClick={() => {
+                          setEditTaskId(detailTaskData.id ?? null);
+                          setAddTaskTitle(detailTaskData.title);
+                          setAddTaskDesc(detailTaskData.description || "");
+                          setAddTaskDeadline(toDatetimeLocalValue(detailTaskData.deadlineRaw));
+                          setAddTaskEnergy(detailTaskData.level === "LOW" ? "Ringan" : detailTaskData.level === "MEDIUM" ? "Sedang" : "Berat");
+                          setIsDetailTaskModalOpen(false);
+                          setIsEditTaskModalOpen(true);
+                        }} style={{ ...buttonReset, cursor: "pointer", display: "flex" }}>
+                          <PenIcon />
+                        </button>
+                        <button onClick={() => {
+                          setIsDetailTaskModalOpen(false);
+                          setOpenTaskMenuId(detailTaskData.id ?? null);
+                        }} style={{ ...buttonReset, cursor: "pointer", display: "flex" }}>
+                          <MoreDotsIcon />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <h3 style={{ fontSize: "18px", fontWeight: 600, color: COLOR.text, margin: "0 0 8px", lineHeight: 1.3 }}>{detailTaskData.title}</h3>
-                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 24px", lineHeight: 1.5 }}>
+                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 24px", lineHeight: 1.5, whiteSpace: "pre-line" }}>
                   {detailTaskData.description || "No description provided."}
                 </p>
 
@@ -3408,24 +3480,26 @@ export default function DashboardPage() {
                 <div style={{ borderTop: `1px solid ${COLOR.borderSoft}`, margin: "0 -32px 24px" }} />
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <button
-                    onClick={() => {
-                      setEditTaskId(detailTaskData.id ?? null);
-                      setAddTaskTitle(detailTaskData.title);
-                      setAddTaskDesc(detailTaskData.description || "");
-                      setAddTaskDeadline(toDatetimeLocalValue(detailTaskData.deadlineRaw));
-                      setAddTaskEnergy(detailTaskData.level === "LOW" ? "Ringan" : detailTaskData.level === "MEDIUM" ? "Sedang" : "Berat");
-                      setIsDetailTaskModalOpen(false);
-                      setIsEditTaskModalOpen(true);
-                    }}
-                    style={{
-                      height: "44px", width: "100%", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                      backgroundColor: COLOR.primary, color: "#ffffff",
-                      fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer"
-                    }}
-                  >
-                    <PenIcon /> Edit Task
-                  </button>
+                  {detailTaskData.status !== "done" && (
+                    <button
+                      onClick={() => {
+                        setEditTaskId(detailTaskData.id ?? null);
+                        setAddTaskTitle(detailTaskData.title);
+                        setAddTaskDesc(detailTaskData.description || "");
+                        setAddTaskDeadline(toDatetimeLocalValue(detailTaskData.deadlineRaw));
+                        setAddTaskEnergy(detailTaskData.level === "LOW" ? "Ringan" : detailTaskData.level === "MEDIUM" ? "Sedang" : "Berat");
+                        setIsDetailTaskModalOpen(false);
+                        setIsEditTaskModalOpen(true);
+                      }}
+                      style={{
+                        height: "44px", width: "100%", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                        backgroundColor: COLOR.primary, color: "#ffffff",
+                        fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer"
+                      }}
+                    >
+                      <PenIcon /> Edit Task
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsDetailTaskModalOpen(false)}
                     style={{
