@@ -12,7 +12,7 @@ import {
   getStoredUser,
   hasActiveSession,
 } from "../lib/api";
-import type { AdminDashboardData, TaskTemplate } from "../lib/api";
+import type { AdminDashboardData, DashboardMetric, DashboardPeriod, TaskTemplate } from "../lib/api";
 import CreateTemplateModal, { type CreateTemplateModalPayload } from "../components/CreateTemplateModal";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
@@ -272,33 +272,17 @@ function LevelBadge({ level }: { level: string }) {
 
 // ─── User Activity Chart ───────────────────────────────────────────────────────
 
-type ChartRange = "week" | "month" | "year";
+type ChartRange = DashboardPeriod;
 
-const CHART_DATA: Record<ChartRange, { labels: string[]; data: number[] }> = {
-  week: {
-    labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-    data: [3, 4, 2, 3, 3.5, 4, 0.5],
-  },
-  month: {
-    labels: ["W1", "W2", "W3", "W4"],
-    data: [8, 12, 6, 10],
-  },
-  year: {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    data: [15, 20, 12, 18, 22, 14, 19, 25, 17, 21, 16, 23],
-  },
-};
-
-function UserActivityChart({
-  range = "week",
-  activity,
-}: {
-  range?: ChartRange;
-  activity?: AdminDashboardData["activity"] | null;
-}) {
-  const chartSource = activity?.labels?.length && activity.data?.length
-    ? activity
-    : CHART_DATA[range];
+function UserActivityChart({ activity }: { activity?: AdminDashboardData["activity"] | null }) {
+  const chartSource = activity?.items?.length
+    ? {
+        labels: activity.items.map((item) => item.label),
+        data: activity.items.map((item) => item.total),
+      }
+    : activity?.labels?.length && activity.data?.length
+      ? activity
+      : { labels: [], data: [] };
   const { labels, data } = chartSource;
   const width = 680;
   const height = 260;
@@ -378,7 +362,7 @@ function UserActivityChart({
 
       {/* Animated Dots */}
       {data.map((v, i) => {
-        const x = padX + (i / (data.length - 1)) * chartW;
+        const x = padX + (data.length === 1 ? 0.5 : i / (data.length - 1)) * chartW;
         const y = padY + chartH - (v / maxVal) * chartH;
         return <circle key={i} cx={x} cy={y} r="3.5" fill={COLOR.primary}
           style={{ animation: `adminPopIn 0.4s ease ${0.5 + i * 0.1}s both` }} />;
@@ -399,16 +383,6 @@ type TemplateItem = {
   description: string;
   label: string;
 };
-
-const INITIAL_TEMPLATES: TemplateItem[] = [
-  { id: "sample-1", name: "Onboarding Journey", createdAt: "Oct 24, 2023", createdBy: "Jane Doe", usage: "1,402 Users", level: "High", description: "A comprehensive onboarding template designed to guide new users through the platform. Includes step-by-step walkthroughs, resource links, and milestone checkpoints to ensure smooth adoption.", label: "Public" },
-  { id: "sample-2", name: "Weekly Sprint Plan", createdAt: "Nov 12, 2023", createdBy: "Jane Doe", usage: "987 Users", level: "High", description: "Organize your weekly sprint cycles with structured task breakdowns, daily standups tracking, and retrospective notes. Perfect for agile teams managing iterative development.", label: "Custom" },
-  { id: "sample-3", name: "Project Kickoff", createdAt: "Dec 5, 2023", createdBy: "Jane Doe", usage: "2,145 Users", level: "High", description: "Start any new project on the right foot with stakeholder identification, scope definition, timeline planning, and resource allocation templates built in.", label: "Public" },
-  { id: "sample-4", name: "Research Pipeline", createdAt: "Jan 15, 2024", createdBy: "Jane Doe", usage: "654 Users", level: "High", description: "Streamline your research workflow from hypothesis formation to data collection, analysis, and presentation. Includes templates for literature review and methodology documentation.", label: "Custom" },
-  { id: "sample-5", name: "Content Calendar", createdAt: "Feb 28, 2024", createdBy: "Jane Doe", usage: "1,823 Users", level: "High", description: "Plan and schedule content across multiple channels with this comprehensive calendar template. Track drafts, reviews, approvals, and publication dates all in one place.", label: "Public" },
-  { id: "sample-6", name: "Bug Triage Workflow", createdAt: "Mar 10, 2024", createdBy: "Jane Doe", usage: "1,102 Users", level: "High", description: "Efficiently manage and prioritize bug reports with severity classification, assignment workflows, and resolution tracking. Integrates with development sprints seamlessly.", label: "Public" },
-  { id: "sample-7", name: "Team Retrospective", createdAt: "Apr 2, 2024", createdBy: "Jane Doe", usage: "756 Users", level: "High", description: "Facilitate productive team retrospectives with structured formats for what went well, what needs improvement, and action items. Includes voting and priority ranking features.", label: "Custom" },
-];
 
 // ─── Main Admin Dashboard ──────────────────────────────────────────────────────
 
@@ -432,6 +406,35 @@ const formatNumber = (value?: number) => (value ?? 0).toLocaleString("en-US");
 
 const formatUsage = (value?: number) => `${formatNumber(value)} Users`;
 
+const mapTimeRangeToPeriod = (value: "Daily" | "Weekly" | "Monthly" | "Yearly"): DashboardPeriod => {
+  if (value === "Daily") return "daily";
+  if (value === "Monthly") return "monthly";
+  if (value === "Yearly") return "yearly";
+  return "weekly";
+};
+
+const chartRangeLabels: Record<ChartRange, string> = {
+  daily: "Today",
+  weekly: "This Week",
+  monthly: "This Month",
+  yearly: "This Year",
+};
+
+const periodToTimeRange: Record<ChartRange, "Daily" | "Weekly" | "Monthly" | "Yearly"> = {
+  daily: "Daily",
+  weekly: "Weekly",
+  monthly: "Monthly",
+  yearly: "Yearly",
+};
+
+const formatMetricTrend = (metric?: DashboardMetric) => {
+  if (!metric || metric.trend_percent === 0 || metric.trend_direction === "flat") return "0%";
+  const sign = metric.trend_percent > 0 ? "+" : "";
+  return `${sign}${metric.trend_percent}%`;
+};
+
+const isTrendUp = (metric?: DashboardMetric) => metric?.trend_direction !== "down";
+
 const getErrorText = (error: unknown, fallback: string) => {
   return error instanceof Error ? error.message : fallback;
 };
@@ -453,7 +456,7 @@ const mapTemplateToAdminItem = (template: TaskTemplate): TemplateItem => ({
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState<AdminMenu>("dashboard");
-  const [chartRange, setChartRange] = useState<ChartRange>("week");
+  const [chartRange, setChartRange] = useState<ChartRange>("weekly");
   const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
   const [timeRange, setTimeRange] = useState<"Daily" | "Weekly" | "Monthly" | "Yearly">("Weekly");
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
@@ -464,7 +467,7 @@ export default function AdminDashboardPage() {
   const [pageError, setPageError] = useState<string | null>(null);
 
   // ─── Templates List (stateful for deletion) ────────────────────────────────
-  const [templates, setTemplates] = useState<TemplateItem[]>(INITIAL_TEMPLATES);
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
 
   // ─── Create Template Modal State ────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -500,8 +503,8 @@ export default function AdminDashboardPage() {
 
       try {
         const [dashboardResponse, templatesResponse] = await Promise.all([
-          getAdminDashboard(),
-          getAdminTemplates(),
+          getAdminDashboard(mapTimeRangeToPeriod(timeRange)),
+          getAdminTemplates(1, 50),
         ]);
 
         if (!isMounted) return;
@@ -524,7 +527,7 @@ export default function AdminDashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [router, timeRange]);
 
   const handleOpenCreateModal = () => {
     setFormError(null);
@@ -569,9 +572,7 @@ export default function AdminDashboardPage() {
     setPageError(null);
 
     try {
-      if (!deleteTemplate.id.startsWith("sample-")) {
-        await deleteAdminTemplate(deleteTemplate.id);
-      }
+      await deleteAdminTemplate(deleteTemplate.id);
 
       setTemplates((prev) => prev.filter((t) => t.id !== deleteTemplate.id));
       setDeleteTemplate(null);
@@ -597,11 +598,12 @@ export default function AdminDashboardPage() {
   // ─── Stat Cards Data ───────────────────────────────────────────────────────
 
   const stats = dashboardData?.stats;
+  const metrics = dashboardData?.metrics;
   const statCards = [
-    { label: "Guest Users", value: formatNumber(stats?.guest_users), icon: <GuestUserIcon />, trend: "+10%", up: true },
-    { label: "Users", value: formatNumber(stats?.users), icon: <UsersGroupIcon />, trend: "+10%", up: true },
-    { label: "Task", value: formatNumber(stats?.tasks), icon: <TaskClipIcon />, trend: "-10%", up: false },
-    { label: "Templates", value: formatNumber(stats?.templates), icon: <TemplatesIcon />, trend: "-10%", up: false },
+    { label: "Guest Users", value: formatNumber(stats?.guest_users), icon: <GuestUserIcon />, trend: formatMetricTrend(metrics?.guest_users), up: isTrendUp(metrics?.guest_users) },
+    { label: "Users", value: formatNumber(stats?.users), icon: <UsersGroupIcon />, trend: formatMetricTrend(metrics?.users), up: isTrendUp(metrics?.users) },
+    { label: "Task", value: formatNumber(stats?.tasks), icon: <TaskClipIcon />, trend: formatMetricTrend(metrics?.tasks), up: isTrendUp(metrics?.tasks) },
+    { label: "Templates", value: formatNumber(stats?.templates), icon: <TemplatesIcon />, trend: formatMetricTrend(metrics?.templates), up: isTrendUp(metrics?.templates) },
   ];
   
   const timeRangeText = {
@@ -943,7 +945,10 @@ export default function AdminDashboardPage() {
                     <button
                       key={t}
                       id={`admin-range-${t.toLowerCase()}`}
-                      onClick={() => setTimeRange(t)}
+                      onClick={() => {
+                        setTimeRange(t);
+                        setChartRange(mapTimeRangeToPeriod(t));
+                      }}
                       style={{
                         width: "72px",
                         height: "34px",
@@ -1008,7 +1013,7 @@ export default function AdminDashboardPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                   <div>
                     <div style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, marginBottom: "4px" }}>User Activity</div>
-                    <div style={{ fontSize: "12px", color: COLOR.muted }}>Sing-ups over the last week</div>
+                    <div style={{ fontSize: "12px", color: COLOR.muted }}>Sign-ups over the selected period</div>
                   </div>
 
                   {/* Chart Range Dropdown */}
@@ -1035,7 +1040,7 @@ export default function AdminDashboardPage() {
                       }}
                     >
                       <CalendarSmIcon />
-                      {chartRange === "week" ? "This Week" : chartRange === "month" ? "This Month" : "This Year"}
+                      {chartRangeLabels[chartRange]}
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                         style={{ transition: "transform 0.2s", transform: chartDropdownOpen ? "rotate(180deg)" : "rotate(0)" }}>
                         <polyline points="6 9 12 15 18 9" />
@@ -1049,11 +1054,15 @@ export default function AdminDashboardPage() {
                         overflow: "hidden", minWidth: "140px",
                         animation: "fadeSlideDown 0.18s ease",
                       }}>
-                        {(["week", "month", "year"] as ChartRange[]).map((r) => (
+                        {(["daily", "weekly", "monthly", "yearly"] as ChartRange[]).map((r) => (
                           <button
                             key={r}
                             id={`admin-chart-range-${r}`}
-                            onClick={() => { setChartRange(r); setChartDropdownOpen(false); }}
+                            onClick={() => {
+                              setChartRange(r);
+                              setTimeRange(periodToTimeRange[r]);
+                              setChartDropdownOpen(false);
+                            }}
                             style={{
                               display: "flex", alignItems: "center", gap: "8px",
                               width: "100%", padding: "10px 14px", border: "none",
@@ -1067,7 +1076,7 @@ export default function AdminDashboardPage() {
                             onMouseLeave={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "transparent"; }}
                           >
                             {chartRange === r && <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: COLOR.primary }} />}
-                            {r === "week" ? "This Week" : r === "month" ? "This Month" : "This Year"}
+                            {chartRangeLabels[r]}
                           </button>
                         ))}
                       </div>
@@ -1075,7 +1084,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
                 <div style={{ width: "100%", minHeight: "290px" }} key={chartRange}>
-                  <UserActivityChart range={chartRange} activity={dashboardData?.activity} />
+                  <UserActivityChart activity={dashboardData?.activity} />
                 </div>
               </div>
 

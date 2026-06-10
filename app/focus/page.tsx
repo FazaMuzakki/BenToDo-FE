@@ -33,7 +33,7 @@ const GUEST_ENERGY_SUMMARY: EnergySummary = {
   is_critical_energy: false,
 };
 
-type ExitIntent = "complete" | "exit" | null;
+type ExitIntent = "exit" | null;
 
 type FocusResult = {
   title: string;
@@ -64,7 +64,6 @@ const exitReasons = [
   "Task finished",
   "Interrupted",
   "Need a break",
-  "Switching task",
   "Other reason",
 ];
 
@@ -131,10 +130,13 @@ function LevelBadge({ level }: { level: EnergyWeight }) {
   );
 }
 
-function PlayIcon() {
+function FullscreenIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5v14l11-7z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+      <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+      <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
     </svg>
   );
 }
@@ -172,6 +174,7 @@ function FocusTimerPage() {
   const [exitNote, setExitNote] = useState("");
   const [result, setResult] = useState<FocusResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const activeTasks = useMemo(() => {
     return tasks.filter((task) => task.status !== "done");
@@ -315,6 +318,15 @@ function FocusTimerPage() {
     return () => window.clearInterval(interval);
   }, [session]);
 
+  useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(!!document.fullscreenElement);
+
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    syncFullscreen();
+
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
   const handleBackRequest = () => {
     if (session) {
       setExitIntent("exit");
@@ -331,7 +343,7 @@ function FocusTimerPage() {
       return;
     }
 
-    const endReason = exitIntent === "complete" ? "completed" : "escaped";
+    const endReason = exitReason === "Task finished" ? "completed" : "escaped";
     const currentTitle = session.task_title || selectedTask?.title || "Selected task";
     const currentElapsed = elapsedSeconds;
 
@@ -356,6 +368,18 @@ function FocusTimerPage() {
       setError(getErrorMessage(stopError, "Failed to stop focus session."));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      setError("Fullscreen is not available in this browser.");
     }
   };
 
@@ -544,81 +568,46 @@ function FocusTimerPage() {
 
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             {!session ? (
-              <button
-                disabled={isLoading || isSubmitting || activeTasks.length === 0}
-                onClick={() => {
-                  if (selectedTaskId) {
-                    void startTask(selectedTaskId);
-                  } else {
-                    setShowTaskPicker(true);
-                  }
-                }}
+              <div
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
                   minWidth: "150px",
                   height: "44px",
                   borderRadius: "999px",
-                  border: "none",
-                  backgroundColor: COLOR.green,
-                  color: "#ffffff",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  color: "#DDFBE5",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 18px",
+                  fontSize: "13px",
+                  fontWeight: 800,
+                }}
+              >
+                {isLoading || isSubmitting ? "Preparing focus..." : activeTasks.length === 0 ? "No active task" : "Choose a task"}
+              </div>
+            ) : (
+              <button
+                disabled={isSubmitting}
+                onClick={() => {
+                  setExitIntent("exit");
+                  setExitReason("Interrupted");
+                }}
+                style={{
+                  minWidth: "130px",
+                  height: "44px",
+                  borderRadius: "999px",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  color: "#DDFBE5",
                   fontFamily: "inherit",
                   fontWeight: 800,
                   fontSize: "14px",
-                  cursor: isLoading || isSubmitting ? "not-allowed" : "pointer",
-                  opacity: isLoading || isSubmitting ? 0.72 : 1,
+                  cursor: isSubmitting ? "not-allowed" : "pointer",
                 }}
               >
-                <PlayIcon />
-                Start
+                Exit Focus
               </button>
-            ) : (
-              <>
-                <button
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    setExitIntent("complete");
-                    setExitReason("Task finished");
-                  }}
-                  style={{
-                    minWidth: "150px",
-                    height: "44px",
-                    borderRadius: "999px",
-                    border: "none",
-                    backgroundColor: COLOR.green,
-                    color: "#ffffff",
-                    fontFamily: "inherit",
-                    fontWeight: 800,
-                    fontSize: "14px",
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Finish Task
-                </button>
-                <button
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    setExitIntent("exit");
-                    setExitReason("Interrupted");
-                  }}
-                  style={{
-                    minWidth: "130px",
-                    height: "44px",
-                    borderRadius: "999px",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    backgroundColor: "rgba(255,255,255,0.06)",
-                    color: "#DDFBE5",
-                    fontFamily: "inherit",
-                    fontWeight: 800,
-                    fontSize: "14px",
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Exit Focus
-                </button>
-              </>
             )}
           </div>
         </div>
@@ -646,6 +635,31 @@ function FocusTimerPage() {
           <div style={{ width: `${energyPercent}%`, height: "100%", backgroundColor: COLOR.green, borderRadius: "999px" }} />
         </div>
       </aside>
+
+      <button
+        onClick={() => void handleToggleFullscreen()}
+        style={{
+          position: "fixed",
+          right: "28px",
+          bottom: "28px",
+          zIndex: 3,
+          width: "44px",
+          height: "44px",
+          borderRadius: "10px",
+          border: "1px solid rgba(255,255,255,0.16)",
+          backgroundColor: isFullscreen ? "rgba(0,139,31,0.34)" : "rgba(255,255,255,0.1)",
+          color: "#DDFBE5",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          backdropFilter: "blur(10px)",
+        }}
+        aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+      >
+        <FullscreenIcon />
+      </button>
 
       {(showTaskPicker || exitIntent || result) && (
         <div
@@ -781,7 +795,7 @@ function FocusTimerPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800 }}>
-                    {exitIntent === "complete" ? "Finish this focus?" : "Why are you leaving focus?"}
+                    Why are you leaving focus?
                   </h2>
                   <p style={{ margin: "6px 0 0", color: COLOR.muted, fontSize: "13px", lineHeight: 1.5 }}>
                     Elapsed time is {formatDuration(elapsedSeconds)}. Energy will be reduced by about {energyLossPreview} point{energyLossPreview === 1 ? "" : "s"}.
@@ -871,7 +885,7 @@ function FocusTimerPage() {
                     cursor: isSubmitting ? "not-allowed" : "pointer",
                   }}
                 >
-                  {isSubmitting ? "Saving..." : exitIntent === "complete" ? "Finish Task" : "Exit Focus"}
+                  {isSubmitting ? "Saving..." : "Exit Focus"}
                 </button>
               </div>
             </div>
