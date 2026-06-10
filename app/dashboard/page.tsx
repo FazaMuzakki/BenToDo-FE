@@ -12,7 +12,6 @@ import {
   getTemplates,
   hasActiveSession,
   isGuestSession,
-  startFocusSession,
   updateTask,
   deleteTask,
   updateTemplate as updateCustomTemplate,
@@ -745,6 +744,13 @@ export default function DashboardPage() {
   }, [notice]);
 
   useEffect(() => {
+    if (!taskSortOpen) return;
+    const closeSort = () => setTaskSortOpen(false);
+    window.addEventListener("click", closeSort);
+    return () => window.removeEventListener("click", closeSort);
+  }, [taskSortOpen]);
+
+  useEffect(() => {
     const syncCurrentTime = () => setCurrentTime(Date.now());
     syncCurrentTime();
     const timer = window.setInterval(syncCurrentTime, 60000);
@@ -1020,27 +1026,13 @@ export default function DashboardPage() {
     }
   };
 
-  const handleStartFocus = async (taskId?: string) => {
-    if (!taskId) {
-      router.push("/focus");
-      return;
-    }
-
-    setIsActionLoading(true);
-    try {
-      await startFocusSession(taskId);
-      setNotice("Sesi fokus berhasil dimulai.");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Gagal memulai fokus.");
-    } finally {
-      setIsActionLoading(false);
-      router.push("/focus");
-    }
+  const handleStartFocus = (taskId?: string) => {
+    router.push(taskId ? `/focus?taskId=${encodeURIComponent(taskId)}` : "/focus");
   };
 
   const handleUseCard = async (item: ViewCard) => {
     if (activeMenu === "task") {
-      await handleStartFocus(item.taskId);
+      handleStartFocus(item.taskId);
       return;
     }
 
@@ -1579,7 +1571,10 @@ export default function DashboardPage() {
                     <>
                       <div style={{ position: "relative" }}>
                         <button
-                          onClick={() => setTaskSortOpen((value) => !value)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setTaskSortOpen((value) => !value);
+                          }}
                           style={{
                             width: "36px",
                             height: "36px",
@@ -1601,48 +1596,73 @@ export default function DashboardPage() {
                           </svg>
                         </button>
                         {taskSortOpen && (
-                          <div style={{
-                            position: "absolute",
-                            top: "42px",
-                            right: 0,
-                            width: "218px",
-                            border: `1px solid ${COLOR.borderSoft}`,
-                            borderRadius: "8px",
-                            backgroundColor: "#ffffff",
-                            boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-                            zIndex: 500,
-                            padding: "6px",
-                          }}>
+                          <div
+                            onClick={(event) => event.stopPropagation()}
+                            style={{
+                              position: "absolute",
+                              top: "44px",
+                              right: 0,
+                              width: "270px",
+                              border: `1px solid ${COLOR.borderSoft}`,
+                              borderRadius: "8px",
+                              backgroundColor: "#ffffff",
+                              boxShadow: "0 14px 34px rgba(0,0,0,0.14)",
+                              zIndex: 800,
+                              padding: "12px",
+                            }}
+                          >
                             {[
-                              { value: "created_desc", label: "Newest created" },
-                              { value: "created_asc", label: "Oldest created" },
-                              { value: "deadline_asc", label: "Nearest due date" },
-                              { value: "deadline_desc", label: "Farthest due date" },
-                              { value: "level_easy", label: "Difficulty: easy first" },
-                              { value: "level_hard", label: "Difficulty: hard first" },
-                            ].map((item) => (
-                              <button
-                                key={item.value}
-                                onClick={() => {
-                                  setTaskSort(item.value as TaskSort);
-                                  setTaskSortOpen(false);
-                                }}
-                                style={{
-                                  width: "100%",
-                                  border: "none",
-                                  borderRadius: "6px",
-                                  backgroundColor: taskSort === item.value ? "#ECFFF0" : "transparent",
-                                  color: taskSort === item.value ? COLOR.primary : COLOR.text,
-                                  cursor: "pointer",
-                                  fontFamily: "inherit",
-                                  fontSize: "12px",
-                                  fontWeight: taskSort === item.value ? 700 : 500,
-                                  textAlign: "left",
-                                  padding: "9px 10px",
-                                }}
-                              >
-                                {item.label}
-                              </button>
+                              {
+                                group: "Created date",
+                                items: [
+                                  { value: "created_desc", label: "Newest first" },
+                                  { value: "created_asc", label: "Oldest first" },
+                                ],
+                              },
+                              {
+                                group: "Due date",
+                                items: [
+                                  { value: "deadline_asc", label: "Nearest first" },
+                                  { value: "deadline_desc", label: "Farthest first" },
+                                ],
+                              },
+                              {
+                                group: "Difficulty",
+                                items: [
+                                  { value: "level_easy", label: "Easiest first" },
+                                  { value: "level_hard", label: "Hardest first" },
+                                ],
+                              },
+                            ].map((group) => (
+                              <div key={group.group} style={{ padding: "4px 0" }}>
+                                <div style={{ fontSize: "10px", fontWeight: 800, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 8px 6px" }}>
+                                  {group.group}
+                                </div>
+                                {group.items.map((item) => (
+                                  <button
+                                    key={item.value}
+                                    onClick={() => {
+                                      setTaskSort(item.value as TaskSort);
+                                      setTaskSortOpen(false);
+                                    }}
+                                    style={{
+                                      width: "100%",
+                                      border: "none",
+                                      borderRadius: "6px",
+                                      backgroundColor: taskSort === item.value ? "#ECFFF0" : "transparent",
+                                      color: taskSort === item.value ? COLOR.primary : COLOR.text,
+                                      cursor: "pointer",
+                                      fontFamily: "inherit",
+                                      fontSize: "12px",
+                                      fontWeight: taskSort === item.value ? 800 : 600,
+                                      textAlign: "left",
+                                      padding: "9px 8px",
+                                    }}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
                             ))}
                           </div>
                         )}
@@ -1677,7 +1697,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => {
                     if (activeMenu === "dashboard") {
-                      void handleStartFocus(priorityTaskItems[0]?.id);
+                      handleStartFocus();
                     } else if (activeMenu === "task") {
                       resetTaskForm();
                       setIsEditTaskModalOpen(false);
@@ -2404,7 +2424,7 @@ export default function DashboardPage() {
 
                           {!isDoneTask && (
                             <button
-                              onClick={() => setNotice("Fitur focus timer akan disambungkan di menu Focus.")}
+                              onClick={() => handleStartFocus(task.id)}
                               style={{
                                 height: "34px",
                                 minWidth: "92px",
@@ -2555,7 +2575,7 @@ export default function DashboardPage() {
                     return (
                     <div key={item.id} style={{
                       width: "100%",
-                      height: "304px",
+                      height: "342px",
                       backgroundColor: COLOR.surface,
                       borderRadius: "7px",
                       border: `1px solid ${COLOR.border}`,
@@ -2567,7 +2587,7 @@ export default function DashboardPage() {
                       minWidth: 0,
                     }}>
                       {/* Icon & Badge */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", flexShrink: 0 }}>
                         <div style={{
                           width: "44px", height: "44px", borderRadius: "7px", backgroundColor: "#E5DEFF",
                           display: "flex", alignItems: "center", justifyContent: "center"
@@ -2591,6 +2611,7 @@ export default function DashboardPage() {
                         margin: "0 0 10px",
                         lineHeight: 1.25,
                         minHeight: "40px",
+                        maxHeight: "40px",
                         overflow: "hidden",
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
@@ -2604,11 +2625,12 @@ export default function DashboardPage() {
                         fontSize: "14px",
                         color: "#4B4B4B",
                         lineHeight: 1.45,
-                        height: "41px",
-                        margin: "0 0 10px",
+                        minHeight: "60px",
+                        maxHeight: "60px",
+                        margin: "0 0 12px",
                         overflow: "hidden",
                         display: "-webkit-box",
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: 3,
                         WebkitBoxOrient: "vertical",
                         overflowWrap: "anywhere",
                         wordBreak: "break-word",
@@ -2616,13 +2638,13 @@ export default function DashboardPage() {
                         {item.desc}
                       </p>
                       {item.createdBy && (
-                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: 1.4, margin: "0 0 14px", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: "18px", margin: "0 0 14px", fontWeight: 700, minHeight: "18px", maxHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
                         </p>
                       )}
 
                       {/* Tags */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px", flexWrap: "wrap", overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px", flexWrap: "wrap", overflow: "hidden", minHeight: "32px", maxHeight: "32px", flexShrink: 0 }}>
                         <span style={{
                           display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
                           backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
@@ -2638,7 +2660,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Buttons */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "auto" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "auto", flexShrink: 0 }}>
                         <button
                           onClick={() => {
                             void handleUseCard(item);
