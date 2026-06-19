@@ -75,7 +75,8 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
         env:
-          NEXT_PUBLIC_API_BASE_URL: https://bentodo.ariqfaridzki.my.id/api/v1
+          # NEXT_PUBLIC_API_BASE_URL: https://bentodo.ariqfaridzki.my.id/api/v1
+          NEXT_PUBLIC_API_BASE_URL: bento-do-backup-production.up.railway.app
           NEXT_PUBLIC_BASE_PATH: /BenToDo-FE
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Upload artifact
