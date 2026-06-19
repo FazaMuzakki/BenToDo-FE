@@ -640,18 +640,28 @@ const mapEnergyToLevel = (energyWeight: EnergyWeight): PriorityLevel => {
   return "LOW";
 };
 
+const safeParseDate = (value: string | null | undefined): Date | null => {
+  if (!value) return null;
+  // Backend returns time in UTC+7 but appends "Z". We replace it with "+07:00" to parse correctly.
+  const safeValue = value.endsWith("Z") ? value.slice(0, -1) + "+07:00" : value;
+  const date = new Date(safeValue);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 const formatDate = (value: string | null) => {
-  if (!value) return "No due date";
+  const date = safeParseDate(value);
+  if (!date) return "No due date";
 
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(value));
+  }).format(date);
 };
 
 const formatTaskDate = (value: string | null) => {
-  if (!value) return "No due date";
+  const date = safeParseDate(value);
+  if (!date) return "No due date";
 
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
@@ -659,7 +669,7 @@ const formatTaskDate = (value: string | null) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
 };
 
 const formatDateOnlyValue = (date: Date) => {
@@ -671,9 +681,8 @@ const formatDateOnlyValue = (date: Date) => {
 };
 
 const formatDateTimeShort = (value: string | null | undefined) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
+  const date = safeParseDate(value);
+  if (!date) return "-";
 
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
@@ -685,17 +694,15 @@ const formatDateTimeShort = (value: string | null | undefined) => {
 };
 
 const toDatetimeLocalValue = (value: string | null | undefined) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
+  const date = safeParseDate(value);
+  if (!date) return "";
   const pad = (num: number) => String(num).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
 const toIsoDeadline = (value: string) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
+  const date = safeParseDate(value);
+  if (!date) return null;
   return date.toISOString();
 };
 
