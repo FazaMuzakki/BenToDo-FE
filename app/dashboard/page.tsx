@@ -414,6 +414,8 @@ function TaskStatusBadge({ status }: { status: TaskViewStatus }) {
 type ChartRange = DashboardPeriod;
 
 function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
+  // ADJUST THIS TO SPAWN TOOLTIP HIGHER OR LOWER (e.g. 100 for higher, 50 for lower)
+  const TOOLTIP_SPAWN_HEIGHT_OFFSET = 100;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const chartData = data.length
     ? data
@@ -450,108 +452,197 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
     return acc + Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
   }, 0);
 
+  const totalValue = chartData.reduce((sum, d) => sum + d.total, 0);
+
+  let mostProductiveLabel = "-";
+  let maxTasks = 0;
+  if (chartData.length > 0) {
+    const bestPoint = chartData.reduce((prev, current) => (prev.total > current.total) ? prev : current);
+    if (bestPoint.total > 0) {
+      mostProductiveLabel = bestPoint.label;
+      maxTasks = bestPoint.total;
+    }
+  }
+
+  let xAxisTitle = "Date";
+  if (chartData.length > 0) {
+    const firstLabel = chartData[0].label.toLowerCase();
+    if (firstLabel.includes("week")) {
+      xAxisTitle = "Month";
+    } else if (["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].includes(firstLabel)) {
+      xAxisTitle = "Year";
+    }
+  }
+
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height + 30}`} style={{ overflow: "visible" }}>
-      <style>{`
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* Header Info */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "16px",
+        padding: "0 4px"
+      }}>
+        <span style={{ fontSize: "14px", color: COLOR.muted, fontWeight: 500 }}>
+          Task Done:
+        </span>
+        <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 500 }}>
+          <span>Total: <strong style={{ color: COLOR.primary }}>{totalValue} Task</strong></span>
+          <span style={{ margin: "0 8px", color: "#E8E8E8" }}>|</span>
+          {maxTasks > 0 ? (
+            <span>Most Productive: <strong style={{ color: COLOR.primary }}>{mostProductiveLabel} ({maxTasks})</strong></span>
+          ) : (
+            <span>Most Productive: <strong style={{ color: COLOR.muted }}>-</strong></span>
+          )}
+        </div>
+      </div>
+
+      <div style={{ flex: 1, position: "relative" }}>
+        <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height + 30}`} style={{ overflow: "visible" }}>
+          <style>{`
         @keyframes drawLine { from { stroke-dashoffset: ${lineLength}; } to { stroke-dashoffset: 0; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes popIn { 0% { r: 0; } 60% { r: 4.5; } 100% { r: 3; } }
       `}</style>
-      {/* Y axis labels & grid */}
-      {yLabels.map((v, i) => {
-        const y = padY + chartH - (v / maxVal) * chartH;
-        return (
-          <g key={`y-${i}`} style={{ animation: `fadeIn 0.4s ease ${i * 0.05}s both` }}>
-            <text x={padX - 12} y={y + 4} textAnchor="end" fontSize="9" fill={COLOR.muted}>{v}</text>
-            <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#E8E8E8" strokeWidth="1" />
-          </g>
-        );
-      })}
-      {/* X axis labels */}
-      {labels.map((d, i) => {
-        const ratio = labels.length === 1 ? 0.5 : i / (labels.length - 1);
-        const x = padX + ratio * chartW;
-        return (
-          <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}
-            style={{ animation: `fadeIn 0.4s ease ${0.2 + i * 0.04}s both` }}>{d}</text>
-        );
-      })}
-      <polygon points={areaPoints} fill="#EEFFF0" opacity="0.95" style={{ animation: `fadeIn 0.8s ease 0.3s both` }} />
-      {/* Animated Line */}
-      <polyline
-        points={points.join(" ")}
-        fill="none"
-        stroke={COLOR.primary}
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        strokeDasharray={lineLength}
-        strokeDashoffset="0"
-        style={{ animation: `drawLine 1.2s ease-out 0.3s both` }}
-      />
-      {/* Animated Dots */}
-      {chartData.map((point, i) => {
-        const ratio = chartData.length === 1 ? 0.5 : i / (chartData.length - 1);
-        const x = padX + ratio * chartW;
-        const v = point.total;
-        const y = padY + chartH - (v / maxVal) * chartH;
-        const isHovered = hoveredIndex === i;
-        const tooltipX = Math.max(8, Math.min(width - 142, x - 64));
-        const tooltipY = Math.max(8, y - 74);
-        const tooltip = point.tooltip ?? {
-          title: point.label,
-          completed: point.completed,
-          overdue: point.overdue,
-        };
+          {/* Y axis labels & grid */}
+          {yLabels.map((v, i) => {
+            const y = padY + chartH - (v / maxVal) * chartH;
+            return (
+              <g key={`y-${i}`} style={{ animation: `fadeIn 0.4s ease ${i * 0.05}s both` }}>
+                <text x={padX - 12} y={y + 4} textAnchor="end" fontSize="9" fill={COLOR.muted}>{v}</text>
+                <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#E8E8E8" strokeWidth="1" />
+              </g>
+            );
+          })}
+          {/* X axis labels */}
+          {chartData.map((point, i) => {
+            const ratio = chartData.length === 1 ? 0.5 : i / (chartData.length - 1);
+            const x = padX + ratio * chartW;
 
-        return (
-          <g
-            key={`${point.label}-${i}`}
-            onMouseEnter={() => setHoveredIndex(i)}
-            onMouseLeave={() => setHoveredIndex(null)}
-            style={{ cursor: "pointer" }}
-          >
-            {isHovered && (
-              <g>
+            const isWeekLabel = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].includes(point.label.toUpperCase());
+            let labelContent = <text x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}>{point.label}</text>;
+
+            if (isWeekLabel) {
+              const weekDates = getCalendarWeek(new Date());
+              const daysOfWeek = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+              const targetDayIndex = daysOfWeek.indexOf(point.label.toUpperCase());
+
+              if (targetDayIndex !== -1 && targetDayIndex < weekDates.length) {
+                const dayNum = weekDates[targetDayIndex].getDate();
+                labelContent = (
+                  <text x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}>{dayNum} · {point.label}</text>
+                );
+              }
+            }
+
+            return (
+              <g key={point.label} style={{ animation: `fadeIn 0.4s ease ${0.2 + i * 0.04}s both` }}>
+                {labelContent}
+              </g>
+            );
+          })}
+          <polygon points={areaPoints} fill="#EEFFF0" opacity="0.95" style={{ animation: `fadeIn 0.8s ease 0.3s both` }} />
+          {/* Animated Line */}
+          <polyline
+            points={points.join(" ")}
+            fill="none"
+            stroke={COLOR.primary}
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            strokeDasharray={lineLength}
+            strokeDashoffset="0"
+            style={{ animation: `drawLine 1.2s ease-out 0.3s both` }}
+          />
+          {/* Animated Dots */}
+          {chartData.map((point, i) => {
+            const ratio = chartData.length === 1 ? 0.5 : i / (chartData.length - 1);
+            const x = padX + ratio * chartW;
+            const v = point.total;
+            const y = padY + chartH - (v / maxVal) * chartH;
+            const isHovered = hoveredIndex === i;
+
+            return (
+              <g
+                key={`${point.label}-${i}`}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                style={{ cursor: "pointer" }}
+              >
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={isHovered ? 5 : 3}
+                  fill={COLOR.primary}
+                  stroke={isHovered ? "#FFFFFF" : "transparent"}
+                  strokeWidth="2"
+                  style={{ animation: `popIn 0.4s ease ${0.5 + i * 0.1}s both` }}
+                />
+                <circle cx={x} cy={y} r="12" fill="transparent" />
+              </g>
+            );
+          })}
+
+          {/* Tooltip Overlay (rendered last to always be on top) */}
+          {hoveredIndex !== null && chartData[hoveredIndex] && (() => {
+            const i = hoveredIndex;
+            const point = chartData[i];
+            const ratio = chartData.length === 1 ? 0.5 : i / (chartData.length - 1);
+            const x = padX + ratio * chartW;
+            const v = point.total;
+            const y = padY + chartH - (v / maxVal) * chartH;
+            const tooltipX = Math.max(8, Math.min(width - 172, x - 82));
+            const tooltipY = Math.max(8, y - TOOLTIP_SPAWN_HEIGHT_OFFSET);
+            const tooltip = point.tooltip ?? {
+              title: point.label,
+              completed: point.completed,
+              overdue: point.overdue,
+            };
+
+            return (
+              <g style={{ pointerEvents: "none" }}>
                 <rect
                   x={tooltipX}
                   y={tooltipY}
-                  width="134"
-                  height="62"
+                  width="164"
+                  height="68"
                   rx="8"
                   fill="#FFFFFF"
                   stroke="#E5E7EB"
                   filter="drop-shadow(0 8px 18px rgba(0,0,0,0.16))"
                 />
-                <text x={tooltipX + 12} y={tooltipY + 19} fontSize="9" fontWeight="700" fill={COLOR.mutedDark}>
+                <text x={tooltipX + 14} y={tooltipY + 22} fontSize="9.5" fontWeight="700" fill={COLOR.mutedDark}>
                   {tooltip.title.toUpperCase()} PRODUCTIVITY
                 </text>
-                <circle cx={tooltipX + 16} cy={tooltipY + 35} r="3" fill="#22C55E" />
-                <text x={tooltipX + 26} y={tooltipY + 38} fontSize="10" fill={COLOR.text}>Completed</text>
-                <text x={tooltipX + 118} y={tooltipY + 38} fontSize="10" fontWeight="700" fill={COLOR.text} textAnchor="end">
+                <circle cx={tooltipX + 16} cy={tooltipY + 40} r="3.5" fill="#22C55E" />
+                <text x={tooltipX + 28} y={tooltipY + 43} fontSize="10.5" fill={COLOR.text}>Completed</text>
+                <text x={tooltipX + 150} y={tooltipY + 43} fontSize="10.5" fontWeight="700" fill={COLOR.text} textAnchor="end">
                   {tooltip.completed} tasks
                 </text>
-                <circle cx={tooltipX + 16} cy={tooltipY + 51} r="3" fill="#DC2626" />
-                <text x={tooltipX + 26} y={tooltipY + 54} fontSize="10" fill={COLOR.text}>Overdue</text>
-                <text x={tooltipX + 118} y={tooltipY + 54} fontSize="10" fontWeight="700" fill={COLOR.text} textAnchor="end">
+                <circle cx={tooltipX + 16} cy={tooltipY + 56} r="3.5" fill="#DC2626" />
+                <text x={tooltipX + 28} y={tooltipY + 59} fontSize="10.5" fill={COLOR.text}>Overdue</text>
+                <text x={tooltipX + 150} y={tooltipY + 59} fontSize="10.5" fontWeight="700" fill={COLOR.text} textAnchor="end">
                   {tooltip.overdue} tasks
                 </text>
               </g>
-            )}
-            <circle
-              cx={x}
-              cy={y}
-              r={isHovered ? 5 : 3}
-              fill={COLOR.primary}
-              stroke={isHovered ? "#FFFFFF" : "transparent"}
-              strokeWidth="2"
-              style={{ animation: `popIn 0.4s ease ${0.5 + i * 0.1}s both` }}
-            />
-            <circle cx={x} cy={y} r="12" fill="transparent" />
-          </g>
-        );
-      })}
-    </svg>
+            );
+          })()}
+        </svg>
+      </div>
+
+      {/* Footer Info */}
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: "16px",
+      }}>
+        <span style={{ fontSize: "12px", color: COLOR.muted, fontWeight: 500 }}>
+          {xAxisTitle}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -1014,19 +1105,30 @@ export default function DashboardPage() {
   const emptyRecentTaskMessage = selectedCalendarDate
     ? "Tidak ada task pada tanggal ini."
     : searchTask.trim()
-    ? "Task tidak ditemukan"
-    : "Belum ada task";
+      ? "Task tidak ditemukan"
+      : "Belum ada task";
 
   const filteredHistoryItems = useMemo(() => {
     const keyword = historySearch.trim().toLowerCase();
     const items = historyData?.data ?? [];
 
-    if (!keyword) return items;
+    let filtered = items;
+    if (keyword) {
+      filtered = items.filter((item) =>
+        `${item.title} ${item.description ?? ""} ${item.task_status} ${item.item_type}`.toLowerCase().includes(keyword),
+      );
+    }
 
-    return items.filter((item) =>
-      `${item.title} ${item.description ?? ""} ${item.task_status} ${item.item_type}`.toLowerCase().includes(keyword),
-    );
-  }, [historyData, historySearch]);
+    const levelRank: Record<PriorityLevel, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
+    return [...filtered].sort((a, b) => {
+      if (taskSort === "created_asc") return new Date(a.event_at ?? 0).getTime() - new Date(b.event_at ?? 0).getTime();
+      if (taskSort === "deadline_asc") return new Date(a.deadline ?? "9999-12-31").getTime() - new Date(b.deadline ?? "9999-12-31").getTime();
+      if (taskSort === "deadline_desc") return new Date(b.deadline ?? 0).getTime() - new Date(a.deadline ?? 0).getTime();
+      if (taskSort === "level_easy") return levelRank[mapEnergyToLevel(a.energy_weight)] - levelRank[mapEnergyToLevel(b.energy_weight)];
+      if (taskSort === "level_hard") return levelRank[mapEnergyToLevel(b.energy_weight)] - levelRank[mapEnergyToLevel(a.energy_weight)];
+      return new Date(b.event_at ?? 0).getTime() - new Date(a.event_at ?? 0).getTime();
+    });
+  }, [historyData, historySearch, taskSort]);
   const taskListItems = useMemo<ViewTask[]>(() => {
     const levelRank: Record<PriorityLevel, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
     const byFilter = filteredTasks.filter((task) => {
@@ -1721,7 +1823,7 @@ export default function DashboardPage() {
                     borderRadius: "3px",
                     backgroundColor: activeMenu === "dashboard" ? "#F1F1F1" : "transparent",
                     padding: activeMenu === "dashboard" ? "2px" : 0,
-                    overflow: "hidden",
+                    overflow: activeMenu === "dashboard" ? "hidden" : "visible",
                     gap: activeMenu === "dashboard" ? 0 : "8px",
                   }}
                 >
@@ -1747,28 +1849,6 @@ export default function DashboardPage() {
                         }}
                       >
                         {t}
-                      </button>
-                    ))
-                  ) : activeMenu === "history" ? (
-                    (["all", "task", "focus"] as DashboardHistoryType[]).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setHistoryType(type)}
-                        style={{
-                          width: "64px",
-                          height: "32px",
-                          fontSize: "11px",
-                          fontWeight: historyType === type ? 600 : 400,
-                          fontFamily: "inherit",
-                          color: COLOR.text,
-                          backgroundColor: historyType === type ? COLOR.surface : "transparent",
-                          border: "none",
-                          cursor: "pointer",
-                          transition: "all 0.15s",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {type}
                       </button>
                     ))
                   ) : activeMenu === "template" ? (
@@ -1837,11 +1917,7 @@ export default function DashboardPage() {
                           }}
                           aria-label="Filter and sort task"
                         >
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18" />
-                            <path d="M7 12h10" />
-                            <path d="M10 18h4" />
-                          </svg>
+                          <FilterIcon />
                         </button>
                         {taskSortOpen && (
                           <div
@@ -1916,26 +1992,50 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "#F1F1F1", padding: "2px", overflow: "hidden" }}>
-                        {(["All", "Active", "Overdue", "Done"] as const).map((t) => (
-                          <button
-                            key={t}
-                            onClick={() => setTaskFilter(t)}
-                            style={{
-                              width: t === "Overdue" ? "76px" : "64px",
-                              height: "32px",
-                              fontSize: "11px",
-                              fontWeight: taskFilter === t ? 600 : 400,
-                              fontFamily: "inherit",
-                              color: COLOR.text,
-                              backgroundColor: taskFilter === t ? COLOR.surface : "transparent",
-                              border: "none",
-                              cursor: "pointer",
-                              transition: "all 0.15s",
-                            }}
-                          >
-                            {t}
-                          </button>
-                        ))}
+                        {activeMenu === "history" ? (
+                          (["all", "task", "focus"] as DashboardHistoryType[]).map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => setHistoryType(type)}
+                              style={{
+                                width: "64px",
+                                height: "32px",
+                                fontSize: "11px",
+                                fontWeight: historyType === type ? 600 : 400,
+                                fontFamily: "inherit",
+                                color: COLOR.text,
+                                backgroundColor: historyType === type ? COLOR.surface : "transparent",
+                                border: "none",
+                                cursor: "pointer",
+                                transition: "all 0.15s",
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {type}
+                            </button>
+                          ))
+                        ) : (
+                          (["All", "Active", "Overdue", "Done"] as const).map((t) => (
+                            <button
+                              key={t}
+                              onClick={() => setTaskFilter(t)}
+                              style={{
+                                width: t === "Overdue" ? "76px" : "64px",
+                                height: "32px",
+                                fontSize: "11px",
+                                fontWeight: taskFilter === t ? 600 : 400,
+                                fontFamily: "inherit",
+                                color: COLOR.text,
+                                backgroundColor: taskFilter === t ? COLOR.surface : "transparent",
+                                border: "none",
+                                cursor: "pointer",
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              {t}
+                            </button>
+                          ))
+                        )}
                       </div>
                     </>
                   )}
@@ -2155,8 +2255,8 @@ export default function DashboardPage() {
                           borderColor: chartDropdownOpen ? COLOR.primary : COLOR.border,
                           boxShadow: chartDropdownOpen ? `0 0 0 2px ${COLOR.primaryPale}` : "none",
                         }}
-                        >
-                          <CalendarSmIcon />
+                      >
+                        <CalendarSmIcon />
                         {chartRangeLabels[chartRange]}
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                           style={{ transition: "transform 0.2s", transform: chartDropdownOpen ? "rotate(180deg)" : "rotate(0)" }}>
@@ -2171,7 +2271,7 @@ export default function DashboardPage() {
                           overflow: "hidden", minWidth: "130px",
                           animation: "fadeSlideDown 0.18s ease",
                         }}>
-                          {(["daily", "weekly", "monthly", "yearly"] as ChartRange[]).map((r) => (
+                          {(["weekly", "monthly", "yearly"] as ChartRange[]).map((r) => (
                             <button
                               key={r}
                               onClick={() => {
@@ -2568,17 +2668,17 @@ export default function DashboardPage() {
                 </div>
                 <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                   <colgroup>
-                    <col style={{ width: "28%" }} />
-                    <col style={{ width: "15%" }} />
-                    <col style={{ width: "17%" }} />
-                    <col style={{ width: "16%" }} />
-                    <col style={{ width: "18%" }} />
-                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "64px" }} />
+                    <col style={{ width: "auto" }} />
+                    <col style={{ width: "150px" }} />
+                    <col style={{ width: "130px" }} />
+                    <col style={{ width: "190px" }} />
+                    <col style={{ width: "120px" }} />
                   </colgroup>
                   <thead>
                     <tr style={{ height: "42px", backgroundColor: "#F7F7FB", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                      {["TASK", "TASK LEVEL", "DUE DATE", "STATUS", "COMPLETED AT", "ACTIONS"].map((h, i) => (
-                        <th key={h} style={{ fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark, textAlign: i === 0 ? "left" : "center", padding: "0 18px", whiteSpace: "nowrap" }}>
+                      {["NO", "TASK", "TASK LEVEL", "STATUS", "COMPLETED AT", "ACTIONS"].map((h, i) => (
+                        <th key={h} style={{ fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark, textAlign: i === 1 ? "left" : "center", padding: "0 12px", whiteSpace: "nowrap" }}>
                           {h}
                         </th>
                       ))}
@@ -2593,7 +2693,7 @@ export default function DashboardPage() {
                       <tr style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                         <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: COLOR.mutedDark }}>Belum ada history.</td>
                       </tr>
-                    ) : filteredHistoryItems.slice(0, 8).map((item) => {
+                    ) : filteredHistoryItems.slice(0, 8).map((item, index) => {
                       const isFocusItem = item.item_type === "focus";
                       const statusText = isFocusItem
                         ? item.end_reason ? item.end_reason.replaceAll("_", " ") : "In Progress"
@@ -2618,7 +2718,10 @@ export default function DashboardPage() {
 
                       return (
                         <tr key={`${item.item_type}-${item.id}`} style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                          <td style={{ padding: "0 18px", verticalAlign: "middle" }}>
+                          <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ padding: "0 12px", verticalAlign: "middle" }}>
                             <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
                             {isFocusItem && (
                               <div style={{ marginTop: "3px", fontSize: "11px", fontWeight: 600, color: COLOR.mutedDark }}>
@@ -2626,17 +2729,16 @@ export default function DashboardPage() {
                               </div>
                             )}
                           </td>
-                          <td style={{ padding: "0 18px", textAlign: "center" }}><PriorityBadge level={mapEnergyToLevel(item.energy_weight)} /></td>
-                          <td style={{ padding: "0 18px", textAlign: "center", fontSize: "12px", color: COLOR.text, fontWeight: 500 }}>{formatTaskDate(item.deadline)}</td>
-                          <td style={{ padding: "0 18px", textAlign: "center" }}>
+                          <td style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}><PriorityBadge level={mapEnergyToLevel(item.energy_weight)} /></td>
+                          <td style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}>
                             <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "86px", borderRadius: "999px", backgroundColor: statusTone.bg, color: statusTone.color, fontSize: "11px", fontWeight: 800, padding: "4px 10px", textTransform: "capitalize" }}>
                               {statusText}
                             </span>
                           </td>
-                          <td style={{ padding: "0 18px", textAlign: "center", fontSize: "12px", color: COLOR.mutedDark, fontWeight: 600 }}>
+                          <td style={{ padding: "0 12px", textAlign: "center", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle" }}>
                             {isFocusItem ? formatDateTimeShort(item.ended_at ?? item.started_at) : formatDateTimeShort(item.completed_at)}
                           </td>
-                          <td style={{ padding: "0 18px", textAlign: "center" }}>
+                          <td style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}>
                             <button
                               onClick={() => void openTaskDetailModal(viewTask)}
                               style={{ ...buttonReset, color: COLOR.mutedDark, display: "inline-flex", padding: "4px", borderRadius: "4px" }}
@@ -2738,115 +2840,115 @@ export default function DashboardPage() {
                     const isDoneTask = taskViewStatus === "Done";
 
                     return (
-                    <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
-                        {index + 1}
-                      </td>
-                      <td style={{ padding: "0 12px", verticalAlign: "middle" }}>
-                        <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
-                      </td>
-                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
-                        <PriorityBadge level={task.level} />
-                      </td>
-                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
-                        <TaskStatusBadge status={taskViewStatus} />
-                      </td>
-                      <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
-                        {task.date}
-                      </td>
-                      <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
-                        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", position: "relative" }}>
-                          <button
-                            onClick={() => void openTaskDetailModal(task)}
-                            style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                            aria-label="Detail task"
-                          >
-                            <EyeOutlineIcon />
-                          </button>
-                          {!isDoneTask && (
-                            <button onClick={() => {
-                              setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
-                            }} style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, color: COLOR.mutedDark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                            >
-                              <MoreDotsIcon />
-                            </button>
-                          )}
-                          {!isDoneTask && openTaskMenuId === task.id && (
-                            <div style={{
-                              position: "absolute",
-                              top: "40px",
-                              right: 0,
-                              backgroundColor: "#ffffff",
-                              borderRadius: "8px",
-                              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                              border: `1px solid ${COLOR.borderSoft}`,
-                              zIndex: 300,
-                              width: "142px",
-                              display: "flex",
-                              flexDirection: "column",
-                              padding: "6px",
-                            }}>
-                              <button onClick={() => {
-                                openTaskEditModal(task);
-                                setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-                              >
-                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
-                                Edit Task
-                              </button>
-                              <button onClick={() => {
-                                void handleCompleteTask(task.id ?? "");
-                                setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-                              >
-                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={11} color="currentColor" /></div>
-                                Done
-                              </button>
-                              <button onClick={() => {
-                                setDeleteTaskId(task.id ?? null);
-                                setIsDeleteTaskModalOpen(true);
-                                setOpenTaskMenuId(null);
-                              }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "#ef4444", width: "100%", transition: "background-color 0.1s" }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-                              >
-                                <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#fee2e2", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
-                                Delete Task
-                              </button>
-                            </div>
-                          )}
-
-                          {!isDoneTask && (
+                      <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle" }}>
+                          <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
+                        </td>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
+                          <PriorityBadge level={task.level} />
+                        </td>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
+                          <TaskStatusBadge status={taskViewStatus} />
+                        </td>
+                        <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
+                          {task.date}
+                        </td>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
+                          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", position: "relative" }}>
                             <button
-                              onClick={() => handleStartFocus(task.id)}
-                              style={{
-                                height: "34px",
-                                minWidth: "92px",
-                                padding: "0 14px",
-                                borderRadius: "20px",
-                                border: "1px solid #d1d5db",
-                                backgroundColor: "#ffffff",
-                                fontSize: "11px",
-                                fontWeight: 700,
-                                color: COLOR.text,
-                                cursor: "pointer",
-                                fontFamily: "inherit",
-                                whiteSpace: "nowrap",
-                                transition: "all 0.15s",
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
+                              onClick={() => void openTaskDetailModal(task)}
+                              style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                              aria-label="Detail task"
                             >
-                              Start Focus
+                              <EyeOutlineIcon />
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                            {!isDoneTask && (
+                              <button onClick={() => {
+                                setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
+                              }} style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, color: COLOR.mutedDark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                              >
+                                <MoreDotsIcon />
+                              </button>
+                            )}
+                            {!isDoneTask && openTaskMenuId === task.id && (
+                              <div style={{
+                                position: "absolute",
+                                top: "40px",
+                                right: 0,
+                                backgroundColor: "#ffffff",
+                                borderRadius: "8px",
+                                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                border: `1px solid ${COLOR.borderSoft}`,
+                                zIndex: 300,
+                                width: "142px",
+                                display: "flex",
+                                flexDirection: "column",
+                                padding: "6px",
+                              }}>
+                                <button onClick={() => {
+                                  openTaskEditModal(task);
+                                  setOpenTaskMenuId(null);
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                                >
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
+                                  Edit Task
+                                </button>
+                                <button onClick={() => {
+                                  void handleCompleteTask(task.id ?? "");
+                                  setOpenTaskMenuId(null);
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                                >
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={11} color="currentColor" /></div>
+                                  Done
+                                </button>
+                                <button onClick={() => {
+                                  setDeleteTaskId(task.id ?? null);
+                                  setIsDeleteTaskModalOpen(true);
+                                  setOpenTaskMenuId(null);
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "#ef4444", width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+                                >
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#fee2e2", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
+                                  Delete Task
+                                </button>
+                              </div>
+                            )}
+
+                            {!isDoneTask && (
+                              <button
+                                onClick={() => handleStartFocus(task.id)}
+                                style={{
+                                  height: "34px",
+                                  minWidth: "92px",
+                                  padding: "0 14px",
+                                  borderRadius: "20px",
+                                  border: "1px solid #d1d5db",
+                                  backgroundColor: "#ffffff",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  color: COLOR.text,
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  whiteSpace: "nowrap",
+                                  transition: "all 0.15s",
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
+                              >
+                                Start Focus
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })}
                 </tbody>
@@ -2960,136 +3062,136 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "clamp(28px, 3vw, 44px)", alignItems: "stretch" }}>
-                {visibleTemplateCards
-                  .map((item) => {
-                    const badgeLabel = item.templateLabel ?? item.level;
-                    const badgeTone =
-                      badgeLabel === "PUBLIC"
-                        ? { bg: "#DCFCE7", color: "#008B1F" }
-                        : badgeLabel === "PRIVATE"
-                          ? { bg: "#E5DEFF", color: "#4F46E5" }
-                          : { bg: "#F1F1F1", color: "#4B4B4B" };
-                    return (
-                    <div key={item.id} style={{
-                      width: "100%",
-                      height: "342px",
-                      backgroundColor: COLOR.surface,
-                      borderRadius: "7px",
-                      border: `1px solid ${COLOR.border}`,
-                      padding: "24px",
-                      boxSizing: "border-box",
-                      display: "flex",
-                      flexDirection: "column",
-                      overflow: "hidden",
-                      minWidth: 0,
-                    }}>
-                      {/* Icon & Badge */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", flexShrink: 0 }}>
-                        <div style={{
-                          width: "44px", height: "44px", borderRadius: "7px", backgroundColor: "#E5DEFF",
-                          display: "flex", alignItems: "center", justifyContent: "center"
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "clamp(28px, 3vw, 44px)", alignItems: "stretch" }}>
+                  {visibleTemplateCards
+                    .map((item) => {
+                      const badgeLabel = item.templateLabel ?? item.level;
+                      const badgeTone =
+                        badgeLabel === "PUBLIC"
+                          ? { bg: "#DCFCE7", color: "#008B1F" }
+                          : badgeLabel === "PRIVATE"
+                            ? { bg: "#E5DEFF", color: "#4F46E5" }
+                            : { bg: "#F1F1F1", color: "#4B4B4B" };
+                      return (
+                        <div key={item.id} style={{
+                          width: "100%",
+                          height: "342px",
+                          backgroundColor: COLOR.surface,
+                          borderRadius: "7px",
+                          border: `1px solid ${COLOR.border}`,
+                          padding: "24px",
+                          boxSizing: "border-box",
+                          display: "flex",
+                          flexDirection: "column",
+                          overflow: "hidden",
+                          minWidth: 0,
                         }}>
-                          <CompassIcon />
-                        </div>
-                        <span style={{
-                          display: "inline-block", fontSize: "11px", fontWeight: 700,
-                          color: badgeTone.color, backgroundColor: badgeTone.bg, borderRadius: "999px", padding: "4px 13px",
-                          letterSpacing: "0.04em",
-                        }}>
-                          {badgeLabel}
-                        </span>
-                      </div>
+                          {/* Icon & Badge */}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", flexShrink: 0 }}>
+                            <div style={{
+                              width: "44px", height: "44px", borderRadius: "7px", backgroundColor: "#E5DEFF",
+                              display: "flex", alignItems: "center", justifyContent: "center"
+                            }}>
+                              <CompassIcon />
+                            </div>
+                            <span style={{
+                              display: "inline-block", fontSize: "11px", fontWeight: 700,
+                              color: badgeTone.color, backgroundColor: badgeTone.bg, borderRadius: "999px", padding: "4px 13px",
+                              letterSpacing: "0.04em",
+                            }}>
+                              {badgeLabel}
+                            </span>
+                          </div>
 
-                      {/* Title & Desc */}
-                      <h3 style={{
-                        fontSize: "16px",
-                        fontWeight: 700,
-                        color: COLOR.text,
-                        margin: "0 0 10px",
-                        lineHeight: 1.25,
-                        minHeight: "40px",
-                        maxHeight: "40px",
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflowWrap: "anywhere",
-                        wordBreak: "break-word",
-                      }}>
-                        {item.title}
-                      </h3>
-                      <p style={{
-                        fontSize: "14px",
-                        color: "#4B4B4B",
-                        lineHeight: 1.45,
-                        minHeight: "60px",
-                        maxHeight: "60px",
-                        margin: "0 0 12px",
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical",
-                        overflowWrap: "anywhere",
-                        wordBreak: "break-word",
-                      }}>
-                        {item.desc}
-                      </p>
-                      {item.createdBy && (
-                        <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: "18px", margin: "0 0 14px", fontWeight: 700, minHeight: "18px", maxHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
-                        </p>
-                      )}
-
-                      {/* Tags */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px", flexWrap: "wrap", overflow: "hidden", minHeight: "32px", maxHeight: "32px", flexShrink: 0 }}>
-                        <span style={{
-                          display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
-                          backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
-                        }}>
-                          <SubtaskIcon /> {item.subtasks} Task
-                        </span>
-                        <span style={{
-                          display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
-                          backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
-                        }}>
-                          <TemplateIcon /> {item.isOfficial ? "Official" : item.visibility === "private" ? "Private" : "Public"}
-                        </span>
-                      </div>
-
-                      {/* Buttons */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "auto", flexShrink: 0 }}>
-                        <button
-                          onClick={() => {
-                            void handleUseCard(item);
-                          }}
-                          style={{
-                            flex: 1, height: "40px", borderRadius: "7px", backgroundColor: COLOR.primary, color: "#ffffff",
-                            fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit",
-                            transition: "background-color 0.15s"
-                          }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = COLOR.primaryHover; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = COLOR.primary; }}
-                        >
-                          Use Template
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedTemplateId(item.id);
-                            setExpandedDetailTaskIndexes([]);
-                            setTemplateView("detail");
-                          }}
-                          style={{
-                            width: "40px", height: "40px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface,
-                            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "border-color 0.15s"
+                          {/* Title & Desc */}
+                          <h3 style={{
+                            fontSize: "16px",
+                            fontWeight: 700,
+                            color: COLOR.text,
+                            margin: "0 0 10px",
+                            lineHeight: 1.25,
+                            minHeight: "40px",
+                            maxHeight: "40px",
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflowWrap: "anywhere",
+                            wordBreak: "break-word",
                           }}>
-                          <EyeOutlineIcon />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                            {item.title}
+                          </h3>
+                          <p style={{
+                            fontSize: "14px",
+                            color: "#4B4B4B",
+                            lineHeight: 1.45,
+                            minHeight: "60px",
+                            maxHeight: "60px",
+                            margin: "0 0 12px",
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflowWrap: "anywhere",
+                            wordBreak: "break-word",
+                          }}>
+                            {item.desc}
+                          </p>
+                          {item.createdBy && (
+                            <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: "18px", margin: "0 0 14px", fontWeight: 700, minHeight: "18px", maxHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
+                            </p>
+                          )}
+
+                          {/* Tags */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px", flexWrap: "wrap", overflow: "hidden", minHeight: "32px", maxHeight: "32px", flexShrink: 0 }}>
+                            <span style={{
+                              display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
+                              backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
+                            }}>
+                              <SubtaskIcon /> {item.subtasks} Task
+                            </span>
+                            <span style={{
+                              display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
+                              backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
+                            }}>
+                              <TemplateIcon /> {item.isOfficial ? "Official" : item.visibility === "private" ? "Private" : "Public"}
+                            </span>
+                          </div>
+
+                          {/* Buttons */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "auto", flexShrink: 0 }}>
+                            <button
+                              onClick={() => {
+                                void handleUseCard(item);
+                              }}
+                              style={{
+                                flex: 1, height: "40px", borderRadius: "7px", backgroundColor: COLOR.primary, color: "#ffffff",
+                                fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit",
+                                transition: "background-color 0.15s"
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = COLOR.primaryHover; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = COLOR.primary; }}
+                            >
+                              Use Template
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedTemplateId(item.id);
+                                setExpandedDetailTaskIndexes([]);
+                                setTemplateView("detail");
+                              }}
+                              style={{
+                                width: "40px", height: "40px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface,
+                                display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "border-color 0.15s"
+                              }}>
+                              <EyeOutlineIcon />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               )}
 
               {visibleTemplateCards.length === 0 && (
@@ -3542,7 +3644,7 @@ export default function DashboardPage() {
             />
           )}
 
-{/* ── Success Pop-up ── */}
+          {/* ── Success Pop-up ── */}
           {activeMenu === "template" && templateView === "success" && (
             <div style={{
               position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
