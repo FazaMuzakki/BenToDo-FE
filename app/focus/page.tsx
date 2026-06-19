@@ -105,6 +105,15 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error ? error.message : fallback;
 };
 
+const getSessionStartTime = (dateString: string) => {
+  // Backend returns time in UTC+7 but appends "Z" as if it were UTC.
+  // We replace the "Z" with "+07:00" to parse it correctly as UTC timestamp.
+  const safeString = dateString.endsWith("Z") ? dateString.slice(0, -1) + "+07:00" : dateString;
+  const time = new Date(safeString).getTime();
+  return Number.isNaN(time) ? Date.now() : time;
+};
+
+
 function LevelBadge({ level }: { level: EnergyWeight }) {
   const tone = levelTone[level];
 
@@ -175,6 +184,7 @@ function FocusTimerPage() {
   const [result, setResult] = useState<FocusResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [autoFullscreen, setAutoFullscreen] = useState(false);
 
   const activeTasks = useMemo(() => {
     return tasks.filter((task) => task.status !== "done");
@@ -222,7 +232,7 @@ function FocusTimerPage() {
       if (activeSessionExists) {
         const active = await getActiveFocusSession();
         if (active.active_session) {
-          const startedAt = new Date(active.active_session.started_at).getTime();
+          const startedAt = getSessionStartTime(active.active_session.started_at);
           setSession(active.active_session);
           setSelectedTaskId(active.active_session.task_id);
           setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
@@ -272,7 +282,7 @@ function FocusTimerPage() {
         setEnergyData(energyRes.data);
 
         if (activeRes.active_session) {
-          const startedAt = new Date(activeRes.active_session.started_at).getTime();
+          const startedAt = getSessionStartTime(activeRes.active_session.started_at);
           setSession(activeRes.active_session);
           setSelectedTaskId(activeRes.active_session.task_id);
           setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
@@ -308,7 +318,7 @@ function FocusTimerPage() {
   useEffect(() => {
     if (!session) return;
 
-    const startedAt = new Date(session.started_at).getTime();
+    const startedAt = getSessionStartTime(session.started_at);
     const tick = () => {
       setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
     };
@@ -391,8 +401,8 @@ function FocusTimerPage() {
       style={{
         minHeight: "100vh",
         color: "#E8F8EC",
-        background:
-          "radial-gradient(circle at 50% 42%, rgba(0,139,31,0.22), rgba(8,24,14,0.94) 42%, #111513 100%)",
+        backgroundColor: "#111513",
+        backgroundImage: "radial-gradient(circle at 50% 50%, rgba(1, 139, 40, 0.28) 0%, #111513 75%)",
         position: "relative",
         overflow: "hidden",
         fontFamily: "inherit",
@@ -400,42 +410,45 @@ function FocusTimerPage() {
     >
       <style>{`
         @keyframes focusGridDrift {
-          0% { transform: translate3d(0, 0, 0); opacity: 0.42; }
-          50% { opacity: 0.72; }
-          100% { transform: translate3d(-24px, -24px, 0); opacity: 0.42; }
+          0% { transform: translate3d(0, 0, 0); opacity: 0.5; }
+          50% { opacity: 0.85; }
+          100% { transform: translate3d(-192px, -192px, 0); opacity: 0.5; }
         }
         @keyframes focusPulse {
-          0%, 100% { transform: scale(1); opacity: 0.6; }
-          50% { transform: scale(1.04); opacity: 0.9; }
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.03); opacity: 0.8; }
         }
         .focus-grid::before {
           content: "";
           position: absolute;
           inset: -80px;
           background-image:
-            linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+            linear-gradient(rgba(0, 200, 50, 0.15) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 200, 50, 0.15) 1px, transparent 1px);
           background-size: 48px 48px;
-          animation: focusGridDrift 14s linear infinite;
+          animation: focusGridDrift 20s linear infinite;
           pointer-events: none;
+          will-change: transform, opacity;
+          backface-visibility: hidden;
         }
         .focus-orbit {
           position: absolute;
-          width: min(58vw, 720px);
+          width: min(65vw, 800px);
           aspect-ratio: 1;
           left: 50%;
           top: 50%;
           transform: translate(-50%, -50%);
           border-radius: 999px;
-          border: 1px solid rgba(156,255,173,0.16);
-          box-shadow: 0 0 90px rgba(0,139,31,0.22) inset;
-          animation: focusPulse 6s ease-in-out infinite;
+          border: 2px solid rgba(21, 142, 47, 0.15);
+          box-shadow: 0 0 120px rgba(20, 180, 54, 0) inset;
+          animation: focusPulse 8s ease-in-out infinite;
           pointer-events: none;
         }
       `}</style>
 
       <div className="focus-grid" style={{ position: "absolute", inset: 0 }} />
       <div className="focus-orbit" />
+
 
       <header
         style={{
@@ -759,9 +772,42 @@ function FocusTimerPage() {
                 )}
               </div>
 
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginBottom: "20px",
+                  cursor: "pointer",
+                  color: COLOR.muted,
+                  fontSize: "14px",
+                  fontWeight: 600,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={autoFullscreen}
+                  onChange={(e) => setAutoFullscreen(e.target.checked)}
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    accentColor: COLOR.green,
+                    cursor: "pointer",
+                  }}
+                />
+                Use full screen
+              </label>
+
               <button
                 disabled={!selectedTaskId || isSubmitting || priorityTasks.length === 0}
-                onClick={() => selectedTaskId && void startTask(selectedTaskId)}
+                onClick={() => {
+                  if (selectedTaskId) {
+                    if (autoFullscreen && document.documentElement.requestFullscreen) {
+                      document.documentElement.requestFullscreen().catch(() => { });
+                    }
+                    void startTask(selectedTaskId);
+                  }
+                }}
                 style={{
                   width: "100%",
                   height: "46px",
