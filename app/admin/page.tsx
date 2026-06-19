@@ -14,16 +14,29 @@ import {
 } from "../lib/api";
 import type { AdminDashboardData, DashboardMetric, DashboardPeriod, TaskTemplate } from "../lib/api";
 import CreateTemplateModal, { type CreateTemplateModalPayload } from "../components/CreateTemplateModal";
-import { ThemeToggle } from "../components/ThemeToggle";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 
-
+const COLOR = {
+  primary: "#008B1F",
+  primaryHover: "#007A1B",
+  primarySoft: "#9CFFAD",
+  primaryPale: "#ECFFF0",
+  border: "#D9D9D9",
+  borderSoft: "#ECECEC",
+  surface: "#FFFFFF",
+  panel: "#F5F5F5",
+  text: "#1E1E1E",
+  muted: "#8A8A8A",
+  mutedDark: "#666666",
+  danger: "#FF6B76",
+  dangerSoft: "#FFCDD2",
+};
 
 const CARD_STYLE = {
-  backgroundColor: "var(--color-surface)",
+  backgroundColor: COLOR.surface,
   borderRadius: "8px",
-  border: `1px solid ${"var(--color-border)"}`,
+  border: `1px solid ${COLOR.border}`,
 } as const;
 
 const buttonReset = {
@@ -66,21 +79,21 @@ const BellIcon = () => (
 );
 
 const TrendUpIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={"var(--color-primary)"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
     <polyline points="17 6 23 6 23 12" />
   </svg>
 );
 
 const TrendDownIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={"var(--color-danger)"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.danger} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
     <polyline points="17 18 23 18 23 12" />
   </svg>
 );
 
 const GuestUserIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={"var(--color-foreground)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <polyline points="16 11 18 13 22 9" />
@@ -88,7 +101,7 @@ const GuestUserIcon = () => (
 );
 
 const UsersGroupIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={"var(--color-foreground)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -97,14 +110,14 @@ const UsersGroupIcon = () => (
 );
 
 const TaskClipIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={"var(--color-foreground)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 
 const TemplatesIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={"var(--color-foreground)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
   </svg>
@@ -149,7 +162,7 @@ const CloseIcon = () => (
 );
 
 const GlobeIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted-dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <line x1="2" y1="12" x2="22" y2="12" />
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -157,7 +170,7 @@ const GlobeIcon = () => (
 );
 
 const LockIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted-dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
@@ -165,20 +178,20 @@ const LockIcon = () => (
 
 const SuccessCheckIcon = () => (
   <svg width="80" height="80" viewBox="0 0 120 120" fill="none">
-    <circle cx="60" cy="60" r="46" stroke={"var(--color-primary)"} strokeWidth="6" />
-    <path d="M38 60l14 14 30-30" stroke={"var(--color-primary)"} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="60" cy="60" r="46" stroke={COLOR.primary} strokeWidth="6" />
+    <path d="M38 60l14 14 30-30" stroke={COLOR.primary} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const SparkleIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill={"var(--color-primary)"}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill={COLOR.primary}>
     <path d="M12 2l2.09 6.26L20.18 10l-6.09 1.74L12 18l-2.09-6.26L3.82 10l6.09-1.74L12 2z" />
     <circle cx="19" cy="5" r="2" />
   </svg>
 );
 
 const CalendarLineIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={"var(--color-muted)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
     <line x1="16" y1="2" x2="16" y2="6" />
     <line x1="8" y1="2" x2="8" y2="6" />
@@ -187,20 +200,20 @@ const CalendarLineIcon = () => (
 );
 
 const FlagLineIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={"var(--color-muted)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
     <line x1="4" y1="22" x2="4" y2="15" />
   </svg>
 );
 
 const PlayTriangleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={"var(--color-muted)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="5 3 19 12 5 21 5 3" />
   </svg>
 );
 
 const CheckCircleSolidIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={"var(--color-primary)"}>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill={COLOR.primary}>
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
   </svg>
 );
@@ -216,8 +229,8 @@ function TrendBadge({ value, up }: { value: string; up: boolean }) {
         gap: "3px",
         fontSize: "12px",
         fontWeight: 700,
-        color: up ? "var(--color-primary)" : "#D62839",
-        backgroundColor: up ? "var(--color-primary-soft)" : "var(--color-danger-soft)",
+        color: up ? COLOR.primary : "#D62839",
+        backgroundColor: up ? "#BDFCC8" : COLOR.dangerSoft,
         borderRadius: "999px",
         padding: "3px 10px",
       }}
@@ -264,9 +277,9 @@ type ChartRange = DashboardPeriod;
 function UserActivityChart({ activity }: { activity?: AdminDashboardData["activity"] | null }) {
   const chartSource = activity?.items?.length
     ? {
-      labels: activity.items.map((item) => item.label),
-      data: activity.items.map((item) => item.total),
-    }
+        labels: activity.items.map((item) => item.label),
+        data: activity.items.map((item) => item.total),
+      }
     : activity?.labels?.length && activity.data?.length
       ? activity
       : { labels: [], data: [] };
@@ -315,7 +328,7 @@ function UserActivityChart({ activity }: { activity?: AdminDashboardData["activi
         const y = padY + chartH - (v / maxVal) * chartH;
         return (
           <g key={`y-${i}`} style={{ animation: `adminFadeIn 0.4s ease ${i * 0.04}s both` }}>
-            <text x={padX - 14} y={y + 4} textAnchor="end" fontSize="10" fill={"var(--color-muted)"}>{v}</text>
+            <text x={padX - 14} y={y + 4} textAnchor="end" fontSize="10" fill={COLOR.muted}>{v}</text>
             <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#EFEFEF" strokeWidth="1" strokeDasharray="4 4" />
           </g>
         );
@@ -326,19 +339,19 @@ function UserActivityChart({ activity }: { activity?: AdminDashboardData["activi
         const ratio = labels.length === 1 ? 0.5 : i / (labels.length - 1);
         const x = padX + ratio * chartW;
         return (
-          <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="10" fill={"var(--color-foreground)"}
+          <text key={d} x={x} y={height + 16} textAnchor="middle" fontSize="10" fill={COLOR.text}
             style={{ animation: `adminFadeIn 0.4s ease ${0.2 + i * 0.04}s both` }}>{d}</text>
         );
       })}
 
       {/* Area fill */}
-      <polygon points={areaPoints} fill={"var(--color-primary-pale)"} opacity="0.8" style={{ animation: `adminFadeIn 0.8s ease 0.3s both` }} />
+      <polygon points={areaPoints} fill="#EEFFF0" opacity="0.8" style={{ animation: `adminFadeIn 0.8s ease 0.3s both` }} />
 
       {/* Animated Line */}
       <polyline
         points={points.join(" ")}
         fill="none"
-        stroke={"var(--color-primary)"}
+        stroke={COLOR.primary}
         strokeWidth="2.5"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -351,7 +364,7 @@ function UserActivityChart({ activity }: { activity?: AdminDashboardData["activi
       {data.map((v, i) => {
         const x = padX + (data.length === 1 ? 0.5 : i / (data.length - 1)) * chartW;
         const y = padY + chartH - (v / maxVal) * chartH;
-        return <circle key={i} cx={x} cy={y} r="3.5" fill={"var(--color-primary)"}
+        return <circle key={i} cx={x} cy={y} r="3.5" fill={COLOR.primary}
           style={{ animation: `adminPopIn 0.4s ease ${0.5 + i * 0.1}s both` }} />;
       })}
     </svg>
@@ -592,7 +605,7 @@ export default function AdminDashboardPage() {
     { label: "Task", value: formatNumber(stats?.tasks), icon: <TaskClipIcon />, trend: formatMetricTrend(metrics?.tasks), up: isTrendUp(metrics?.tasks) },
     { label: "Templates", value: formatNumber(stats?.templates), icon: <TemplatesIcon />, trend: formatMetricTrend(metrics?.templates), up: isTrendUp(metrics?.templates) },
   ];
-
+  
   const timeRangeText = {
     Daily: "from yesterday",
     Weekly: "from last week",
@@ -603,7 +616,7 @@ export default function AdminDashboardPage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--color-surface)", color: "var(--color-foreground)", fontFamily: "inherit" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: COLOR.surface, color: COLOR.text, fontFamily: "inherit" }}>
       <style>{`
         @keyframes adminRingBell {
           0% { transform: rotate(0); }
@@ -632,8 +645,8 @@ export default function AdminDashboardPage() {
         style={{
           width: "220px",
           minHeight: "100vh",
-          backgroundColor: "var(--color-surface)",
-          borderRight: `1px solid ${"var(--color-border-soft)"}`,
+          backgroundColor: COLOR.surface,
+          borderRight: `1px solid ${COLOR.borderSoft}`,
           display: "flex",
           flexDirection: "column",
           padding: "28px 0 0",
@@ -650,20 +663,20 @@ export default function AdminDashboardPage() {
               width: "36px",
               height: "36px",
               display: "inline-block",
-              backgroundColor: "var(--color-primary)",
+              backgroundColor: COLOR.primary,
               WebkitMask: `url('${LOGO_SRC}') center / contain no-repeat`,
               mask: `url('${LOGO_SRC}') center / contain no-repeat`,
               flexShrink: 0,
             }}
           />
           <div>
-            <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1.1 }}>Ben To Do</div>
-            <div style={{ fontSize: "11px", color: "var(--color-muted)", fontWeight: 400, lineHeight: 1.3 }}>Task Dashboard</div>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: COLOR.text, lineHeight: 1.1 }}>Ben To Do</div>
+            <div style={{ fontSize: "11px", color: COLOR.muted, fontWeight: 400, lineHeight: 1.3 }}>Task Dashboard</div>
           </div>
         </div>
 
         {/* Menu Label */}
-        <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-muted)", letterSpacing: "0.05em", padding: "0 28px", marginBottom: "14px", textTransform: "uppercase" }}>
+        <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.muted, letterSpacing: "0.05em", padding: "0 28px", marginBottom: "14px", textTransform: "uppercase" }}>
           Menu
         </div>
 
@@ -683,20 +696,20 @@ export default function AdminDashboardPage() {
                   height: "42px",
                   padding: "0 16px",
                   borderRadius: "6px",
-                  border: isActive ? `2px solid ${"var(--color-primary)"}` : "2px solid transparent",
+                  border: isActive ? `2px solid ${COLOR.primary}` : "2px solid transparent",
                   cursor: "pointer",
                   fontFamily: "inherit",
                   fontSize: "13px",
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? "var(--color-primary)" : "var(--color-muted-dark)",
-                  backgroundColor: isActive ? "var(--color-primary-soft)" : "transparent",
+                  color: isActive ? COLOR.primary : COLOR.mutedDark,
+                  backgroundColor: isActive ? COLOR.primarySoft : "transparent",
                   transition: "all 0.2s ease",
                   width: "100%",
                   textAlign: "left",
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = "var(--color-panel)";
+                    e.currentTarget.style.backgroundColor = COLOR.panel;
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -705,7 +718,7 @@ export default function AdminDashboardPage() {
                   }
                 }}
               >
-                <span style={{ display: "flex", color: isActive ? "var(--color-primary)" : "var(--color-muted-dark)" }}>
+                <span style={{ display: "flex", color: isActive ? COLOR.primary : COLOR.mutedDark }}>
                   {icon}
                 </span>
                 {label}
@@ -718,7 +731,7 @@ export default function AdminDashboardPage() {
         <div style={{ flex: 1 }} />
 
         {/* Sign Out */}
-        <div style={{ padding: "22px 16px", borderTop: `1px solid ${"var(--color-border-soft)"}` }}>
+        <div style={{ padding: "22px 16px", borderTop: `1px solid ${COLOR.borderSoft}` }}>
           <button
             id="admin-sign-out"
             onClick={handleSignOut}
@@ -734,13 +747,13 @@ export default function AdminDashboardPage() {
               fontFamily: "inherit",
               fontSize: "13px",
               fontWeight: 400,
-              color: "var(--color-muted-dark)",
+              color: COLOR.mutedDark,
               backgroundColor: "transparent",
               transition: "all 0.2s ease",
               width: "100%",
               textAlign: "left",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
           >
             <SignOutIcon />
@@ -762,21 +775,19 @@ export default function AdminDashboardPage() {
             justifyContent: "space-between",
             height: "70px",
             padding: "0 36px",
-            backgroundColor: "var(--color-surface)",
-            borderBottom: `1px solid ${"var(--color-border-soft)"}`,
+            backgroundColor: COLOR.surface,
+            borderBottom: `1px solid ${COLOR.borderSoft}`,
             position: "sticky",
             top: 0,
             zIndex: 20,
           }}
         >
-          <h1 style={{ fontSize: "18px", fontWeight: 500, color: "var(--color-foreground)", margin: 0, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: "18px", fontWeight: 500, color: COLOR.text, margin: 0, letterSpacing: "-0.01em" }}>
             {activeMenu === "dashboard" ? "Dashboard Admin" : "Template Management Admin"}
           </h1>
 
           {/* Right side: notification + profile */}
           <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-            <ThemeToggle />
-
             {/* Notification Bell */}
             <div style={{ position: "relative" }}>
               <button
@@ -790,17 +801,17 @@ export default function AdminDashboardPage() {
                   width: "36px",
                   height: "36px",
                   borderRadius: "6px",
-                  border: `1px solid ${showNotifications ? "var(--color-primary)" : "var(--color-border)"}`,
+                  border: `1px solid ${showNotifications ? COLOR.primary : COLOR.border}`,
                   background: showNotifications ? "#f0fdf4" : "none",
-                  color: showNotifications ? "var(--color-primary)" : "var(--color-muted-dark)",
+                  color: showNotifications ? COLOR.primary : COLOR.mutedDark,
                   cursor: "pointer",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-primary)"; e.currentTarget.style.color = "var(--color-primary)"; }}
-                onMouseLeave={(e) => {
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.color = COLOR.primary; }}
+                onMouseLeave={(e) => { 
                   if (!showNotifications) {
-                    e.currentTarget.style.borderColor = "var(--color-border)";
-                    e.currentTarget.style.color = "var(--color-muted-dark)";
+                    e.currentTarget.style.borderColor = COLOR.border; 
+                    e.currentTarget.style.color = COLOR.mutedDark;
                   }
                 }}
               >
@@ -815,31 +826,31 @@ export default function AdminDashboardPage() {
                     top: "46px",
                     right: 0,
                     width: "320px",
-                    backgroundColor: "var(--color-surface)",
+                    backgroundColor: COLOR.surface,
                     borderRadius: "12px",
                     boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
-                    border: `1px solid ${"var(--color-border-soft)"}`,
+                    border: `1px solid ${COLOR.borderSoft}`,
                     zIndex: 100,
                     animation: "adminNotifPop 0.2s ease-out forwards",
                     overflow: "hidden",
                   }}
                 >
-                  <div style={{ padding: "16px", borderBottom: `1px solid ${"var(--color-border-soft)"}`, backgroundColor: "var(--color-surface)" }}>
-                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "var(--color-foreground)" }}>Notifications</h3>
+                  <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}`, backgroundColor: "#f9fafb" }}>
+                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: COLOR.text }}>Notifications</h3>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", maxHeight: "300px", overflowY: "auto" }}>
-                    <div style={{ padding: "16px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                    <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-foreground)" }}>System Update v1.2</div>
-                        <div style={{ width: "8px", height: "8px", backgroundColor: "var(--color-primary)", borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text }}>System Update v1.2</div>
+                        <div style={{ width: "8px", height: "8px", backgroundColor: COLOR.primary, borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
                       </div>
-                      <div style={{ fontSize: "12px", color: "var(--color-muted)", lineHeight: 1.4 }}>Added new template layouts and improved dashboard performance.</div>
-                      <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", marginTop: "8px" }}>Just now</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>Added new template layouts and improved dashboard performance.</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>Just now</div>
                     </div>
-                    <div style={{ padding: "16px", backgroundColor: "var(--color-surface)" }}>
-                      <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-foreground)", marginBottom: "4px" }}>New User Registered</div>
-                      <div style={{ fontSize: "12px", color: "var(--color-muted)", lineHeight: 1.4 }}>5 new guest users have joined in the last hour.</div>
-                      <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", marginTop: "8px" }}>2 hours ago</div>
+                    <div style={{ padding: "16px", backgroundColor: "#ffffff" }}>
+                      <div style={{ fontSize: "13px", fontWeight: 500, color: COLOR.text, marginBottom: "4px" }}>New User Registered</div>
+                      <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>5 new guest users have joined in the last hour.</div>
+                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>2 hours ago</div>
                     </div>
                   </div>
                 </div>
@@ -847,7 +858,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Separator */}
-            <div style={{ width: "1px", height: "28px", backgroundColor: "var(--color-border-soft)" }} />
+            <div style={{ width: "1px", height: "28px", backgroundColor: COLOR.borderSoft }} />
 
             {/* Admin Avatar + Info */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -862,7 +873,7 @@ export default function AdminDashboardPage() {
                   justifyContent: "center",
                   fontSize: "15px",
                   fontWeight: 700,
-                  color: "var(--color-surface)",
+                  color: "#ffffff",
                   flexShrink: 0,
                   border: "2px solid #e0e0e0",
                 }}
@@ -870,24 +881,24 @@ export default function AdminDashboardPage() {
                 {adminName.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1.2 }}>{adminName}</div>
-                <div style={{ fontSize: "10px", color: "var(--color-muted)", lineHeight: 1.3 }}>SuperAdmin</div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.2 }}>{adminName}</div>
+                <div style={{ fontSize: "10px", color: COLOR.muted, lineHeight: 1.3 }}>SuperAdmin</div>
               </div>
             </div>
           </div>
         </header>
 
         {/* ── Scrollable Content ── */}
-        <div style={{ flex: 1, padding: "28px 36px 40px", overflowY: "auto", overflowX: "hidden", backgroundColor: "var(--color-surface)" }}>
+        <div style={{ flex: 1, padding: "28px 36px 40px", overflowY: "auto", overflowX: "hidden", backgroundColor: "#FAFAFA" }}>
           {pageError && (
             <div
               style={{
                 marginBottom: "16px",
                 padding: "12px 14px",
                 borderRadius: "8px",
-                border: `1px solid ${"var(--color-danger-soft)"}`,
+                border: `1px solid ${COLOR.dangerSoft}`,
                 backgroundColor: "#FFF5F6",
-                color: "var(--color-danger)",
+                color: "#B91C1C",
                 fontSize: "13px",
                 fontWeight: 600,
               }}
@@ -902,9 +913,9 @@ export default function AdminDashboardPage() {
                 marginBottom: "16px",
                 padding: "12px 14px",
                 borderRadius: "8px",
-                border: `1px solid ${"var(--color-border-soft)"}`,
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-muted-dark)",
+                border: `1px solid ${COLOR.borderSoft}`,
+                backgroundColor: COLOR.surface,
+                color: COLOR.mutedDark,
                 fontSize: "13px",
                 fontWeight: 600,
               }}
@@ -920,12 +931,12 @@ export default function AdminDashboardPage() {
             <>
               {/* Overview Header */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--color-foreground)", margin: 0 }}>Overview</h2>
+                <h2 style={{ fontSize: "24px", fontWeight: 700, color: COLOR.text, margin: 0 }}>Overview</h2>
                 <div
                   style={{
                     display: "flex",
-                    borderRadius: "3px",
-                    backgroundColor: "var(--color-panel)",
+                    borderRadius: "6px",
+                    backgroundColor: "#F1F1F1",
                     padding: "3px",
                     overflow: "hidden",
                   }}
@@ -944,8 +955,8 @@ export default function AdminDashboardPage() {
                         fontSize: "12px",
                         fontWeight: timeRange === t ? 600 : 400,
                         fontFamily: "inherit",
-                        color: "var(--color-foreground)",
-                        backgroundColor: timeRange === t ? "var(--color-surface)" : "transparent",
+                        color: COLOR.text,
+                        backgroundColor: timeRange === t ? COLOR.surface : "transparent",
                         border: "none",
                         borderRadius: timeRange === t ? "4px" : "0",
                         cursor: "pointer",
@@ -980,13 +991,13 @@ export default function AdminDashboardPage() {
                       gap: "12px",
                     }}
                   >
-                    <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--color-foreground)" }}>{card.label}</div>
+                    <div style={{ fontSize: "14px", fontWeight: 500, color: COLOR.text }}>{card.label}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                      <span style={{ display: "flex", color: "var(--color-foreground)" }}>{card.icon}</span>
-                      <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1, letterSpacing: "-0.02em" }}>{card.value}</span>
+                      <span style={{ display: "flex", color: COLOR.text }}>{card.icon}</span>
+                      <span style={{ fontSize: "28px", fontWeight: 700, color: COLOR.text, lineHeight: 1, letterSpacing: "-0.02em" }}>{card.value}</span>
                       <TrendBadge value={card.trend} up={card.up} />
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--color-muted)" }}>{timeRangeText[timeRange]}</div>
+                    <div style={{ fontSize: "12px", color: COLOR.muted }}>{timeRangeText[timeRange]}</div>
                   </div>
                 ))}
               </div>
@@ -1001,8 +1012,8 @@ export default function AdminDashboardPage() {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                   <div>
-                    <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "4px" }}>User Activity</div>
-                    <div style={{ fontSize: "12px", color: "var(--color-muted)" }}>Sign-ups over the selected period</div>
+                    <div style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, marginBottom: "4px" }}>User Activity</div>
+                    <div style={{ fontSize: "12px", color: COLOR.muted }}>Sign-ups over the selected period</div>
                   </div>
 
                   {/* Chart Range Dropdown */}
@@ -1017,15 +1028,15 @@ export default function AdminDashboardPage() {
                         height: "34px",
                         padding: "0 14px",
                         borderRadius: "6px",
-                        border: `1px solid ${"var(--color-border)"}`,
-                        backgroundColor: "var(--color-surface)",
+                        border: `1px solid ${COLOR.border}`,
+                        backgroundColor: COLOR.surface,
                         fontSize: "12px",
-                        color: "var(--color-foreground)",
+                        color: COLOR.text,
                         cursor: "pointer",
                         fontFamily: "inherit",
                         transition: "border-color 0.2s, box-shadow 0.2s",
-                        borderColor: chartDropdownOpen ? "var(--color-primary)" : "var(--color-border)",
-                        boxShadow: chartDropdownOpen ? `0 0 0 2px ${"var(--color-primary-pale)"}` : "none",
+                        borderColor: chartDropdownOpen ? COLOR.primary : COLOR.border,
+                        boxShadow: chartDropdownOpen ? `0 0 0 2px ${COLOR.primaryPale}` : "none",
                       }}
                     >
                       <CalendarSmIcon />
@@ -1038,7 +1049,7 @@ export default function AdminDashboardPage() {
                     {chartDropdownOpen && (
                       <div style={{
                         position: "absolute", top: "40px", right: 0, zIndex: 30,
-                        backgroundColor: "var(--color-surface)", border: `1px solid ${"var(--color-border)"}`,
+                        backgroundColor: COLOR.surface, border: `1px solid ${COLOR.border}`,
                         borderRadius: "8px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                         overflow: "hidden", minWidth: "140px",
                         animation: "fadeSlideDown 0.18s ease",
@@ -1055,8 +1066,8 @@ export default function AdminDashboardPage() {
                             style={{
                               display: "flex", alignItems: "center", gap: "8px",
                               width: "100%", padding: "10px 14px", border: "none",
-                              backgroundColor: chartRange === r ? "var(--color-primary-pale)" : "transparent",
-                              color: chartRange === r ? "var(--color-primary)" : "var(--color-foreground)",
+                              backgroundColor: chartRange === r ? COLOR.primaryPale : "transparent",
+                              color: chartRange === r ? COLOR.primary : COLOR.text,
                               fontSize: "12px", fontWeight: chartRange === r ? 600 : 400,
                               cursor: "pointer", fontFamily: "inherit",
                               transition: "background-color 0.15s",
@@ -1064,7 +1075,7 @@ export default function AdminDashboardPage() {
                             onMouseEnter={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "#f5f5f5"; }}
                             onMouseLeave={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "transparent"; }}
                           >
-                            {chartRange === r && <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />}
+                            {chartRange === r && <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: COLOR.primary }} />}
                             {chartRangeLabels[r]}
                           </button>
                         ))}
@@ -1080,7 +1091,7 @@ export default function AdminDashboardPage() {
               {/* ── Recent Templates Table ── */}
               <div style={{ ...CARD_STYLE, overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 28px" }}>
-                  <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)" }}>Recent Templates</span>
+                  <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text }}>Recent Templates</span>
                   <button
                     id="admin-view-all-templates"
                     onClick={() => setActiveMenu("template")}
@@ -1088,7 +1099,7 @@ export default function AdminDashboardPage() {
                       ...buttonReset,
                       fontSize: "13px",
                       fontWeight: 600,
-                      color: "var(--color-primary)",
+                      color: COLOR.primary,
                       transition: "opacity 0.15s",
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.75"; }}
@@ -1107,14 +1118,14 @@ export default function AdminDashboardPage() {
                     <col style={{ width: "16%" }} />
                   </colgroup>
                   <thead>
-                    <tr style={{ height: "48px", borderTop: `1px solid ${"var(--color-border-soft)"}`, borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                    <tr style={{ height: "48px", borderTop: `1px solid ${COLOR.borderSoft}`, borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                       {["Template Name", "Created By", "Usage", "Level", "Actions"].map((h) => (
                         <th
                           key={h}
                           style={{
                             fontSize: "12px",
                             fontWeight: 700,
-                            color: "var(--color-foreground)",
+                            color: COLOR.text,
                             textAlign: "left",
                             padding: "0 28px",
                             whiteSpace: "nowrap",
@@ -1131,8 +1142,8 @@ export default function AdminDashboardPage() {
                         key={tmpl.id}
                         style={{
                           height: "68px",
-                          borderBottom: `1px solid ${"var(--color-border-soft)"}`,
-                          backgroundColor: hoveredRow === idx ? "var(--color-primary-pale)" : "transparent",
+                          borderBottom: `1px solid ${COLOR.borderSoft}`,
+                          backgroundColor: hoveredRow === idx ? "#FAFFFE" : "transparent",
                           transition: "background-color 0.15s",
                         }}
                         onMouseEnter={() => setHoveredRow(idx)}
@@ -1140,12 +1151,12 @@ export default function AdminDashboardPage() {
                       >
                         <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
                           <div>
-                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{tmpl.name}</div>
-                            <div style={{ fontSize: "11px", color: "var(--color-muted)", marginTop: "2px" }}>Created on {tmpl.createdAt}</div>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{tmpl.name}</div>
+                            <div style={{ fontSize: "11px", color: COLOR.muted, marginTop: "2px" }}>Created on {tmpl.createdAt}</div>
                           </div>
                         </td>
-                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: "var(--color-foreground)" }}>{tmpl.createdBy}</td>
-                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: "var(--color-foreground)" }}>{tmpl.usage}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.createdBy}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.usage}</td>
                         <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
                           <LevelBadge level={tmpl.level} />
                         </td>
@@ -1153,17 +1164,17 @@ export default function AdminDashboardPage() {
                           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                             <button
                               onClick={() => setDetailTemplate(tmpl)}
-                              style={{ ...buttonReset, color: "var(--color-muted-dark)", display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-foreground)"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-muted-dark)"; }}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.text; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
                             >
                               <MoreDotsIcon />
                             </button>
                             <button
                               onClick={() => setDeleteTemplate(tmpl)}
-                              style={{ ...buttonReset, color: "var(--color-muted-dark)", display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-danger)"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-muted-dark)"; }}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.danger; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
                             >
                               <TrashIcon />
                             </button>
@@ -1183,13 +1194,13 @@ export default function AdminDashboardPage() {
                       ...buttonReset,
                       fontSize: "13px",
                       fontWeight: 500,
-                      color: "var(--color-muted-dark)",
+                      color: COLOR.mutedDark,
                       padding: "8px 20px",
                       borderRadius: "6px",
                       transition: "all 0.15s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; e.currentTarget.style.color = "var(--color-foreground)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--color-muted-dark)"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; e.currentTarget.style.color = COLOR.text; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = COLOR.mutedDark; }}
                   >
                     Show More Templates
                   </button>
@@ -1205,7 +1216,7 @@ export default function AdminDashboardPage() {
             <>
               {/* Overview Header */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--color-foreground)", margin: 0, fontStyle: "italic" }}>Overview</h2>
+                <h2 style={{ fontSize: "24px", fontWeight: 700, color: COLOR.text, margin: 0, fontStyle: "italic" }}>Overview</h2>
                 <button
                   id="admin-create-new-template"
                   onClick={handleOpenCreateModal}
@@ -1216,8 +1227,8 @@ export default function AdminDashboardPage() {
                     height: "42px",
                     padding: "0 24px",
                     borderRadius: "8px",
-                    backgroundColor: "var(--color-primary)",
-                    color: "var(--color-background)",
+                    backgroundColor: COLOR.primary,
+                    color: "#ffffff",
                     fontSize: "13px",
                     fontWeight: 600,
                     border: "none",
@@ -1227,12 +1238,12 @@ export default function AdminDashboardPage() {
                     boxShadow: "0 2px 8px rgba(0,139,31,0.25)",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--color-primary-hover)";
+                    e.currentTarget.style.backgroundColor = COLOR.primaryHover;
                     e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,139,31,0.35)";
                     e.currentTarget.style.transform = "translateY(-1px)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--color-primary)";
+                    e.currentTarget.style.backgroundColor = COLOR.primary;
                     e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,139,31,0.25)";
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
@@ -1253,14 +1264,14 @@ export default function AdminDashboardPage() {
                     <col style={{ width: "16%" }} />
                   </colgroup>
                   <thead>
-                    <tr style={{ height: "52px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                    <tr style={{ height: "52px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                       {["Template Name", "Created By", "Usage", "Level", "Actions"].map((h) => (
                         <th
                           key={h}
                           style={{
                             fontSize: "12px",
                             fontWeight: 700,
-                            color: "var(--color-foreground)",
+                            color: COLOR.text,
                             textAlign: "left",
                             padding: "0 28px",
                             whiteSpace: "nowrap",
@@ -1278,8 +1289,8 @@ export default function AdminDashboardPage() {
                         id={`admin-template-row-${tmpl.id}`}
                         style={{
                           height: "72px",
-                          borderBottom: `1px solid ${"var(--color-border-soft)"}`,
-                          backgroundColor: hoveredRow === idx + 100 ? "var(--color-primary-pale)" : "transparent",
+                          borderBottom: `1px solid ${COLOR.borderSoft}`,
+                          backgroundColor: hoveredRow === idx + 100 ? "#FAFFFE" : "transparent",
                           transition: "background-color 0.15s",
                         }}
                         onMouseEnter={() => setHoveredRow(idx + 100)}
@@ -1287,12 +1298,12 @@ export default function AdminDashboardPage() {
                       >
                         <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
                           <div>
-                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{tmpl.name}</div>
-                            <div style={{ fontSize: "11px", color: "var(--color-muted)", marginTop: "2px" }}>Created on {tmpl.createdAt}</div>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{tmpl.name}</div>
+                            <div style={{ fontSize: "11px", color: COLOR.muted, marginTop: "2px" }}>Created on {tmpl.createdAt}</div>
                           </div>
                         </td>
-                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: "var(--color-foreground)" }}>{tmpl.createdBy}</td>
-                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: "var(--color-foreground)" }}>{tmpl.usage}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.createdBy}</td>
+                        <td style={{ padding: "0 28px", verticalAlign: "middle", fontSize: "13px", color: COLOR.text }}>{tmpl.usage}</td>
                         <td style={{ padding: "0 28px", verticalAlign: "middle" }}>
                           <LevelBadge level={tmpl.level} />
                         </td>
@@ -1300,17 +1311,17 @@ export default function AdminDashboardPage() {
                           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                             <button
                               onClick={() => setDetailTemplate(tmpl)}
-                              style={{ ...buttonReset, color: "var(--color-muted-dark)", display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-foreground)"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-muted-dark)"; }}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.text; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
                             >
                               <MoreDotsIcon />
                             </button>
                             <button
                               onClick={() => setDeleteTemplate(tmpl)}
-                              style={{ ...buttonReset, color: "var(--color-muted-dark)", display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-danger)"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-muted-dark)"; }}
+                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.danger; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.mutedDark; }}
                             >
                               <TrashIcon />
                             </button>
@@ -1347,7 +1358,7 @@ export default function AdminDashboardPage() {
           <div
             id="admin-detail-modal"
             style={{
-              backgroundColor: "var(--color-surface)",
+              backgroundColor: COLOR.surface,
               borderRadius: "16px",
               width: "520px",
               maxWidth: "90vw",
@@ -1366,19 +1377,19 @@ export default function AdminDashboardPage() {
                   width: "40px",
                   height: "40px",
                   borderRadius: "10px",
-                  backgroundColor: "var(--color-primary-pale)",
+                  backgroundColor: COLOR.primaryPale,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={"var(--color-primary)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={COLOR.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
                 </div>
                 <div>
-                  <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-foreground)", margin: 0 }}>Template Detail</h2>
-                  <p style={{ fontSize: "11px", color: "var(--color-muted)", margin: "2px 0 0" }}>View template information</p>
+                  <h2 style={{ fontSize: "18px", fontWeight: 700, color: COLOR.text, margin: 0 }}>Template Detail</h2>
+                  <p style={{ fontSize: "11px", color: COLOR.muted, margin: "2px 0 0" }}>View template information</p>
                 </div>
               </div>
               <button
@@ -1386,14 +1397,14 @@ export default function AdminDashboardPage() {
                 onClick={() => setDetailTemplate(null)}
                 style={{
                   ...buttonReset,
-                  color: "var(--color-muted-dark)",
+                  color: COLOR.mutedDark,
                   padding: "4px",
                   borderRadius: "6px",
                   display: "flex",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; e.currentTarget.style.color = "var(--color-foreground)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--color-muted-dark)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; e.currentTarget.style.color = COLOR.text; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = COLOR.mutedDark; }}
               >
                 <CloseIcon />
               </button>
@@ -1401,20 +1412,20 @@ export default function AdminDashboardPage() {
 
             {/* Template Name */}
             <div style={{
-              backgroundColor: "var(--color-primary-pale)",
+              backgroundColor: COLOR.primaryPale,
               borderRadius: "10px",
               padding: "18px 20px",
               marginBottom: "20px",
-              borderLeft: `4px solid ${"var(--color-primary)"}`,
+              borderLeft: `4px solid ${COLOR.primary}`,
             }}>
-              <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>Template Name</div>
-              <div style={{ fontSize: "17px", fontWeight: 700, color: "var(--color-foreground)" }}>{detailTemplate.name}</div>
+              <div style={{ fontSize: "10px", fontWeight: 600, color: COLOR.primary, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>Template Name</div>
+              <div style={{ fontSize: "17px", fontWeight: 700, color: COLOR.text }}>{detailTemplate.name}</div>
             </div>
 
             {/* Description */}
             <div style={{ marginBottom: "22px" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-muted)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</div>
-              <p style={{ fontSize: "13px", color: "var(--color-foreground)", lineHeight: 1.7, margin: 0, padding: "12px 16px", backgroundColor: "#F9F9F9", borderRadius: "8px", border: `1px solid ${"var(--color-border-soft)"}` }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: COLOR.muted, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</div>
+              <p style={{ fontSize: "13px", color: COLOR.text, lineHeight: 1.7, margin: 0, padding: "12px 16px", backgroundColor: "#F9F9F9", borderRadius: "8px", border: `1px solid ${COLOR.borderSoft}` }}>
                 {detailTemplate.description || "No description provided."}
               </p>
             </div>
@@ -1438,13 +1449,13 @@ export default function AdminDashboardPage() {
                   gap: "12px",
                   padding: "14px 16px",
                   borderRadius: "8px",
-                  border: `1px solid ${"var(--color-border-soft)"}`,
-                  backgroundColor: "var(--color-surface)",
+                  border: `1px solid ${COLOR.borderSoft}`,
+                  backgroundColor: COLOR.surface,
                 }}>
-                  <span style={{ display: "flex", color: "var(--color-muted)", flexShrink: 0 }}>{item.icon}</span>
+                  <span style={{ display: "flex", color: COLOR.muted, flexShrink: 0 }}>{item.icon}</span>
                   <div>
-                    <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "2px" }}>{item.label}</div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{item.value}</div>
+                    <div style={{ fontSize: "10px", fontWeight: 600, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "2px" }}>{item.label}</div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{item.value}</div>
                   </div>
                 </div>
               ))}
@@ -1452,7 +1463,7 @@ export default function AdminDashboardPage() {
 
             {/* Label Badge */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-muted)" }}>Label:</span>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: COLOR.muted }}>Label:</span>
               <span style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -1461,8 +1472,8 @@ export default function AdminDashboardPage() {
                 borderRadius: "999px",
                 fontSize: "12px",
                 fontWeight: 600,
-                backgroundColor: detailTemplate.label === "Public" ? "var(--color-primary-pale)" : "#FEF3C7",
-                color: detailTemplate.label === "Public" ? "var(--color-primary)" : "#92400E",
+                backgroundColor: detailTemplate.label === "Public" ? COLOR.primaryPale : "#FEF3C7",
+                color: detailTemplate.label === "Public" ? COLOR.primary : "#92400E",
                 border: `1px solid ${detailTemplate.label === "Public" ? "#BBF7D0" : "#FDE68A"}`,
               }}>
                 {detailTemplate.label === "Public" ? <GlobeIcon /> : <LockIcon />}
@@ -1478,17 +1489,17 @@ export default function AdminDashboardPage() {
                 width: "100%",
                 height: "44px",
                 borderRadius: "8px",
-                border: `1px solid ${"var(--color-border)"}`,
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-foreground)",
+                border: `1px solid ${COLOR.border}`,
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
                 fontSize: "13px",
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "inherit",
                 transition: "all 0.15s",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = COLOR.surface; }}
             >
               Close
             </button>
@@ -1517,7 +1528,7 @@ export default function AdminDashboardPage() {
           <div
             id="admin-delete-modal"
             style={{
-              backgroundColor: "var(--color-surface)",
+              backgroundColor: COLOR.surface,
               borderRadius: "16px",
               width: "420px",
               maxWidth: "90vw",
@@ -1533,7 +1544,7 @@ export default function AdminDashboardPage() {
               width: "64px",
               height: "64px",
               borderRadius: "50%",
-              backgroundColor: "var(--color-danger-soft)",
+              backgroundColor: "#FEE2E2",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1548,10 +1559,10 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Title */}
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-foreground)", margin: "0 0 8px" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: COLOR.text, margin: "0 0 8px" }}>
               Delete Template?
             </h2>
-            <p style={{ fontSize: "13px", color: "var(--color-muted)", margin: "0 0 8px", lineHeight: 1.5 }}>
+            <p style={{ fontSize: "13px", color: COLOR.muted, margin: "0 0 8px", lineHeight: 1.5 }}>
               Are you sure you want to delete
             </p>
 
@@ -1570,10 +1581,10 @@ export default function AdminDashboardPage() {
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
-              <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-danger)" }}>&ldquo;{deleteTemplate.name}&rdquo;</span>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#DC2626" }}>&ldquo;{deleteTemplate.name}&rdquo;</span>
             </div>
 
-            <p style={{ fontSize: "12px", color: "var(--color-muted)", margin: "0 0 28px", lineHeight: 1.5 }}>
+            <p style={{ fontSize: "12px", color: COLOR.muted, margin: "0 0 28px", lineHeight: 1.5 }}>
               This action cannot be undone. All data associated<br />with this template will be permanently removed.
             </p>
 
@@ -1586,17 +1597,17 @@ export default function AdminDashboardPage() {
                   flex: 1,
                   height: "44px",
                   borderRadius: "8px",
-                  border: `1px solid ${"var(--color-border)"}`,
-                  backgroundColor: "var(--color-surface)",
-                  color: "var(--color-foreground)",
+                  border: `1px solid ${COLOR.border}`,
+                  backgroundColor: COLOR.surface,
+                  color: COLOR.text,
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                   fontFamily: "inherit",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = COLOR.surface; }}
               >
                 No, Cancel
               </button>
@@ -1609,8 +1620,8 @@ export default function AdminDashboardPage() {
                   height: "44px",
                   borderRadius: "8px",
                   border: "none",
-                  backgroundColor: isDeletingTemplate ? "var(--color-muted)" : "#EF4444",
-                  color: "var(--color-background)",
+                  backgroundColor: isDeletingTemplate ? COLOR.muted : "#EF4444",
+                  color: "#ffffff",
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: isDeletingTemplate ? "not-allowed" : "pointer",
@@ -1620,7 +1631,7 @@ export default function AdminDashboardPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (isDeletingTemplate) return;
-                  e.currentTarget.style.backgroundColor = "var(--color-danger)";
+                  e.currentTarget.style.backgroundColor = "#DC2626";
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow = "0 4px 16px rgba(239,68,68,0.4)";
                 }}
@@ -1651,7 +1662,7 @@ export default function AdminDashboardPage() {
         onSubmit={handleCreateTemplate}
       />
 
-      {/* ═══════════════════════════════════════
+{/* ═══════════════════════════════════════
           SUCCESS MODAL
       ═══════════════════════════════════════ */}
       {showSuccessModal && (
@@ -1672,7 +1683,7 @@ export default function AdminDashboardPage() {
           <div
             id="admin-success-modal"
             style={{
-              backgroundColor: "var(--color-surface)",
+              backgroundColor: COLOR.surface,
               borderRadius: "16px",
               width: "420px",
               maxWidth: "90vw",
@@ -1692,14 +1703,14 @@ export default function AdminDashboardPage() {
                 position: "absolute",
                 top: "16px",
                 right: "16px",
-                color: "var(--color-muted-dark)",
+                color: COLOR.mutedDark,
                 padding: "4px",
                 borderRadius: "6px",
                 display: "flex",
                 transition: "all 0.15s",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; e.currentTarget.style.color = "var(--color-foreground)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--color-muted-dark)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; e.currentTarget.style.color = COLOR.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = COLOR.mutedDark; }}
             >
               <CloseIcon />
             </button>
@@ -1715,16 +1726,16 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Title */}
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--color-foreground)", margin: "0 0 6px" }}>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: COLOR.text, margin: "0 0 6px" }}>
               Template added successfully!
             </h2>
-            <p style={{ fontSize: "12px", color: "var(--color-muted)", margin: "0 0 24px" }}>
+            <p style={{ fontSize: "12px", color: COLOR.muted, margin: "0 0 24px" }}>
               All tasks have been added to your task list.
             </p>
 
             {/* Summary Card */}
             <div style={{
-              border: `1px solid ${"var(--color-border-soft)"}`,
+              border: `1px solid ${COLOR.borderSoft}`,
               borderRadius: "10px",
               padding: "20px",
               textAlign: "left",
@@ -1733,7 +1744,7 @@ export default function AdminDashboardPage() {
               {/* Template Title */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
                 <CheckCircleSolidIcon />
-                <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--color-foreground)" }}>{createdTemplateSummary?.name || "Template"}</span>
+                <span style={{ fontSize: "15px", fontWeight: 700, color: COLOR.text }}>{createdTemplateSummary?.name || "Template"}</span>
               </div>
 
               {/* Details */}
@@ -1741,9 +1752,9 @@ export default function AdminDashboardPage() {
                 {/* Deadline */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <CalendarLineIcon />
-                  <span style={{ fontSize: "13px", color: "var(--color-muted)", minWidth: "80px" }}>Tasks</span>
-                  <span style={{ fontSize: "13px", color: "var(--color-muted)", marginRight: "4px" }}>:</span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, minWidth: "80px" }}>Tasks</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, marginRight: "4px" }}>:</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
                     {createdTemplateSummary?.taskCount ?? 0} tasks
                   </span>
                 </div>
@@ -1751,17 +1762,17 @@ export default function AdminDashboardPage() {
                 {/* Level Task */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <FlagLineIcon />
-                  <span style={{ fontSize: "13px", color: "var(--color-muted)", minWidth: "80px" }}>Level Task</span>
-                  <span style={{ fontSize: "13px", color: "var(--color-muted)", marginRight: "4px" }}>:</span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{createdTemplateSummary?.level ?? "Medium"}</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, minWidth: "80px" }}>Level Task</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, marginRight: "4px" }}>:</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{createdTemplateSummary?.level ?? "Medium"}</span>
                 </div>
 
                 {/* Label */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <PlayTriangleIcon />
-                  <span style={{ fontSize: "13px", color: "var(--color-muted)", minWidth: "80px" }}>Label</span>
-                  <span style={{ fontSize: "13px", color: "var(--color-muted)", marginRight: "4px" }}>:</span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>Official</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, minWidth: "80px" }}>Label</span>
+                  <span style={{ fontSize: "13px", color: COLOR.muted, marginRight: "4px" }}>:</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>Official</span>
                 </div>
               </div>
             </div>
@@ -1775,8 +1786,8 @@ export default function AdminDashboardPage() {
                 height: "46px",
                 borderRadius: "8px",
                 border: "none",
-                backgroundColor: "var(--color-primary)",
-                color: "var(--color-background)",
+                backgroundColor: COLOR.primary,
+                color: "#ffffff",
                 fontSize: "14px",
                 fontWeight: 600,
                 cursor: "pointer",
@@ -1785,12 +1796,12 @@ export default function AdminDashboardPage() {
                 boxShadow: "0 2px 8px rgba(0,139,31,0.25)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--color-primary-hover)";
+                e.currentTarget.style.backgroundColor = COLOR.primaryHover;
                 e.currentTarget.style.transform = "translateY(-1px)";
                 e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,139,31,0.35)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--color-primary)";
+                e.currentTarget.style.backgroundColor = COLOR.primary;
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,139,31,0.25)";
               }}

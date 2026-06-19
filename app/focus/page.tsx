@@ -16,17 +16,15 @@ import {
   type Task,
 } from "../lib/api";
 
-
-
 const COLOR = {
-  green: "var(--color-primary)",
-  greenDark: "var(--color-primary-hover)",
-  greenSoft: "var(--color-primary-soft)",
-  surface: "var(--color-surface)",
-  dark: "var(--color-background)",
-  text: "var(--color-foreground)",
-  muted: "var(--color-muted)",
-  border: "var(--color-border)",
+  green: "#008B1F",
+  greenDark: "#0F6E31",
+  greenSoft: "#DDFBE5",
+  surface: "#FFFFFF",
+  dark: "#111513",
+  text: "#111827",
+  muted: "#6B7280",
+  border: "#DADADA",
 };
 
 const GUEST_ENERGY_SUMMARY: EnergySummary = {
@@ -415,7 +413,7 @@ function FocusTimerPage() {
       style={{
         minHeight: "100vh",
         color: "#E8F8EC",
-        backgroundColor: "var(--color-background)",
+        backgroundColor: "#111513",
         backgroundImage: "radial-gradient(circle at 50% 50%, rgba(1, 139, 40, 0.28) 0%, #111513 75%)",
         position: "relative",
         overflow: "hidden",
@@ -706,8 +704,8 @@ function FocusTimerPage() {
               style={{
                 width: "min(520px, 100%)",
                 borderRadius: "12px",
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-foreground)",
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
                 boxShadow: "0 26px 70px rgba(0,0,0,0.35)",
                 padding: "26px",
               }}
@@ -715,13 +713,13 @@ function FocusTimerPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
                 <div>
                   <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800 }}>Choose Priority Task</h2>
-                  <p style={{ margin: "6px 0 0", color: "var(--color-muted)", fontSize: "13px", lineHeight: 1.5 }}>
+                  <p style={{ margin: "6px 0 0", color: COLOR.muted, fontSize: "13px", lineHeight: 1.5 }}>
                     Pick one of your closest-deadline tasks before entering focus.
                   </p>
                 </div>
                 <button
                   onClick={() => router.push("/dashboard")}
-                  style={{ border: "none", background: "transparent", color: "var(--color-muted)", cursor: "pointer" }}
+                  style={{ border: "none", background: "transparent", color: COLOR.muted, cursor: "pointer" }}
                   aria-label="Close task picker"
                 >
                   <CloseIcon />
@@ -730,7 +728,7 @@ function FocusTimerPage() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
                 {priorityTasks.length === 0 ? (
-                  <div style={{ border: `1px dashed ${"var(--color-border)"}`, borderRadius: "8px", padding: "18px", color: "var(--color-muted)", fontSize: "13px", fontWeight: 700 }}>
+                  <div style={{ border: `1px dashed ${COLOR.border}`, borderRadius: "8px", padding: "18px", color: COLOR.muted, fontSize: "13px", fontWeight: 700 }}>
                     No active task is available. Add a task first from the task menu.
                   </div>
                 ) : (
@@ -742,8 +740,8 @@ function FocusTimerPage() {
                         onClick={() => setSelectedTaskId(task.id)}
                         style={{
                           width: "100%",
-                          border: `1px solid ${active ? "var(--color-primary)" : "var(--color-border)"}`,
-                          backgroundColor: active ? "var(--color-primary-pale)" : "var(--color-surface)",
+                          border: `1px solid ${active ? COLOR.green : COLOR.border}`,
+                          backgroundColor: active ? "#F0FFF4" : "#FFFFFF",
                           borderRadius: "8px",
                           padding: "14px",
                           display: "grid",
@@ -760,8 +758,8 @@ function FocusTimerPage() {
                             width: "28px",
                             height: "28px",
                             borderRadius: "999px",
-                            backgroundColor: active ? "var(--color-primary)" : "var(--color-panel)",
-                            color: active ? "var(--color-surface)" : "var(--color-foreground)",
+                            backgroundColor: active ? COLOR.green : "#F3F4F6",
+                            color: active ? "#FFFFFF" : COLOR.text,
                             display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -772,10 +770,10 @@ function FocusTimerPage() {
                           {index + 1}
                         </span>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: "block", color: "var(--color-foreground)", fontSize: "14px", fontWeight: 800, lineHeight: 1.35, overflowWrap: "anywhere" }}>
+                          <span style={{ display: "block", color: COLOR.text, fontSize: "14px", fontWeight: 800, lineHeight: 1.35, overflowWrap: "anywhere" }}>
                             {task.title}
                           </span>
-                          <span style={{ display: "block", color: "var(--color-muted)", fontSize: "12px", fontWeight: 600, marginTop: "4px" }}>
+                          <span style={{ display: "block", color: COLOR.muted, fontSize: "12px", fontWeight: 600, marginTop: "4px" }}>
                             {formatDueDate(task.deadline)}
                           </span>
                         </span>
@@ -793,7 +791,7 @@ function FocusTimerPage() {
                   gap: "10px",
                   marginBottom: "20px",
                   cursor: "pointer",
-                  color: "var(--color-muted)",
+                  color: COLOR.muted,
                   fontSize: "14px",
                   fontWeight: 600,
                 }}
@@ -828,7 +826,7 @@ function FocusTimerPage() {
                   borderRadius: "7px",
                   border: "none",
                   backgroundColor: COLOR.green,
-                  color: "var(--color-foreground)",
+                  color: "#FFFFFF",
                   fontFamily: "inherit",
                   fontSize: "14px",
                   fontWeight: 800,
@@ -846,8 +844,8 @@ function FocusTimerPage() {
               style={{
                 width: "min(520px, 100%)",
                 borderRadius: "12px",
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-foreground)",
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
                 boxShadow: "0 26px 70px rgba(0,0,0,0.35)",
                 padding: "26px",
               }}
@@ -857,13 +855,13 @@ function FocusTimerPage() {
                   <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800 }}>
                     Why are you leaving focus?
                   </h2>
-                  <p style={{ margin: "6px 0 0", color: "var(--color-muted)", fontSize: "13px", lineHeight: 1.5 }}>
+                  <p style={{ margin: "6px 0 0", color: COLOR.muted, fontSize: "13px", lineHeight: 1.5 }}>
                     Elapsed time is {formatDuration(elapsedSeconds)}. Energy will be reduced by about {energyLossPreview} point{energyLossPreview === 1 ? "" : "s"}.
                   </p>
                 </div>
                 <button
                   onClick={() => setExitIntent(null)}
-                  style={{ border: "none", background: "transparent", color: "var(--color-muted)", cursor: "pointer" }}
+                  style={{ border: "none", background: "transparent", color: COLOR.muted, cursor: "pointer" }}
                   aria-label="Close exit dialog"
                 >
                   <CloseIcon />
@@ -878,9 +876,9 @@ function FocusTimerPage() {
                     style={{
                       minHeight: "40px",
                       borderRadius: "7px",
-                      border: `1px solid ${exitReason === reason ? "var(--color-primary)" : "var(--color-border)"}`,
-                      backgroundColor: exitReason === reason ? "var(--color-primary-pale)" : "var(--color-surface)",
-                      color: exitReason === reason ? "var(--color-primary)" : "var(--color-foreground)",
+                      border: `1px solid ${exitReason === reason ? COLOR.green : COLOR.border}`,
+                      backgroundColor: exitReason === reason ? "#F0FFF4" : "#FFFFFF",
+                      color: exitReason === reason ? COLOR.greenDark : COLOR.text,
                       fontFamily: "inherit",
                       fontSize: "12px",
                       fontWeight: 800,
@@ -901,7 +899,7 @@ function FocusTimerPage() {
                   minHeight: "92px",
                   resize: "vertical",
                   borderRadius: "7px",
-                  border: `1px solid ${"var(--color-border)"}`,
+                  border: `1px solid ${COLOR.border}`,
                   padding: "12px",
                   boxSizing: "border-box",
                   fontFamily: "inherit",
@@ -920,9 +918,9 @@ function FocusTimerPage() {
                     minWidth: "110px",
                     height: "42px",
                     borderRadius: "7px",
-                    border: `1px solid ${"var(--color-border)"}`,
-                    backgroundColor: "var(--color-surface)",
-                    color: "var(--color-foreground)",
+                    border: `1px solid ${COLOR.border}`,
+                    backgroundColor: "#FFFFFF",
+                    color: COLOR.text,
                     fontFamily: "inherit",
                     fontWeight: 800,
                     cursor: isSubmitting ? "not-allowed" : "pointer",
@@ -939,7 +937,7 @@ function FocusTimerPage() {
                     borderRadius: "7px",
                     border: "none",
                     backgroundColor: COLOR.green,
-                    color: "var(--color-foreground)",
+                    color: "#FFFFFF",
                     fontFamily: "inherit",
                     fontWeight: 800,
                     cursor: isSubmitting ? "not-allowed" : "pointer",
@@ -956,8 +954,8 @@ function FocusTimerPage() {
               style={{
                 width: "min(480px, 100%)",
                 borderRadius: "12px",
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-foreground)",
+                backgroundColor: COLOR.surface,
+                color: COLOR.text,
                 boxShadow: "0 26px 70px rgba(0,0,0,0.35)",
                 padding: "30px",
                 textAlign: "center",
@@ -983,12 +981,12 @@ function FocusTimerPage() {
               <h2 style={{ margin: "0 0 8px", fontSize: "22px", fontWeight: 900 }}>
                 {result.endReason === "completed" ? "Focus completed!" : "Focus session ended"}
               </h2>
-              <p style={{ margin: "0 0 18px", color: "var(--color-muted)", fontSize: "13px", lineHeight: 1.5 }}>
+              <p style={{ margin: "0 0 18px", color: COLOR.muted, fontSize: "13px", lineHeight: 1.5 }}>
                 {result.title} was focused for {formatDuration(result.elapsedSeconds)}.
               </p>
-              <div style={{ border: `1px solid ${"var(--color-border)"}`, borderRadius: "8px", padding: "14px", marginBottom: "20px", textAlign: "left" }}>
+              <div style={{ border: `1px solid ${COLOR.border}`, borderRadius: "8px", padding: "14px", marginBottom: "20px", textAlign: "left" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: 800 }}>
-                  <span style={{ color: "var(--color-muted)" }}>Energy now</span>
+                  <span style={{ color: COLOR.muted }}>Energy now</span>
                   <span>{result.energy ? Math.round((result.energy.current_energy / result.energy.max_energy) * 100) : energyPercent}%</span>
                 </div>
               </div>
@@ -999,9 +997,9 @@ function FocusTimerPage() {
                     flex: 1,
                     height: "44px",
                     borderRadius: "7px",
-                    border: `1px solid ${"var(--color-border)"}`,
-                    backgroundColor: "var(--color-surface)",
-                    color: "var(--color-foreground)",
+                    border: `1px solid ${COLOR.border}`,
+                    backgroundColor: "#FFFFFF",
+                    color: COLOR.text,
                     fontFamily: "inherit",
                     fontWeight: 800,
                     cursor: "pointer",
@@ -1020,7 +1018,7 @@ function FocusTimerPage() {
                     borderRadius: "7px",
                     border: "none",
                     backgroundColor: COLOR.green,
-                    color: "var(--color-foreground)",
+                    color: "#FFFFFF",
                     fontFamily: "inherit",
                     fontWeight: 800,
                     cursor: "pointer",

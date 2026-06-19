@@ -46,6 +46,20 @@ type CreateTemplateModalProps = {
   onSubmit: (payload: CreateTemplateModalPayload) => void | Promise<void>;
 };
 
+const COLORS = {
+  primary: "#008B1F",
+  primaryHover: "#007A1B",
+  primaryPale: "#ECFFF0",
+  border: "#D9D9D9",
+  borderSoft: "#E5E7EB",
+  surface: "#FFFFFF",
+  panel: "#F8F8F8",
+  text: "#111827",
+  muted: "#9CA3AF",
+  mutedDark: "#6B7280",
+  danger: "#DC2626",
+};
+
 const emptyTask = (): DraftTask => ({
   title: "",
   description: "",
@@ -72,7 +86,7 @@ const deriveTemplateLevel = (tasks: DraftTask[]): TemplateLevel => {
 
 const levelTone = (level: DraftTaskLevel) => {
   if (level === "HARD") {
-    return { bg: "var(--color-danger-soft)", text: "var(--color-danger)", border: "#FCA5A5" };
+    return { bg: "#FEE2E2", text: "#DC2626", border: "#FCA5A5" };
   }
 
   if (level === "MEDIUM") {
@@ -98,7 +112,7 @@ const DescIcon = () => (
 );
 
 const DragIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-muted-dark)">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#9CA3AF">
     <circle cx="9" cy="6" r="1.5" />
     <circle cx="15" cy="6" r="1.5" />
     <circle cx="9" cy="12" r="1.5" />
@@ -114,7 +128,7 @@ const ChevronIcon = ({ open }: { open: boolean }) => (
     height="14"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="var(--color-muted-dark)"
+    stroke="#6B7280"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -276,7 +290,7 @@ export default function CreateTemplateModal({
           maxWidth: "640px",
           maxHeight: "92vh",
           overflowY: "auto",
-          backgroundColor: "var(--color-surface)",
+          backgroundColor: COLORS.surface,
           borderRadius: "8px",
           boxShadow: "0 24px 70px rgba(0,0,0,0.22)",
           padding: "24px",
@@ -293,7 +307,7 @@ export default function CreateTemplateModal({
             right: "20px",
             border: "none",
             background: "none",
-            color: "var(--color-muted-dark)",
+            color: COLORS.mutedDark,
             cursor: isSubmitting ? "not-allowed" : "pointer",
             padding: "4px",
             display: "flex",
@@ -306,10 +320,10 @@ export default function CreateTemplateModal({
           </svg>
         </button>
 
-        <h2 style={{ margin: "0 0 4px", color: "var(--color-foreground)", fontSize: "24px", lineHeight: 1.15, fontWeight: 800 }}>
+        <h2 style={{ margin: "0 0 4px", color: COLORS.text, fontSize: "24px", lineHeight: 1.15, fontWeight: 800 }}>
           {title}
         </h2>
-        <p style={{ margin: "0 0 22px", color: "var(--color-muted-dark)", fontSize: "13px", lineHeight: 1.4 }}>
+        <p style={{ margin: "0 0 22px", color: COLORS.mutedDark, fontSize: "13px", lineHeight: 1.4 }}>
           {subtitle}
         </p>
 
@@ -321,7 +335,7 @@ export default function CreateTemplateModal({
               borderRadius: "8px",
               border: "1px solid #FECACA",
               backgroundColor: "#FFF5F6",
-              color: "var(--color-danger)",
+              color: "#B91C1C",
               fontSize: "12px",
               fontWeight: 600,
             }}
@@ -330,15 +344,15 @@ export default function CreateTemplateModal({
           </div>
         )}
 
-        <div style={{ fontSize: "11px", fontWeight: 800, color: "var(--color-muted)", letterSpacing: "0.08em", marginBottom: "14px" }}>
+        <div style={{ fontSize: "11px", fontWeight: 800, color: COLORS.muted, letterSpacing: "0.08em", marginBottom: "14px" }}>
           GENERAL INFORMATION
         </div>
 
-        <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "8px" }}>
-          Template Name <span style={{ color: "var(--color-danger)" }}>*</span>
+        <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: COLORS.text, marginBottom: "8px" }}>
+          Template Name <span style={{ color: COLORS.danger }}>*</span>
         </label>
         <div style={{ position: "relative", marginBottom: "18px" }}>
-          <span style={{ position: "absolute", left: "13px", top: "50%", transform: "translateY(-50%)", color: "var(--color-muted)", display: "flex" }}>
+          <span style={{ position: "absolute", left: "13px", top: "50%", transform: "translateY(-50%)", color: COLORS.muted, display: "flex" }}>
             <DocIcon />
           </span>
           <input
@@ -350,25 +364,25 @@ export default function CreateTemplateModal({
               width: "100%",
               height: "42px",
               borderRadius: "6px",
-              border: `1px solid ${"var(--color-border)"}`,
+              border: `1px solid ${COLORS.border}`,
               padding: "0 56px 0 40px",
-              color: "var(--color-foreground)",
+              color: COLORS.text,
               fontSize: "13px",
               fontFamily: "inherit",
               outline: "none",
               boxSizing: "border-box",
             }}
           />
-          <span style={{ position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", color: "var(--color-primary)", fontSize: "11px" }}>
+          <span style={{ position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", color: COLORS.primary, fontSize: "11px" }}>
             {name.length}/{NAME_LIMIT}
           </span>
         </div>
 
-        <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "8px" }}>
+        <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: COLORS.text, marginBottom: "8px" }}>
           Description
         </label>
         <div style={{ position: "relative", marginBottom: "24px" }}>
-          <span style={{ position: "absolute", left: "13px", top: "13px", color: "var(--color-muted)", display: "flex" }}>
+          <span style={{ position: "absolute", left: "13px", top: "13px", color: COLORS.muted, display: "flex" }}>
             <DescIcon />
           </span>
           <textarea
@@ -381,9 +395,9 @@ export default function CreateTemplateModal({
               width: "100%",
               minHeight: "76px",
               borderRadius: "6px",
-              border: `1px solid ${"var(--color-border)"}`,
+              border: `1px solid ${COLORS.border}`,
               padding: "12px 42px 18px 40px",
-              color: "var(--color-foreground)",
+              color: COLORS.text,
               fontSize: "12px",
               lineHeight: 1.45,
               fontFamily: "inherit",
@@ -392,15 +406,15 @@ export default function CreateTemplateModal({
               boxSizing: "border-box",
             }}
           />
-          <span style={{ position: "absolute", right: "13px", bottom: "9px", color: "var(--color-primary)", fontSize: "11px" }}>
+          <span style={{ position: "absolute", right: "13px", bottom: "9px", color: COLORS.primary, fontSize: "11px" }}>
             {description.length}/{DESCRIPTION_LIMIT}
           </span>
         </div>
 
-        <div style={{ height: "1px", backgroundColor: "var(--color-border)", opacity: 0.8, marginBottom: "22px" }} />
+        <div style={{ height: "1px", backgroundColor: COLORS.border, opacity: 0.8, marginBottom: "22px" }} />
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--color-muted)", letterSpacing: "0.08em" }}>
+          <span style={{ fontSize: "11px", fontWeight: 800, color: COLORS.muted, letterSpacing: "0.08em" }}>
             TEMPLATE TASKS ({tasks.length})
           </span>
           <button
@@ -409,7 +423,7 @@ export default function CreateTemplateModal({
             style={{
               border: "none",
               background: "none",
-              color: "var(--color-primary)",
+              color: COLORS.primary,
               cursor: "pointer",
               fontFamily: "inherit",
               fontSize: "12px",
@@ -427,11 +441,11 @@ export default function CreateTemplateModal({
               style={{
                 padding: "20px",
                 textAlign: "center",
-                color: "var(--color-muted)",
+                color: COLORS.muted,
                 fontSize: "13px",
-                border: `1px dashed ${"var(--color-border-soft)"}`,
+                border: `1px dashed ${COLORS.borderSoft}`,
                 borderRadius: "8px",
-                backgroundColor: "var(--color-surface)",
+                backgroundColor: "#FAFAFA",
               }}
             >
               No tasks added yet. Click &quot;+ Add Task&quot; to get started.
@@ -446,10 +460,10 @@ export default function CreateTemplateModal({
               <div
                 key={index}
                 style={{
-                  border: `1px solid ${isOpen ? "var(--color-primary)" : "var(--color-border)"}`,
+                  border: `1px solid ${isOpen ? COLORS.primary : COLORS.border}`,
                   borderRadius: "8px",
                   overflow: "hidden",
-                  backgroundColor: "var(--color-surface)",
+                  backgroundColor: COLORS.surface,
                   boxShadow: isOpen ? "0 0 0 1px rgba(0,139,31,0.08)" : "none",
                   transition: "border-color 180ms ease, box-shadow 180ms ease",
                 }}
@@ -461,8 +475,8 @@ export default function CreateTemplateModal({
                     width: "100%",
                     minHeight: "42px",
                     border: "none",
-                    borderBottom: isOpen ? `1px solid ${"var(--color-border-soft)"}` : "1px solid transparent",
-                    backgroundColor: "var(--color-surface)",
+                    borderBottom: isOpen ? `1px solid ${COLORS.borderSoft}` : "1px solid transparent",
+                    backgroundColor: COLORS.surface,
                     display: "flex",
                     alignItems: "center",
                     gap: "10px",
@@ -473,7 +487,7 @@ export default function CreateTemplateModal({
                   }}
                 >
                   <DragIcon />
-                  <span style={{ flex: 1, textAlign: "left", color: "var(--color-foreground)", fontSize: "13px", fontWeight: 700 }}>
+                  <span style={{ flex: 1, textAlign: "left", color: COLORS.text, fontSize: "13px", fontWeight: 700 }}>
                     {task.title.trim() || `Task ${index + 1}`}
                   </span>
                   <span
@@ -502,7 +516,7 @@ export default function CreateTemplateModal({
                   }}
                 >
                   <div style={{ padding: "14px" }}>
-                    <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "6px" }}>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: COLORS.text, marginBottom: "6px" }}>
                       Task Title
                     </label>
                     <input
@@ -514,7 +528,7 @@ export default function CreateTemplateModal({
                         width: "100%",
                         height: "34px",
                         borderRadius: "5px",
-                        border: `1px solid ${"var(--color-border)"}`,
+                        border: `1px solid ${COLORS.border}`,
                         padding: "0 10px",
                         boxSizing: "border-box",
                         fontFamily: "inherit",
@@ -524,7 +538,7 @@ export default function CreateTemplateModal({
                       }}
                     />
 
-                    <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "6px" }}>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: COLORS.text, marginBottom: "6px" }}>
                       Task Description
                     </label>
                     <textarea
@@ -537,7 +551,7 @@ export default function CreateTemplateModal({
                         width: "100%",
                         minHeight: "48px",
                         borderRadius: "5px",
-                        border: `1px solid ${"var(--color-border)"}`,
+                        border: `1px solid ${COLORS.border}`,
                         padding: "9px 10px",
                         boxSizing: "border-box",
                         fontFamily: "inherit",
@@ -549,7 +563,7 @@ export default function CreateTemplateModal({
                       }}
                     />
 
-                    <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "8px" }}>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: COLORS.text, marginBottom: "8px" }}>
                       Task Level
                     </label>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "12px" }}>
@@ -565,9 +579,9 @@ export default function CreateTemplateModal({
                             style={{
                               height: "28px",
                               borderRadius: "5px",
-                              border: `1px solid ${selected ? currentTone.text : "var(--color-border)"}`,
-                              backgroundColor: selected ? "var(--color-surface)" : "var(--color-surface)",
-                              color: selected ? currentTone.text : "var(--color-muted-dark)",
+                              border: `1px solid ${selected ? currentTone.text : COLORS.border}`,
+                              backgroundColor: selected ? "#FFFFFF" : "#FAFAFA",
+                              color: selected ? currentTone.text : COLORS.mutedDark,
                               fontFamily: "inherit",
                               fontSize: "11px",
                               fontWeight: 700,
@@ -587,7 +601,7 @@ export default function CreateTemplateModal({
                       style={{
                         border: "none",
                         background: "none",
-                        color: "var(--color-danger)",
+                        color: COLORS.danger,
                         cursor: "pointer",
                         fontFamily: "inherit",
                         fontSize: "12px",
@@ -604,10 +618,10 @@ export default function CreateTemplateModal({
           })}
         </div>
 
-        <div style={{ height: "1px", backgroundColor: "var(--color-border)", opacity: 0.8, marginBottom: "20px" }} />
+        <div style={{ height: "1px", backgroundColor: COLORS.border, opacity: 0.8, marginBottom: "20px" }} />
 
-        <div style={{ fontSize: "11px", fontWeight: 800, color: "var(--color-muted)", letterSpacing: "0.08em", marginBottom: "12px" }}>
-          {mode === "admin" ? "TEMPLATE LABEL" : "VISIBILITY LABEL"} <span style={{ color: "var(--color-danger)" }}>*</span>
+        <div style={{ fontSize: "11px", fontWeight: 800, color: COLORS.muted, letterSpacing: "0.08em", marginBottom: "12px" }}>
+          {mode === "admin" ? "TEMPLATE LABEL" : "VISIBILITY LABEL"} <span style={{ color: COLORS.danger }}>*</span>
         </div>
 
         {mode === "user" ? (
@@ -636,8 +650,8 @@ export default function CreateTemplateModal({
                   style={{
                     minHeight: "72px",
                     borderRadius: "8px",
-                    border: `1px solid ${selected ? "var(--color-primary)" : "var(--color-border)"}`,
-                    backgroundColor: selected ? "var(--color-primary-pale)" : "var(--color-surface)",
+                    border: `1px solid ${selected ? COLORS.primary : COLORS.border}`,
+                    backgroundColor: selected ? COLORS.primaryPale : COLORS.surface,
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
@@ -652,8 +666,8 @@ export default function CreateTemplateModal({
                       width: "36px",
                       height: "36px",
                       borderRadius: "8px",
-                      color: selected ? "var(--color-primary)" : "var(--color-muted-dark)",
-                      backgroundColor: selected ? "#DFFFE6" : "var(--color-panel)",
+                      color: selected ? COLORS.primary : COLORS.mutedDark,
+                      backgroundColor: selected ? "#DFFFE6" : "#F3F4F6",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -663,10 +677,10 @@ export default function CreateTemplateModal({
                     {option.icon}
                   </span>
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", color: "var(--color-foreground)", fontSize: "13px", fontWeight: 800, marginBottom: "2px" }}>
+                    <span style={{ display: "block", color: COLORS.text, fontSize: "13px", fontWeight: 800, marginBottom: "2px" }}>
                       {option.label}
                     </span>
-                    <span style={{ display: "block", color: "var(--color-muted-dark)", fontSize: "10px", lineHeight: 1.3 }}>
+                    <span style={{ display: "block", color: COLORS.mutedDark, fontSize: "10px", lineHeight: 1.3 }}>
                       {option.description}
                     </span>
                   </span>
@@ -675,14 +689,14 @@ export default function CreateTemplateModal({
                       width: "18px",
                       height: "18px",
                       borderRadius: "50%",
-                      border: `2px solid ${selected ? "var(--color-primary)" : "#CBD5E1"}`,
+                      border: `2px solid ${selected ? COLORS.primary : "#CBD5E1"}`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
                     }}
                   >
-                    {selected && <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />}
+                    {selected && <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: COLORS.primary }} />}
                   </span>
                 </button>
               );
@@ -693,8 +707,8 @@ export default function CreateTemplateModal({
             style={{
               minHeight: "72px",
               borderRadius: "8px",
-              border: `1px solid ${"var(--color-primary)"}`,
-              backgroundColor: "var(--color-primary-pale)",
+              border: `1px solid ${COLORS.primary}`,
+              backgroundColor: COLORS.primaryPale,
               display: "flex",
               alignItems: "center",
               gap: "12px",
@@ -707,7 +721,7 @@ export default function CreateTemplateModal({
                 width: "36px",
                 height: "36px",
                 borderRadius: "8px",
-                color: "var(--color-primary)",
+                color: COLORS.primary,
                 backgroundColor: "#DFFFE6",
                 display: "flex",
                 alignItems: "center",
@@ -718,10 +732,10 @@ export default function CreateTemplateModal({
               <ShieldIcon />
             </span>
             <span style={{ flex: 1 }}>
-              <span style={{ display: "block", color: "var(--color-foreground)", fontSize: "13px", fontWeight: 800, marginBottom: "2px" }}>
+              <span style={{ display: "block", color: COLORS.text, fontSize: "13px", fontWeight: 800, marginBottom: "2px" }}>
                 Official
               </span>
-              <span style={{ display: "block", color: "var(--color-muted-dark)", fontSize: "10px", lineHeight: 1.3 }}>
+              <span style={{ display: "block", color: COLORS.mutedDark, fontSize: "10px", lineHeight: 1.3 }}>
                 Created by admin and visible to all users.
               </span>
             </span>
@@ -730,14 +744,14 @@ export default function CreateTemplateModal({
                 width: "18px",
                 height: "18px",
                 borderRadius: "50%",
-                border: `2px solid ${"var(--color-primary)"}`,
+                border: `2px solid ${COLORS.primary}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: COLORS.primary }} />
             </span>
           </div>
         )}
@@ -751,9 +765,9 @@ export default function CreateTemplateModal({
               width: "110px",
               height: "40px",
               borderRadius: "6px",
-              border: `1px solid ${"var(--color-border)"}`,
-              backgroundColor: "var(--color-surface)",
-              color: "var(--color-muted-dark)",
+              border: `1px solid ${COLORS.border}`,
+              backgroundColor: COLORS.surface,
+              color: COLORS.mutedDark,
               cursor: isSubmitting ? "not-allowed" : "pointer",
               fontFamily: "inherit",
               fontSize: "13px",
@@ -773,8 +787,8 @@ export default function CreateTemplateModal({
               height: "40px",
               borderRadius: "6px",
               border: "none",
-              backgroundColor: canSubmit ? "var(--color-primary)" : "#A7A7A7",
-              color: "var(--color-surface)",
+              backgroundColor: canSubmit ? COLORS.primary : "#A7A7A7",
+              color: COLORS.surface,
               cursor: canSubmit ? "pointer" : "not-allowed",
               fontFamily: "inherit",
               fontSize: "13px",
@@ -782,10 +796,10 @@ export default function CreateTemplateModal({
               boxShadow: canSubmit ? "0 8px 18px rgba(0,139,31,0.18)" : "none",
             }}
             onMouseEnter={(event) => {
-              if (canSubmit) event.currentTarget.style.backgroundColor = "var(--color-primary-hover)";
+              if (canSubmit) event.currentTarget.style.backgroundColor = COLORS.primaryHover;
             }}
             onMouseLeave={(event) => {
-              if (canSubmit) event.currentTarget.style.backgroundColor = "var(--color-primary)";
+              if (canSubmit) event.currentTarget.style.backgroundColor = COLORS.primary;
             }}
           >
             {isSubmitting ? submittingLabel : submitLabel}
