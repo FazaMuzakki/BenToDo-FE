@@ -1112,12 +1112,23 @@ export default function DashboardPage() {
     const keyword = historySearch.trim().toLowerCase();
     const items = historyData?.data ?? [];
 
-    if (!keyword) return items;
+    let filtered = items;
+    if (keyword) {
+      filtered = items.filter((item) =>
+        `${item.title} ${item.description ?? ""} ${item.task_status} ${item.item_type}`.toLowerCase().includes(keyword),
+      );
+    }
 
-    return items.filter((item) =>
-      `${item.title} ${item.description ?? ""} ${item.task_status} ${item.item_type}`.toLowerCase().includes(keyword),
-    );
-  }, [historyData, historySearch]);
+    const levelRank: Record<PriorityLevel, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
+    return [...filtered].sort((a, b) => {
+      if (taskSort === "created_asc") return new Date(a.event_at ?? 0).getTime() - new Date(b.event_at ?? 0).getTime();
+      if (taskSort === "deadline_asc") return new Date(a.deadline ?? "9999-12-31").getTime() - new Date(b.deadline ?? "9999-12-31").getTime();
+      if (taskSort === "deadline_desc") return new Date(b.deadline ?? 0).getTime() - new Date(a.deadline ?? 0).getTime();
+      if (taskSort === "level_easy") return levelRank[mapEnergyToLevel(a.energy_weight)] - levelRank[mapEnergyToLevel(b.energy_weight)];
+      if (taskSort === "level_hard") return levelRank[mapEnergyToLevel(b.energy_weight)] - levelRank[mapEnergyToLevel(a.energy_weight)];
+      return new Date(b.event_at ?? 0).getTime() - new Date(a.event_at ?? 0).getTime();
+    });
+  }, [historyData, historySearch, taskSort]);
   const taskListItems = useMemo<ViewTask[]>(() => {
     const levelRank: Record<PriorityLevel, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
     const byFilter = filteredTasks.filter((task) => {
@@ -1812,7 +1823,7 @@ export default function DashboardPage() {
                     borderRadius: "3px",
                     backgroundColor: activeMenu === "dashboard" ? "#F1F1F1" : "transparent",
                     padding: activeMenu === "dashboard" ? "2px" : 0,
-                    overflow: "hidden",
+                    overflow: activeMenu === "dashboard" ? "hidden" : "visible",
                     gap: activeMenu === "dashboard" ? 0 : "8px",
                   }}
                 >
@@ -1838,28 +1849,6 @@ export default function DashboardPage() {
                         }}
                       >
                         {t}
-                      </button>
-                    ))
-                  ) : activeMenu === "history" ? (
-                    (["all", "task", "focus"] as DashboardHistoryType[]).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setHistoryType(type)}
-                        style={{
-                          width: "64px",
-                          height: "32px",
-                          fontSize: "11px",
-                          fontWeight: historyType === type ? 600 : 400,
-                          fontFamily: "inherit",
-                          color: COLOR.text,
-                          backgroundColor: historyType === type ? COLOR.surface : "transparent",
-                          border: "none",
-                          cursor: "pointer",
-                          transition: "all 0.15s",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {type}
                       </button>
                     ))
                   ) : activeMenu === "template" ? (
@@ -1928,11 +1917,7 @@ export default function DashboardPage() {
                           }}
                           aria-label="Filter and sort task"
                         >
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18" />
-                            <path d="M7 12h10" />
-                            <path d="M10 18h4" />
-                          </svg>
+                          <FilterIcon />
                         </button>
                         {taskSortOpen && (
                           <div
@@ -2007,26 +1992,50 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "#F1F1F1", padding: "2px", overflow: "hidden" }}>
-                        {(["All", "Active", "Overdue", "Done"] as const).map((t) => (
-                          <button
-                            key={t}
-                            onClick={() => setTaskFilter(t)}
-                            style={{
-                              width: t === "Overdue" ? "76px" : "64px",
-                              height: "32px",
-                              fontSize: "11px",
-                              fontWeight: taskFilter === t ? 600 : 400,
-                              fontFamily: "inherit",
-                              color: COLOR.text,
-                              backgroundColor: taskFilter === t ? COLOR.surface : "transparent",
-                              border: "none",
-                              cursor: "pointer",
-                              transition: "all 0.15s",
-                            }}
-                          >
-                            {t}
-                          </button>
-                        ))}
+                        {activeMenu === "history" ? (
+                          (["all", "task", "focus"] as DashboardHistoryType[]).map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => setHistoryType(type)}
+                              style={{
+                                width: "64px",
+                                height: "32px",
+                                fontSize: "11px",
+                                fontWeight: historyType === type ? 600 : 400,
+                                fontFamily: "inherit",
+                                color: COLOR.text,
+                                backgroundColor: historyType === type ? COLOR.surface : "transparent",
+                                border: "none",
+                                cursor: "pointer",
+                                transition: "all 0.15s",
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {type}
+                            </button>
+                          ))
+                        ) : (
+                          (["All", "Active", "Overdue", "Done"] as const).map((t) => (
+                            <button
+                              key={t}
+                              onClick={() => setTaskFilter(t)}
+                              style={{
+                                width: t === "Overdue" ? "76px" : "64px",
+                                height: "32px",
+                                fontSize: "11px",
+                                fontWeight: taskFilter === t ? 600 : 400,
+                                fontFamily: "inherit",
+                                color: COLOR.text,
+                                backgroundColor: taskFilter === t ? COLOR.surface : "transparent",
+                                border: "none",
+                                cursor: "pointer",
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              {t}
+                            </button>
+                          ))
+                        )}
                       </div>
                     </>
                   )}
@@ -2659,17 +2668,17 @@ export default function DashboardPage() {
                 </div>
                 <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                   <colgroup>
-                    <col style={{ width: "28%" }} />
-                    <col style={{ width: "15%" }} />
-                    <col style={{ width: "17%" }} />
-                    <col style={{ width: "16%" }} />
-                    <col style={{ width: "18%" }} />
-                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "64px" }} />
+                    <col style={{ width: "auto" }} />
+                    <col style={{ width: "150px" }} />
+                    <col style={{ width: "130px" }} />
+                    <col style={{ width: "190px" }} />
+                    <col style={{ width: "120px" }} />
                   </colgroup>
                   <thead>
                     <tr style={{ height: "42px", backgroundColor: "#F7F7FB", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                      {["TASK", "TASK LEVEL", "DUE DATE", "STATUS", "COMPLETED AT", "ACTIONS"].map((h, i) => (
-                        <th key={h} style={{ fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark, textAlign: i === 0 ? "left" : "center", padding: "0 18px", whiteSpace: "nowrap" }}>
+                      {["NO", "TASK", "TASK LEVEL", "STATUS", "COMPLETED AT", "ACTIONS"].map((h, i) => (
+                        <th key={h} style={{ fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark, textAlign: i === 1 ? "left" : "center", padding: "0 12px", whiteSpace: "nowrap" }}>
                           {h}
                         </th>
                       ))}
@@ -2684,7 +2693,7 @@ export default function DashboardPage() {
                       <tr style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
                         <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: COLOR.mutedDark }}>Belum ada history.</td>
                       </tr>
-                    ) : filteredHistoryItems.slice(0, 8).map((item) => {
+                    ) : filteredHistoryItems.slice(0, 8).map((item, index) => {
                       const isFocusItem = item.item_type === "focus";
                       const statusText = isFocusItem
                         ? item.end_reason ? item.end_reason.replaceAll("_", " ") : "In Progress"
@@ -2709,7 +2718,10 @@ export default function DashboardPage() {
 
                       return (
                         <tr key={`${item.item_type}-${item.id}`} style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                          <td style={{ padding: "0 18px", verticalAlign: "middle" }}>
+                          <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ padding: "0 12px", verticalAlign: "middle" }}>
                             <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
                             {isFocusItem && (
                               <div style={{ marginTop: "3px", fontSize: "11px", fontWeight: 600, color: COLOR.mutedDark }}>
@@ -2717,17 +2729,16 @@ export default function DashboardPage() {
                               </div>
                             )}
                           </td>
-                          <td style={{ padding: "0 18px", textAlign: "center" }}><PriorityBadge level={mapEnergyToLevel(item.energy_weight)} /></td>
-                          <td style={{ padding: "0 18px", textAlign: "center", fontSize: "12px", color: COLOR.text, fontWeight: 500 }}>{formatTaskDate(item.deadline)}</td>
-                          <td style={{ padding: "0 18px", textAlign: "center" }}>
+                          <td style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}><PriorityBadge level={mapEnergyToLevel(item.energy_weight)} /></td>
+                          <td style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}>
                             <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "86px", borderRadius: "999px", backgroundColor: statusTone.bg, color: statusTone.color, fontSize: "11px", fontWeight: 800, padding: "4px 10px", textTransform: "capitalize" }}>
                               {statusText}
                             </span>
                           </td>
-                          <td style={{ padding: "0 18px", textAlign: "center", fontSize: "12px", color: COLOR.mutedDark, fontWeight: 600 }}>
+                          <td style={{ padding: "0 12px", textAlign: "center", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle" }}>
                             {isFocusItem ? formatDateTimeShort(item.ended_at ?? item.started_at) : formatDateTimeShort(item.completed_at)}
                           </td>
-                          <td style={{ padding: "0 18px", textAlign: "center" }}>
+                          <td style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}>
                             <button
                               onClick={() => void openTaskDetailModal(viewTask)}
                               style={{ ...buttonReset, color: COLOR.mutedDark, display: "inline-flex", padding: "4px", borderRadius: "4px" }}
