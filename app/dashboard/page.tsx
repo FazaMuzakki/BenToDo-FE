@@ -22,6 +22,7 @@ import {
   createTemplate,
 } from "../lib/api";
 import CreateTemplateModal, { type CreateTemplateModalPayload } from "../components/CreateTemplateModal";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { LOGO_SRC } from "../lib/assets";
 import type {
   DashboardHistoryResponse,
@@ -36,26 +37,12 @@ import type {
   TaskTemplate,
 } from "../lib/api";
 
-const COLOR = {
-  primary: "#008B1F",
-  primaryHover: "#007A1B",
-  primarySoft: "#9CFFAD",
-  primaryPale: "#ECFFF0",
-  border: "#D9D9D9",
-  borderSoft: "#ECECEC",
-  surface: "#FFFFFF",
-  panel: "#F5F5F5",
-  text: "#1E1E1E",
-  muted: "#8A8A8A",
-  mutedDark: "#666666",
-  danger: "#FF6B76",
-  dangerSoft: "#FFCDD2",
-};
+
 
 const CARD_STYLE = {
-  backgroundColor: COLOR.surface,
+  backgroundColor: "var(--color-surface)",
   borderRadius: "8px",
-  border: `1px solid ${COLOR.border}`,
+  border: `1px solid ${"var(--color-border)"}`,
 } as const;
 
 const buttonReset = {
@@ -127,21 +114,21 @@ const PlayIcon = () => (
   </svg>
 );
 
-const CheckSquareIcon = ({ color = COLOR.text, size = 18 }: { color?: string, size?: number } = {}) => (
+const CheckSquareIcon = ({ color = "var(--color-foreground)", size = 18 }: { color?: string, size?: number } = {}) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="9 11 12 14 22 4" />
     <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
   </svg>
 );
 
-const ClockAlertIcon = ({ color = COLOR.text, size = 18 }: { color?: string, size?: number } = {}) => (
+const ClockAlertIcon = ({ color = "var(--color-foreground)", size = 18 }: { color?: string, size?: number } = {}) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 
-const AlertTriangleIcon = ({ color = COLOR.text, size = 18 }: { color?: string, size?: number } = {}) => (
+const AlertTriangleIcon = ({ color = "var(--color-foreground)", size = 18 }: { color?: string, size?: number } = {}) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
     <line x1="12" y1="9" x2="12" y2="13" />
@@ -150,7 +137,7 @@ const AlertTriangleIcon = ({ color = COLOR.text, size = 18 }: { color?: string, 
 );
 
 const BatteryIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLOR.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={"var(--color-foreground)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="1" y="6" width="18" height="12" rx="2" ry="2" />
     <line x1="23" y1="13" x2="23" y2="11" />
   </svg>
@@ -217,14 +204,14 @@ const PenIcon = ({ size = 13 }: { size?: number }) => (
 );
 
 const TrendUpIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COLOR.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={"var(--color-primary)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
     <polyline points="17 6 23 6 23 12" />
   </svg>
 );
 
 const TrendDownIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COLOR.danger} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={"var(--color-danger)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
     <polyline points="17 18 23 18 23 12" />
   </svg>
@@ -240,7 +227,7 @@ const CompassIcon = () => (
 );
 
 const EyeOutlineIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted-dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
@@ -306,20 +293,20 @@ const CalendarLineIcon = () => (
 
 const SuccessCheckIcon = () => (
   <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-    <circle cx="60" cy="60" r="50" stroke={COLOR.primary} strokeWidth="8" />
-    <path d="M35 60l15 15 35-35" stroke={COLOR.primary} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M20 30l5 5M90 20l5-5M100 80l-5 5" stroke={COLOR.primary} strokeWidth="4" strokeLinecap="round" />
+    <circle cx="60" cy="60" r="50" stroke={"var(--color-primary)"} strokeWidth="8" />
+    <path d="M35 60l15 15 35-35" stroke={"var(--color-primary)"} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M20 30l5 5M90 20l5-5M100 80l-5 5" stroke={"var(--color-primary)"} strokeWidth="4" strokeLinecap="round" />
   </svg>
 );
 
 const CheckCircleSolidIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={COLOR.primary}>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill={"var(--color-primary)"}>
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
   </svg>
 );
 
 const PlusCircleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" color="#6b7280">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" color="var(--color-muted-dark)">
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
   </svg>
 );
@@ -336,8 +323,8 @@ function TrendBadge({ value, up }: { value: string; up: boolean }) {
         gap: "2px",
         fontSize: "12px",
         fontWeight: 700,
-        color: up ? COLOR.primary : "#D62839",
-        backgroundColor: up ? "#BDFCC8" : COLOR.dangerSoft,
+        color: up ? "var(--color-primary)" : "#D62839",
+        backgroundColor: up ? "var(--color-primary-soft)" : "var(--color-danger-soft)",
         borderRadius: "999px",
         padding: "2px 8px",
       }}
@@ -426,7 +413,7 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
   const height = 220;
   const padX = 40;
   const padY = 20;
-  const maxVal = Math.max(6, Math.ceil(Math.max(...values)) + 2);
+  const maxVal = Math.max(4, Math.ceil(Math.max(...values)) + 1);
   const chartW = width - padX * 2;
   const chartH = height - padY * 2;
 
@@ -484,16 +471,16 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
         marginBottom: "16px",
         padding: "0 4px"
       }}>
-        <span style={{ fontSize: "14px", color: COLOR.muted, fontWeight: 500 }}>
+        <span style={{ fontSize: "14px", color: "var(--color-muted)", fontWeight: 500 }}>
           Task Done:
         </span>
-        <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 500 }}>
-          <span>Total: <strong style={{ color: COLOR.primary }}>{totalValue} Task</strong></span>
-          <span style={{ margin: "0 8px", color: "#E8E8E8" }}>|</span>
+        <div style={{ fontSize: "14px", color: "var(--color-foreground)", fontWeight: 500 }}>
+          <span>Total: <strong style={{ color: "var(--color-primary)" }}>{totalValue} Task</strong></span>
+          <span style={{ margin: "0 8px", color: "var(--color-border-soft)" }}>|</span>
           {maxTasks > 0 ? (
-            <span>Most Productive: <strong style={{ color: COLOR.primary }}>{mostProductiveLabel} ({maxTasks})</strong></span>
+            <span>Most Productive: <strong style={{ color: "var(--color-primary)" }}>{mostProductiveLabel} ({maxTasks})</strong></span>
           ) : (
-            <span>Most Productive: <strong style={{ color: COLOR.muted }}>-</strong></span>
+            <span>Most Productive: <strong style={{ color: "var(--color-muted)" }}>-</strong></span>
           )}
         </div>
       </div>
@@ -510,8 +497,8 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
             const y = padY + chartH - (v / maxVal) * chartH;
             return (
               <g key={`y-${i}`} style={{ animation: `fadeIn 0.4s ease ${i * 0.05}s both` }}>
-                <text x={padX - 12} y={y + 4} textAnchor="end" fontSize="9" fill={COLOR.muted}>{v}</text>
-                <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#E8E8E8" strokeWidth="1" />
+                <text x={padX - 12} y={y + 4} textAnchor="end" fontSize="9" fill={"var(--color-muted)"}>{v}</text>
+                <line x1={padX} y1={y} x2={width - padX} y2={y} stroke={"var(--color-border-soft)"} strokeWidth="1" />
               </g>
             );
           })}
@@ -521,7 +508,7 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
             const x = padX + ratio * chartW;
 
             const isWeekLabel = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].includes(point.label.toUpperCase());
-            let labelContent = <text x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}>{point.label}</text>;
+            let labelContent = <text x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={"var(--color-muted)"}>{point.label}</text>;
 
             if (isWeekLabel) {
               const weekDates = getCalendarWeek(new Date());
@@ -531,7 +518,7 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
               if (targetDayIndex !== -1 && targetDayIndex < weekDates.length) {
                 const dayNum = weekDates[targetDayIndex].getDate();
                 labelContent = (
-                  <text x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={COLOR.text}>{dayNum} · {point.label}</text>
+                  <text x={x} y={height + 16} textAnchor="middle" fontSize="8" fill={"var(--color-muted)"}>{dayNum} · {point.label}</text>
                 );
               }
             }
@@ -542,12 +529,12 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
               </g>
             );
           })}
-          <polygon points={areaPoints} fill="#EEFFF0" opacity="0.95" style={{ animation: `fadeIn 0.8s ease 0.3s both` }} />
+          <polygon points={areaPoints} fill={"var(--color-primary-pale)"} opacity="0.95" style={{ animation: `fadeIn 0.8s ease 0.3s both` }} />
           {/* Animated Line */}
           <polyline
             points={points.join(" ")}
             fill="none"
-            stroke={COLOR.primary}
+            stroke={"var(--color-primary)"}
             strokeWidth="2"
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -574,8 +561,8 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
                   cx={x}
                   cy={y}
                   r={isHovered ? 5 : 3}
-                  fill={COLOR.primary}
-                  stroke={isHovered ? "#FFFFFF" : "transparent"}
+                  fill={"var(--color-primary)"}
+                  stroke={isHovered ? "var(--color-surface)" : "transparent"}
                   strokeWidth="2"
                   style={{ animation: `popIn 0.4s ease ${0.5 + i * 0.1}s both` }}
                 />
@@ -608,21 +595,21 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
                   width="164"
                   height="68"
                   rx="8"
-                  fill="#FFFFFF"
-                  stroke="#E5E7EB"
+                  fill="var(--color-surface)"
+                  stroke="var(--color-border)"
                   filter="drop-shadow(0 8px 18px rgba(0,0,0,0.16))"
                 />
-                <text x={tooltipX + 14} y={tooltipY + 22} fontSize="9.5" fontWeight="700" fill={COLOR.mutedDark}>
+                <text x={tooltipX + 14} y={tooltipY + 22} fontSize="9.5" fontWeight="700" fill={"var(--color-muted-dark)"}>
                   {tooltip.title.toUpperCase()} PRODUCTIVITY
                 </text>
                 <circle cx={tooltipX + 16} cy={tooltipY + 40} r="3.5" fill="#22C55E" />
-                <text x={tooltipX + 28} y={tooltipY + 43} fontSize="10.5" fill={COLOR.text}>Completed</text>
-                <text x={tooltipX + 150} y={tooltipY + 43} fontSize="10.5" fontWeight="700" fill={COLOR.text} textAnchor="end">
+                <text x={tooltipX + 28} y={tooltipY + 43} fontSize="10.5" fill={"var(--color-foreground)"}>Completed</text>
+                <text x={tooltipX + 150} y={tooltipY + 43} fontSize="10.5" fontWeight="700" fill={"var(--color-foreground)"} textAnchor="end">
                   {tooltip.completed} tasks
                 </text>
-                <circle cx={tooltipX + 16} cy={tooltipY + 56} r="3.5" fill="#DC2626" />
-                <text x={tooltipX + 28} y={tooltipY + 59} fontSize="10.5" fill={COLOR.text}>Overdue</text>
-                <text x={tooltipX + 150} y={tooltipY + 59} fontSize="10.5" fontWeight="700" fill={COLOR.text} textAnchor="end">
+                <circle cx={tooltipX + 16} cy={tooltipY + 56} r="3.5" fill="var(--color-danger)" />
+                <text x={tooltipX + 28} y={tooltipY + 59} fontSize="10.5" fill={"var(--color-foreground)"}>Overdue</text>
+                <text x={tooltipX + 150} y={tooltipY + 59} fontSize="10.5" fontWeight="700" fill={"var(--color-foreground)"} textAnchor="end">
                   {tooltip.overdue} tasks
                 </text>
               </g>
@@ -638,7 +625,7 @@ function ProductivityChart({ data }: { data: ProductivityPoint[] }) {
         alignItems: "center",
         marginTop: "16px",
       }}>
-        <span style={{ fontSize: "12px", color: COLOR.muted, fontWeight: 500 }}>
+        <span style={{ fontSize: "12px", color: "var(--color-muted)", fontWeight: 500 }}>
           {xAxisTitle}
         </span>
       </div>
@@ -1473,7 +1460,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: COLOR.surface, color: COLOR.text, fontFamily: "inherit" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--color-surface)", color: "var(--color-foreground)", fontFamily: "inherit" }}>
       <style>{`
         @keyframes dashRingBell {
           0% { transform: rotate(0); }
@@ -1502,8 +1489,8 @@ export default function DashboardPage() {
         style={{
           width: "210px",
           minHeight: "100vh",
-          backgroundColor: COLOR.surface,
-          borderRight: `1px solid ${COLOR.borderSoft}`,
+          backgroundColor: "var(--color-surface)",
+          borderRight: `1px solid ${"var(--color-border-soft)"}`,
           display: "flex",
           flexDirection: "column",
           padding: "24px 0 0",
@@ -1520,20 +1507,20 @@ export default function DashboardPage() {
               width: "32px",
               height: "32px",
               display: "inline-block",
-              backgroundColor: COLOR.primary,
+              backgroundColor: "var(--color-primary)",
               WebkitMask: `url('${LOGO_SRC}') center / contain no-repeat`,
               mask: `url('${LOGO_SRC}') center / contain no-repeat`,
               flexShrink: 0,
             }}
           />
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: COLOR.text, lineHeight: 1.1 }}>Ben To Do</div>
-            <div style={{ fontSize: "11px", color: COLOR.text, fontWeight: 400, lineHeight: 1.15 }}>Task Dashboard</div>
+            <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1.1 }}>Ben To Do</div>
+            <div style={{ fontSize: "11px", color: "var(--color-foreground)", fontWeight: 400, lineHeight: 1.15 }}>Task Dashboard</div>
           </div>
         </div>
 
         {/* Menu Label */}
-        <div style={{ fontSize: "11px", fontWeight: 600, color: COLOR.text, letterSpacing: "0", padding: "0 28px", marginBottom: "14px" }}>
+        <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-foreground)", letterSpacing: "0", padding: "0 28px", marginBottom: "14px" }}>
           MENU
         </div>
 
@@ -1565,14 +1552,14 @@ export default function DashboardPage() {
                 fontFamily: "inherit",
                 fontSize: "13px",
                 fontWeight: activeMenu === key ? 600 : 400,
-                color: activeMenu === key ? COLOR.primary : COLOR.mutedDark,
-                backgroundColor: activeMenu === key ? COLOR.primarySoft : "transparent",
+                color: activeMenu === key ? "var(--color-primary)" : "var(--color-muted)",
+                backgroundColor: activeMenu === key ? "var(--color-primary-soft)" : "transparent",
                 transition: "all 0.15s",
                 width: "100%",
                 textAlign: "left",
               }}
             >
-              <span style={{ display: "flex", color: activeMenu === key ? COLOR.primary : COLOR.mutedDark }}>
+              <span style={{ display: "flex", color: activeMenu === key ? "var(--color-primary)" : "var(--color-muted)" }}>
                 {icon}
               </span>
               {label}
@@ -1584,7 +1571,7 @@ export default function DashboardPage() {
         <div style={{ flex: 1 }} />
 
         {/* Sign Out */}
-        <div style={{ padding: "22px 24px", borderTop: `1px solid ${COLOR.borderSoft}` }}>
+        <div style={{ padding: "22px 24px", borderTop: `1px solid ${"var(--color-border-soft)"}` }}>
           <button
             onClick={handleSignOut}
             style={{
@@ -1599,7 +1586,7 @@ export default function DashboardPage() {
               fontFamily: "inherit",
               fontSize: "13px",
               fontWeight: 400,
-              color: COLOR.mutedDark,
+              color: "var(--color-muted)",
               backgroundColor: "transparent",
               transition: "all 0.15s",
               width: "100%",
@@ -1625,14 +1612,14 @@ export default function DashboardPage() {
             justifyContent: "space-between",
             height: "64px",
             padding: "0 32px",
-            backgroundColor: COLOR.surface,
-            borderBottom: `1px solid ${COLOR.borderSoft}`,
+            backgroundColor: "var(--color-surface)",
+            borderBottom: `1px solid ${"var(--color-border-soft)"}`,
             position: "sticky",
             top: 0,
             zIndex: 20,
           }}
         >
-          <h1 style={{ fontSize: "18px", fontWeight: 400, color: COLOR.text, margin: 0 }}>
+          <h1 style={{ fontSize: "18px", fontWeight: 400, color: "var(--color-foreground)", margin: 0 }}>
             {activeMenu === "dashboard" ? "Dashboard" :
               activeMenu === "task" ? (selectedTaskId ? "Detail Task" : "Task") :
                 activeMenu === "history" ? "History Task" : "Template"}
@@ -1642,7 +1629,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             {/* Search */}
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: COLOR.muted, display: "flex" }}>
+              <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--color-muted)", display: "flex" }}>
                 <SearchIcon />
               </span>
               <input
@@ -1660,17 +1647,19 @@ export default function DashboardPage() {
                   width: "260px",
                   height: "32px",
                   borderRadius: "3px",
-                  border: `1px solid ${COLOR.border}`,
+                  border: `1px solid ${"var(--color-border)"}`,
                   paddingLeft: "36px",
                   paddingRight: "12px",
                   fontSize: "12px",
-                  color: COLOR.text,
-                  backgroundColor: COLOR.surface,
+                  color: "var(--color-foreground)",
+                  backgroundColor: "var(--color-surface)",
                   outline: "none",
                   fontFamily: "inherit",
                 }}
               />
             </div>
+
+            <ThemeToggle />
 
             {/* Notification */}
             <div style={{ position: "relative" }}>
@@ -1684,17 +1673,17 @@ export default function DashboardPage() {
                   width: "32px",
                   height: "32px",
                   borderRadius: "6px",
-                  border: `1px solid ${showNotifications ? COLOR.primary : COLOR.border}`,
+                  border: `1px solid ${showNotifications ? "var(--color-primary)" : "var(--color-border)"}`,
                   background: showNotifications ? "#f0fdf4" : "none",
-                  color: showNotifications ? COLOR.primary : COLOR.mutedDark,
+                  color: showNotifications ? "var(--color-primary)" : "var(--color-muted-dark)",
                   cursor: "pointer",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.color = COLOR.primary; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-primary)"; e.currentTarget.style.color = "var(--color-primary)"; }}
                 onMouseLeave={(e) => {
                   if (!showNotifications) {
-                    e.currentTarget.style.borderColor = COLOR.border;
-                    e.currentTarget.style.color = COLOR.mutedDark;
+                    e.currentTarget.style.borderColor = "var(--color-border)";
+                    e.currentTarget.style.color = "var(--color-muted-dark)";
                   }
                 }}
               >
@@ -1709,21 +1698,21 @@ export default function DashboardPage() {
                     top: "42px",
                     right: 0,
                     width: "320px",
-                    backgroundColor: COLOR.surface,
+                    backgroundColor: "var(--color-surface)",
                     borderRadius: "12px",
                     boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
-                    border: `1px solid ${COLOR.borderSoft}`,
+                    border: `1px solid ${"var(--color-border-soft)"}`,
                     zIndex: 100,
                     animation: "dashNotifPop 0.2s ease-out forwards",
                     overflow: "hidden",
                   }}
                 >
-                  <div style={{ padding: "16px", borderBottom: `1px solid ${COLOR.borderSoft}`, backgroundColor: "#f9fafb" }}>
-                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: COLOR.text }}>Notifications & History</h3>
+                  <div style={{ padding: "16px", borderBottom: `1px solid ${"var(--color-border-soft)"}`, backgroundColor: "var(--color-surface)" }}>
+                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "var(--color-foreground)" }}>Notifications & History</h3>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", maxHeight: "300px", overflowY: "auto" }}>
                     {(dashboardOverview?.notifications.data ?? []).length === 0 ? (
-                      <div style={{ padding: "18px 16px", fontSize: "12px", fontWeight: 600, color: COLOR.mutedDark }}>
+                      <div style={{ padding: "18px 16px", fontSize: "12px", fontWeight: 600, color: "var(--color-muted-dark)" }}>
                         Belum ada notifikasi.
                       </div>
                     ) : (
@@ -1732,20 +1721,20 @@ export default function DashboardPage() {
                           key={notification.id}
                           style={{
                             padding: "16px",
-                            borderBottom: index === arr.length - 1 ? "none" : `1px solid ${COLOR.borderSoft}`,
-                            backgroundColor: notification.is_read ? "#ffffff" : "#FAFFFE",
+                            borderBottom: index === arr.length - 1 ? "none" : `1px solid ${"var(--color-border-soft)"}`,
+                            backgroundColor: notification.is_read ? "var(--color-surface)" : "var(--color-primary-pale)",
                           }}
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                            <div style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text }}>
+                            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-foreground)" }}>
                               {notification.type.replaceAll("_", " ")}
                             </div>
                             {!notification.is_read && (
-                              <div style={{ width: "8px", height: "8px", backgroundColor: COLOR.primary, borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
+                              <div style={{ width: "8px", height: "8px", backgroundColor: "var(--color-primary)", borderRadius: "50%", flexShrink: 0, marginTop: "4px" }} />
                             )}
                           </div>
-                          <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1.4 }}>{notification.message}</div>
-                          <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "8px" }}>
+                          <div style={{ fontSize: "12px", color: "var(--color-muted)", lineHeight: 1.4 }}>{notification.message}</div>
+                          <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", marginTop: "8px" }}>
                             {formatDateTimeShort(notification.created_at)}
                           </div>
                         </div>
@@ -1757,7 +1746,7 @@ export default function DashboardPage() {
             </div>
 
             {/* User Avatar + Name */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingLeft: "12px", borderLeft: `1px solid ${COLOR.borderSoft}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingLeft: "12px", borderLeft: `1px solid ${"var(--color-border-soft)"}` }}>
               <div
                 style={{
                   width: "38px",
@@ -1769,16 +1758,16 @@ export default function DashboardPage() {
                   justifyContent: "center",
                   fontSize: "14px",
                   fontWeight: 700,
-                  color: "#ffffff",
+                  color: "var(--color-surface)",
                 }}
               >
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: COLOR.text, lineHeight: 1.15 }}>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1.15 }}>
                   {displayName}
                 </div>
-                <div style={{ fontSize: "9px", color: COLOR.text, lineHeight: 1.2 }}>My Workspace</div>
+                <div style={{ fontSize: "9px", color: "var(--color-foreground)", lineHeight: 1.2 }}>My Workspace</div>
               </div>
             </div>
           </div>
@@ -1790,7 +1779,7 @@ export default function DashboardPage() {
             <div
               style={{
                 backgroundColor: "#f0fdf4",
-                color: "#166534",
+                color: "var(--color-primary)",
                 padding: "12px 16px",
                 borderRadius: "8px",
                 fontSize: "13px",
@@ -1806,11 +1795,13 @@ export default function DashboardPage() {
           {/* Welcome + Time Range + Focus Timer */}
           {(activeMenu === "dashboard" || activeMenu === "history" || (activeMenu === "template" && templateView !== "success") || (activeMenu === "task" && !selectedTaskId)) && (
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", width: "100%", marginBottom: "32px", gap: "24px" }}>
-              <div>
-                <h2 style={{ fontSize: "26px", fontWeight: 700, color: COLOR.text, margin: "0 0 6px", lineHeight: 1.15 }}>
+              <div style={activeMenu !== "dashboard" ? { display: "none" } : {
+                  flex: 1,
+              }}>
+                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "var(--color-foreground)", margin: "0 0 6px", lineHeight: 1.15 }}>
                   Welcome, {displayName}
                 </h2>
-                <p style={{ fontSize: "12px", color: COLOR.text, margin: 0, lineHeight: 1.4 }}>
+                <p style={{ fontSize: "12px", color: "var(--color-muted)", margin: 0, lineHeight: 1.4 }}>
                   Here&apos;s what&apos;s happening with your workspace today.
                 </p>
               </div>
@@ -1821,7 +1812,7 @@ export default function DashboardPage() {
                   style={{
                     display: "flex",
                     borderRadius: "3px",
-                    backgroundColor: activeMenu === "dashboard" ? "#F1F1F1" : "transparent",
+                    backgroundColor: activeMenu === "dashboard" ? "var(--color-panel)" : "transparent",
                     padding: activeMenu === "dashboard" ? "2px" : 0,
                     overflow: activeMenu === "dashboard" ? "hidden" : "visible",
                     gap: activeMenu === "dashboard" ? 0 : "8px",
@@ -1841,8 +1832,8 @@ export default function DashboardPage() {
                           fontSize: "11px",
                           fontWeight: timeRange === t ? 600 : 400,
                           fontFamily: "inherit",
-                          color: COLOR.text,
-                          backgroundColor: timeRange === t ? COLOR.surface : "transparent",
+                          color: "var(--color-foreground)",
+                          backgroundColor: timeRange === t ? "var(--color-surface)" : "transparent",
                           border: "none",
                           cursor: "pointer",
                           transition: "all 0.15s",
@@ -1853,7 +1844,7 @@ export default function DashboardPage() {
                     ))
                   ) : activeMenu === "template" ? (
                     <>
-                      <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "#F1F1F1", padding: "2px", overflow: "hidden" }}>
+                      <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "var(--color-panel)", padding: "2px", overflow: "hidden" }}>
                         {(["Official", "Public", "Private"] as const).map((t) => (
                           <button
                             key={t}
@@ -1864,8 +1855,8 @@ export default function DashboardPage() {
                               fontSize: "11px",
                               fontWeight: templateFilter === t ? 600 : 400,
                               fontFamily: "inherit",
-                              color: COLOR.text,
-                              backgroundColor: templateFilter === t ? COLOR.surface : "transparent",
+                              color: "var(--color-foreground)",
+                              backgroundColor: templateFilter === t ? "var(--color-surface)" : "transparent",
                               border: "none",
                               cursor: "pointer",
                               transition: "all 0.15s",
@@ -1885,9 +1876,9 @@ export default function DashboardPage() {
                           fontSize: "11px",
                           fontWeight: templateFilter === "Manage" ? 700 : 600,
                           fontFamily: "inherit",
-                          color: templateFilter === "Manage" ? COLOR.primary : COLOR.text,
-                          backgroundColor: templateFilter === "Manage" ? "#ffffff" : "#F1F1F1",
-                          border: templateFilter === "Manage" ? `1px solid ${COLOR.border}` : "1px solid transparent",
+                          color: templateFilter === "Manage" ? "var(--color-primary)" : "var(--color-foreground)",
+                          backgroundColor: templateFilter === "Manage" ? "var(--color-surface)" : "var(--color-panel)",
+                          border: templateFilter === "Manage" ? `1px solid ${"var(--color-border)"}` : "1px solid transparent",
                           cursor: "pointer",
                           transition: "all 0.15s",
                         }}
@@ -1907,13 +1898,13 @@ export default function DashboardPage() {
                             width: "36px",
                             height: "36px",
                             borderRadius: "4px",
-                            border: `1px solid ${COLOR.border}`,
-                            backgroundColor: "#ffffff",
+                            border: `1px solid ${"var(--color-border)"}`,
+                            backgroundColor: "var(--color-surface)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             cursor: "pointer",
-                            color: COLOR.text,
+                            color: "var(--color-foreground)",
                           }}
                           aria-label="Filter and sort task"
                         >
@@ -1927,9 +1918,9 @@ export default function DashboardPage() {
                               top: "44px",
                               right: 0,
                               width: "270px",
-                              border: `1px solid ${COLOR.borderSoft}`,
+                              border: `1px solid ${"var(--color-border-soft)"}`,
                               borderRadius: "8px",
-                              backgroundColor: "#ffffff",
+                              backgroundColor: "var(--color-surface)",
                               boxShadow: "0 14px 34px rgba(0,0,0,0.14)",
                               zIndex: 800,
                               padding: "12px",
@@ -1959,7 +1950,7 @@ export default function DashboardPage() {
                               },
                             ].map((group) => (
                               <div key={group.group} style={{ padding: "4px 0" }}>
-                                <div style={{ fontSize: "10px", fontWeight: 800, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 8px 6px" }}>
+                                <div style={{ fontSize: "10px", fontWeight: 800, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 8px 6px" }}>
                                   {group.group}
                                 </div>
                                 {group.items.map((item) => (
@@ -1973,8 +1964,8 @@ export default function DashboardPage() {
                                       width: "100%",
                                       border: "none",
                                       borderRadius: "6px",
-                                      backgroundColor: taskSort === item.value ? "#ECFFF0" : "transparent",
-                                      color: taskSort === item.value ? COLOR.primary : COLOR.text,
+                                      backgroundColor: taskSort === item.value ? "var(--color-surface)" : "transparent",
+                                      color: taskSort === item.value ? "var(--color-primary)" : "var(--color-foreground)",
                                       cursor: "pointer",
                                       fontFamily: "inherit",
                                       fontSize: "12px",
@@ -1991,7 +1982,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                      <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "#F1F1F1", padding: "2px", overflow: "hidden" }}>
+                      <div style={{ display: "flex", borderRadius: "3px", backgroundColor: "var(--color-panel)", padding: "2px", overflow: "hidden" }}>
                         {activeMenu === "history" ? (
                           (["all", "task", "focus"] as DashboardHistoryType[]).map((type) => (
                             <button
@@ -2003,15 +1994,15 @@ export default function DashboardPage() {
                                 fontSize: "11px",
                                 fontWeight: historyType === type ? 600 : 400,
                                 fontFamily: "inherit",
-                                color: COLOR.text,
-                                backgroundColor: historyType === type ? COLOR.surface : "transparent",
+                                color: "var(--color-foreground)",
+                                backgroundColor: historyType === type ? "var(--color-surface)" : "transparent",
                                 border: "none",
                                 cursor: "pointer",
                                 transition: "all 0.15s",
                                 textTransform: "capitalize",
                               }}
                             >
-                              {type}
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
                             </button>
                           ))
                         ) : (
@@ -2025,8 +2016,8 @@ export default function DashboardPage() {
                                 fontSize: "11px",
                                 fontWeight: taskFilter === t ? 600 : 400,
                                 fontFamily: "inherit",
-                                color: COLOR.text,
-                                backgroundColor: taskFilter === t ? COLOR.surface : "transparent",
+                                color: "var(--color-foreground)",
+                                backgroundColor: taskFilter === t ? "var(--color-surface)" : "transparent",
                                 border: "none",
                                 cursor: "pointer",
                                 transition: "all 0.15s",
@@ -2064,8 +2055,8 @@ export default function DashboardPage() {
                       height: "34px",
                       padding: "0 16px",
                       borderRadius: "4px",
-                      backgroundColor: COLOR.primary,
-                      color: "#ffffff",
+                      backgroundColor: "var(--color-primary)",
+                      color: "var(--color-background)",
                       fontSize: "13px",
                       fontWeight: 600,
                       border: "none",
@@ -2096,76 +2087,76 @@ export default function DashboardPage() {
               >
                 {/* Task Completed */}
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Task Completed</div>
+                  <div style={{ fontSize: "14px", color: "var(--color-foreground)", fontWeight: 600, lineHeight: 1.1 }}>Task Completed</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#e0f2fe", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <CheckSquareIcon color="currentColor" size={24} />
                     </div>
-                    <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{completedCount}</span>
+                    <span style={{ fontSize: "34px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1 }}>{completedCount}</span>
                     <TrendBadge value={formatMetricTrend(completedMetric)} up={isTrendUp(completedMetric)} />
                   </div>
-                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>{timeRangeText}</div>
+                  <div style={{ fontSize: "12px", color: "var(--color-muted)", lineHeight: 1 }}>{timeRangeText}</div>
                 </div>
 
                 {/* Upcoming Deadlines */}
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Upcoming Deadlines</div>
+                  <div style={{ fontSize: "14px", color: "var(--color-foreground)", fontWeight: 600, lineHeight: 1.1 }}>Upcoming Deadlines</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#fef08a", color: "#a16207", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <ClockAlertIcon color="currentColor" size={24} />
                     </div>
-                    <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{upcomingDeadlineCount}</span>
+                    <span style={{ fontSize: "34px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1 }}>{upcomingDeadlineCount}</span>
                     <TrendBadge value={formatMetricTrend(upcomingMetric)} up={isTrendUp(upcomingMetric)} />
                   </div>
-                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>{timeRangeText}</div>
+                  <div style={{ fontSize: "12px", color: "var(--color-muted)", lineHeight: 1 }}>{timeRangeText}</div>
                 </div>
 
                 {/* Overdue Task */}
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Overdue Task</div>
+                  <div style={{ fontSize: "14px", color: "var(--color-foreground)", fontWeight: 600, lineHeight: 1.1 }}>Overdue Task</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "var(--color-danger-soft)", color: "var(--color-danger)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <AlertTriangleIcon color="currentColor" size={24} />
                     </div>
-                    <span style={{ fontSize: "34px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>{overdueCount}</span>
+                    <span style={{ fontSize: "34px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1 }}>{overdueCount}</span>
                     <TrendBadge value={formatMetricTrend(overdueMetric)} up={isTrendUp(overdueMetric)} />
                   </div>
-                  <div style={{ fontSize: "12px", color: COLOR.muted, lineHeight: 1 }}>{timeRangeText}</div>
+                  <div style={{ fontSize: "12px", color: "var(--color-muted)", lineHeight: 1 }}>{timeRangeText}</div>
                 </div>
 
                 {/* Energy */}
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "136px", padding: "20px clamp(18px, 2.8vw, 32px)", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: "14px", color: COLOR.text, fontWeight: 600, lineHeight: 1.1 }}>Energy</div>
+                  <div style={{ fontSize: "14px", color: "var(--color-foreground)", fontWeight: 600, lineHeight: 1.1 }}>Energy</div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "4px" }}>
                     {/* Circle Progress */}
                     <div style={{ position: "relative", width: "48px", height: "48px", flexShrink: 0 }}>
                       <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
                         <path
-                          style={{ fill: "none", stroke: "#E8E8E8", strokeWidth: 4 }}
+                          style={{ fill: "none", stroke: "var(--color-border-soft)", strokeWidth: 4 }}
                           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                         />
                         <path
-                          style={{ fill: "none", stroke: "#111827", strokeWidth: 4, strokeDasharray: `${energyData.percent}, 100`, transition: "stroke-dasharray 0.3s ease" }}
+                          style={{ fill: "none", stroke: "var(--color-foreground)", strokeWidth: 4, strokeDasharray: `${energyData.percent}, 100`, transition: "stroke-dasharray 0.3s ease" }}
                           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                         />
                       </svg>
-                      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>
                         {energyData.percent}%
                       </div>
                     </div>
 
                     {/* Linear Progress and Label */}
                     <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <div style={{ width: "100%", height: "8px", backgroundColor: "#E8E8E8", borderRadius: "999px", overflow: "hidden" }}>
-                        <div style={{ width: `${energyData.percent}%`, height: "100%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary, borderRadius: "999px", transition: "width 0.3s ease, background-color 0.3s ease" }} />
+                      <div style={{ width: "100%", height: "8px", backgroundColor: "var(--color-border-soft)", borderRadius: "999px", overflow: "hidden" }}>
+                        <div style={{ width: `${energyData.percent}%`, height: "100%", backgroundColor: energyData.isCritical ? "var(--color-danger)" : "var(--color-primary)", borderRadius: "999px", transition: "width 0.3s ease, background-color 0.3s ease" }} />
                       </div>
-                      <div style={{ fontSize: "11px", color: COLOR.mutedDark, fontWeight: 500 }}>Capacity Energy</div>
+                      <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", fontWeight: 500 }}>Capacity Energy</div>
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: energyData.isCritical ? COLOR.danger : COLOR.primary, fontWeight: 600, marginTop: "8px" }}>
-                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: energyData.isCritical ? COLOR.danger : COLOR.primary }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: energyData.isCritical ? "var(--color-danger)" : "var(--color-primary)", fontWeight: 600, marginTop: "8px" }}>
+                    <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: energyData.isCritical ? "var(--color-danger)" : "var(--color-primary)" }} />
                     {energyData.current === 0 ? "Depleted" : energyData.isCritical ? "Critical Energy" : "Ready for do Task"}
                   </div>
                 </div>
@@ -2186,21 +2177,21 @@ export default function DashboardPage() {
                 {/* Priority Task Card */}
                 <div style={{ ...CARD_STYLE, width: "100%", minHeight: "230px", padding: "24px clamp(18px, 2.2vw, 32px)", boxSizing: "border-box", gridColumn: "1" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Priority Task</span>
-                    <span onClick={() => setActiveMenu("task")} style={{ fontSize: "12px", fontWeight: 600, color: "#3b82f6", cursor: "pointer", lineHeight: 1 }}>View all</span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1 }}>Priority Task</span>
+                    <span onClick={() => setActiveMenu("task")} style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-primary)", cursor: "pointer", lineHeight: 1 }}>View all</span>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                     {priorityTaskItems.length === 0 ? (
                       <div
                         style={{
-                          backgroundColor: "#F1F1F1",
+                          backgroundColor: "var(--color-panel)",
                           borderRadius: "7px",
                           padding: "18px clamp(16px, 1.8vw, 24px)",
                           minHeight: "80px",
                           display: "flex",
                           alignItems: "center",
-                          color: COLOR.mutedDark,
+                          color: "var(--color-muted-dark)",
                           fontSize: "13px",
                           fontWeight: 600,
                         }}
@@ -2211,18 +2202,18 @@ export default function DashboardPage() {
                       <div
                         key={task.id ?? task.title}
                         style={{
-                          backgroundColor: "#F1F1F1",
+                          backgroundColor: "var(--color-panel)",
                           borderRadius: "7px",
                           padding: "18px clamp(16px, 1.8vw, 24px)",
                           minHeight: "80px",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "15px", gap: "14px" }}>
-                          <span style={{ flex: 1, minWidth: 0, fontSize: "14px", fontWeight: 700, color: COLOR.text, lineHeight: 1.25, whiteSpace: "normal", wordBreak: "normal", overflowWrap: "break-word" }}>{task.title}</span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: "14px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1.25, whiteSpace: "normal", wordBreak: "normal", overflowWrap: "break-word" }}>{task.title}</span>
                           <PriorityBadge level={task.level} />
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: COLOR.text, lineHeight: 1 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--color-foreground)", lineHeight: 1 }}>
                             <CalendarSmIcon /> {task.date}
                           </span>
                         </div>
@@ -2234,7 +2225,7 @@ export default function DashboardPage() {
                 {/* Productivity Overview Chart */}
                 <div style={{ ...CARD_STYLE, padding: "24px clamp(18px, 2vw, 32px)", gridColumn: "2", gridRow: "1 / span 2", minHeight: "386px", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Productivity Overview</span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1 }}>Productivity Overview</span>
                     <div style={{ position: "relative" }}>
                       <button
                         onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
@@ -2245,15 +2236,15 @@ export default function DashboardPage() {
                           height: "28px",
                           padding: "0 12px",
                           borderRadius: "4px",
-                          border: `1px solid ${COLOR.border}`,
-                          backgroundColor: COLOR.surface,
+                          border: `1px solid ${"var(--color-border)"}`,
+                          backgroundColor: "var(--color-surface)",
                           fontSize: "11px",
-                          color: COLOR.text,
+                          color: "var(--color-foreground)",
                           cursor: "pointer",
                           fontFamily: "inherit",
                           transition: "border-color 0.2s, box-shadow 0.2s",
-                          borderColor: chartDropdownOpen ? COLOR.primary : COLOR.border,
-                          boxShadow: chartDropdownOpen ? `0 0 0 2px ${COLOR.primaryPale}` : "none",
+                          borderColor: chartDropdownOpen ? "var(--color-primary)" : "var(--color-border)",
+                          boxShadow: chartDropdownOpen ? `0 0 0 2px ${"var(--color-primary-pale)"}` : "none",
                         }}
                       >
                         <CalendarSmIcon />
@@ -2266,7 +2257,7 @@ export default function DashboardPage() {
                       {chartDropdownOpen && (
                         <div style={{
                           position: "absolute", top: "34px", right: 0, zIndex: 30,
-                          backgroundColor: COLOR.surface, border: `1px solid ${COLOR.border}`,
+                          backgroundColor: "var(--color-surface)", border: `1px solid ${"var(--color-border)"}`,
                           borderRadius: "6px", boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
                           overflow: "hidden", minWidth: "130px",
                           animation: "fadeSlideDown 0.18s ease",
@@ -2282,8 +2273,8 @@ export default function DashboardPage() {
                               style={{
                                 display: "flex", alignItems: "center", gap: "8px",
                                 width: "100%", padding: "9px 14px", border: "none",
-                                backgroundColor: chartRange === r ? COLOR.primaryPale : "transparent",
-                                color: chartRange === r ? COLOR.primary : COLOR.text,
+                                backgroundColor: chartRange === r ? "var(--color-primary-pale)" : "transparent",
+                                color: chartRange === r ? "var(--color-primary)" : "var(--color-foreground)",
                                 fontSize: "12px", fontWeight: chartRange === r ? 600 : 400,
                                 cursor: "pointer", fontFamily: "inherit",
                                 transition: "background-color 0.15s",
@@ -2291,7 +2282,7 @@ export default function DashboardPage() {
                               onMouseEnter={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "#f9f9f9"; }}
                               onMouseLeave={(e) => { if (chartRange !== r) e.currentTarget.style.backgroundColor = "transparent"; }}
                             >
-                              {chartRange === r && <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: COLOR.primary }} />}
+                              {chartRange === r && <span style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />}
                               {chartRangeLabels[r]}
                             </button>
                           ))}
@@ -2318,7 +2309,7 @@ export default function DashboardPage() {
                   return (
                     <div style={{ ...CARD_STYLE, width: "100%", padding: "12px 14px", minHeight: "86px", boxSizing: "border-box", gridColumn: "1" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "9px" }}>
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text }}>Calendar</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>Calendar</span>
                         <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                           <button
                             onClick={() => {
@@ -2326,17 +2317,17 @@ export default function DashboardPage() {
                               prev.setDate(prev.getDate() - 7);
                               setCalendarRef(prev);
                             }}
-                            style={{ ...buttonReset, color: COLOR.text, display: "flex", padding: "2px", borderRadius: "4px", transition: "background-color 0.15s" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+                            style={{ ...buttonReset, color: "var(--color-foreground)", display: "flex", padding: "2px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; }}
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                           >
                             <ChevronLeftIcon />
                           </button>
                           <button
                             onClick={() => setCalendarRef(new Date())}
-                            style={{ ...buttonReset, fontSize: "11px", fontWeight: 600, color: COLOR.text, padding: "2px 4px", borderRadius: "4px", transition: "color 0.15s" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = COLOR.primary; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = COLOR.text; }}
+                            style={{ ...buttonReset, fontSize: "11px", fontWeight: 600, color: "var(--color-foreground)", padding: "2px 4px", borderRadius: "4px", transition: "color 0.15s" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-primary)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-foreground)"; }}
                           >
                             {displayMonth} {displayYear}
                           </button>
@@ -2346,8 +2337,8 @@ export default function DashboardPage() {
                               next.setDate(next.getDate() + 7);
                               setCalendarRef(next);
                             }}
-                            style={{ ...buttonReset, color: COLOR.text, display: "flex", padding: "2px", borderRadius: "4px", transition: "background-color 0.15s" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLOR.panel; }}
+                            style={{ ...buttonReset, color: "var(--color-foreground)", display: "flex", padding: "2px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; }}
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                           >
                             <ChevronRightIcon />
@@ -2357,7 +2348,7 @@ export default function DashboardPage() {
 
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", marginBottom: "5px" }}>
                         {DAY_HEADERS.map((d) => (
-                          <span key={d} style={{ fontSize: "8px", fontWeight: 600, color: COLOR.muted }}>{d}</span>
+                          <span key={d} style={{ fontSize: "8px", fontWeight: 600, color: "var(--color-muted)" }}>{d}</span>
                         ))}
                       </div>
 
@@ -2384,17 +2375,17 @@ export default function DashboardPage() {
                                   justifyContent: "center",
                                   fontSize: "10px",
                                   fontWeight: isToday || isSelected ? 700 : 500,
-                                  color: isSelected ? "#ffffff" : isToday ? COLOR.primary : COLOR.text,
-                                  backgroundColor: isSelected ? COLOR.primary : isToday ? COLOR.primarySoft : "transparent",
+                                  color: isSelected ? "var(--color-surface)" : isToday ? "var(--color-primary)" : "var(--color-foreground)",
+                                  backgroundColor: isSelected ? "var(--color-primary)" : isToday ? "var(--color-primary-soft)" : "transparent",
                                   cursor: "pointer",
                                   transition: "all 0.15s",
-                                  boxShadow: isSelected ? `0 0 0 3px ${COLOR.primaryPale}` : "none",
+                                  boxShadow: isSelected ? `0 0 0 3px ${"var(--color-primary-pale)"}` : "none",
                                 }}
                               >
                                 {dateObj.getDate()}
                               </div>
                               {hasDot && (
-                                <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: COLOR.primary }} />
+                                <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "var(--color-primary)" }} />
                               )}
                             </div>
                           );
@@ -2409,9 +2400,9 @@ export default function DashboardPage() {
               <div id="recent-tasks-section" style={{ ...CARD_STYLE, width: "100%", padding: 0, marginBottom: "32px", overflow: "hidden" }}>
                 <div style={{ height: "64px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 30px" }}>
                   <div>
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, lineHeight: 1 }}>Recent Tasks</span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1 }}>Recent Tasks</span>
                     {selectedCalendarDate && (
-                      <span style={{ marginLeft: "10px", fontSize: "12px", fontWeight: 700, color: COLOR.primary }}>
+                      <span style={{ marginLeft: "10px", fontSize: "12px", fontWeight: 700, color: "var(--color-primary)" }}>
                         {formatDate(selectedCalendarDate)}
                       </span>
                     )}
@@ -2424,7 +2415,7 @@ export default function DashboardPage() {
                         setActiveMenu("task");
                       }
                     }}
-                    style={{ background: "none", border: "none", color: "#3b82f6", fontSize: "14px", fontWeight: 600, cursor: "pointer", padding: 0 }}
+                    style={{ background: "none", border: "none", color: "var(--color-primary)", fontSize: "14px", fontWeight: 600, cursor: "pointer", padding: 0 }}
                   >
                     {selectedCalendarDate ? "Clear Date" : "View All"}
                   </button>
@@ -2439,14 +2430,14 @@ export default function DashboardPage() {
                     <col style={{ width: "25%" }} />
                   </colgroup>
                   <thead>
-                    <tr style={{ height: "42px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
+                    <tr style={{ height: "42px", backgroundColor: "var(--color-surface)", borderTop: `1px solid ${"var(--color-border)"}`, borderBottom: `1px solid ${"var(--color-border)"}` }}>
                       {["TASK", "TASK LEVEL", "DUE DATE", "ACTIONS"].map((h, i) => (
                         <th
                           key={h}
                           style={{
                             fontSize: "11px",
                             fontWeight: 600,
-                            color: COLOR.mutedDark,
+                            color: "var(--color-muted-dark)",
                             textAlign: i === 0 ? "left" : "center",
                             padding: i === 0 ? "0 12px 0 clamp(44px, 3.5vw, 60px)" : "0 12px",
                             letterSpacing: "0.04em",
@@ -2461,7 +2452,7 @@ export default function DashboardPage() {
                   </thead>
                   <tbody>
                     {recentTaskItems.length === 0 ? (
-                      <tr style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      <tr style={{ height: "56px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
                         <td
                           colSpan={4}
                           style={{
@@ -2470,14 +2461,14 @@ export default function DashboardPage() {
                             verticalAlign: "middle",
                             fontSize: "12px",
                             fontWeight: 600,
-                            color: COLOR.mutedDark,
+                            color: "var(--color-muted-dark)",
                           }}
                         >
                           {emptyRecentTaskMessage}
                         </td>
                       </tr>
                     ) : recentTaskItems.map((task) => (
-                      <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                      <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
                         <td style={{ padding: "0 12px 0 clamp(44px, 3.5vw, 60px)", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }}>
                             <input
@@ -2490,19 +2481,19 @@ export default function DashboardPage() {
                               style={{
                                 width: "18px",
                                 height: "18px",
-                                accentColor: COLOR.primary,
+                                accentColor: "var(--color-primary)",
                                 borderRadius: "3px",
                                 cursor: "pointer",
                                 flexShrink: 0,
                               }}
                             />
-                            <span style={{ fontSize: "13px", fontWeight: 600, color: COLOR.text, lineHeight: 1.3, overflowWrap: "break-word" }}>{task.title}</span>
+                            <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-foreground)", lineHeight: 1.3, overflowWrap: "break-word" }}>{task.title}</span>
                           </div>
                         </td>
                         <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                           <PriorityBadge level={task.level} />
                         </td>
-                        <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
+                        <td style={{ padding: "0 12px", fontSize: "12px", color: "var(--color-foreground)", fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
                           {task.date}
                         </td>
                         <td style={{ padding: "0 12px", verticalAlign: "middle", position: "relative" }}>
@@ -2512,8 +2503,8 @@ export default function DashboardPage() {
                               onClick={() => {
                                 setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
                               }}
-                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f3f4f6"; }}
+                              style={{ ...buttonReset, color: "var(--color-muted-dark)", display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-panel)"; }}
                               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                             >
                               <MoreDotsIcon />
@@ -2525,10 +2516,10 @@ export default function DashboardPage() {
                                 position: "absolute",
                                 top: "100%", right: "60px",
                                 marginTop: "4px",
-                                backgroundColor: "#ffffff",
+                                backgroundColor: "var(--color-surface)",
                                 borderRadius: "8px",
                                 boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                                border: `1px solid ${COLOR.borderSoft}`,
+                                border: `1px solid ${"var(--color-border-soft)"}`,
                                 zIndex: 100,
                                 width: "150px",
                                 display: "flex",
@@ -2543,21 +2534,21 @@ export default function DashboardPage() {
                                   setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
                                   setIsEditTaskModalOpen(true);
                                   setOpenTaskMenuId(null);
-                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "var(--color-foreground)", width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                                 >
-                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "var(--color-primary-pale)", color: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
                                   Edit Task
                                 </button>
                                 <button onClick={() => {
                                   void openTaskDetailModal(task);
                                   setOpenTaskMenuId(null);
-                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "var(--color-foreground)", width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                                 >
-                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#f3f4f6", color: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "var(--color-panel)", color: "var(--color-foreground)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                                   </div>
                                   Detail Task
@@ -2565,8 +2556,8 @@ export default function DashboardPage() {
                                 <button onClick={() => {
                                   void handleCompleteTask(task.id ?? "");
                                   setOpenTaskMenuId(null);
-                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "var(--color-foreground)", width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                                 >
                                   <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={11} color="currentColor" /></div>
@@ -2580,7 +2571,7 @@ export default function DashboardPage() {
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                                 >
-                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#fee2e2", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "var(--color-danger-soft)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
                                   Delete Task
                                 </button>
                               </div>
@@ -2596,8 +2587,8 @@ export default function DashboardPage() {
                                 setAddTaskEnergy(task.level === "LOW" ? "Ringan" : task.level === "MEDIUM" ? "Sedang" : "Berat");
                                 setIsEditTaskModalOpen(true);
                               }}
-                              style={{ ...buttonReset, color: "#3b82f6", display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#eff6ff"; }}
+                              style={{ ...buttonReset, color: "var(--color-primary)", display: "flex", padding: "4px", borderRadius: "4px", transition: "background-color 0.15s" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-primary-pale)"; }}
                               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                             >
                               <PenIcon />
@@ -2627,10 +2618,10 @@ export default function DashboardPage() {
                                 minWidth: "85px",
                                 borderRadius: "20px",
                                 border: "1px solid #d1d5db",
-                                backgroundColor: "#ffffff",
+                                backgroundColor: "var(--color-surface)",
                                 fontSize: "11px",
                                 fontWeight: 600,
-                                color: "#111827",
+                                color: "var(--color-foreground)",
                                 cursor: "pointer",
                                 fontFamily: "inherit",
                                 whiteSpace: "nowrap",
@@ -2638,12 +2629,12 @@ export default function DashboardPage() {
                               }}
                               onMouseEnter={(e) => {
                                 if (!isActionLoading) {
-                                  e.currentTarget.style.backgroundColor = "#f9fafb";
+                                  e.currentTarget.style.backgroundColor = "var(--color-surface)";
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (!isActionLoading) {
-                                  e.currentTarget.style.backgroundColor = "#ffffff";
+                                  e.currentTarget.style.backgroundColor = "var(--color-surface)";
                                 }
                               }}
                             >
@@ -2663,8 +2654,8 @@ export default function DashboardPage() {
           {activeMenu === "history" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
               <div style={{ ...CARD_STYLE, overflow: "hidden", boxShadow: "0 14px 36px rgba(17,24,39,0.06)" }}>
-                <div style={{ padding: "18px 22px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                  <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.mutedDark, letterSpacing: "0.04em" }}>TASK HISTORY</div>
+                <div style={{ padding: "18px 22px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                  <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--color-muted-dark)", letterSpacing: "0.04em" }}>TASK HISTORY</div>
                 </div>
                 <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                   <colgroup>
@@ -2676,9 +2667,9 @@ export default function DashboardPage() {
                     <col style={{ width: "120px" }} />
                   </colgroup>
                   <thead>
-                    <tr style={{ height: "42px", backgroundColor: "#F7F7FB", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                    <tr style={{ height: "42px", backgroundColor: "var(--color-surface)", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
                       {["NO", "TASK", "TASK LEVEL", "STATUS", "COMPLETED AT", "ACTIONS"].map((h, i) => (
-                        <th key={h} style={{ fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark, textAlign: i === 1 ? "left" : "center", padding: "0 12px", whiteSpace: "nowrap" }}>
+                        <th key={h} style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)", textAlign: i === 1 ? "left" : "center", padding: "0 12px", whiteSpace: "nowrap" }}>
                           {h}
                         </th>
                       ))}
@@ -2686,12 +2677,12 @@ export default function DashboardPage() {
                   </thead>
                   <tbody>
                     {isHistoryLoading ? (
-                      <tr style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                        <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: COLOR.mutedDark }}>Loading history...</td>
+                      <tr style={{ height: "58px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                        <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: "var(--color-muted-dark)" }}>Loading history...</td>
                       </tr>
                     ) : filteredHistoryItems.length === 0 ? (
-                      <tr style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                        <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: COLOR.mutedDark }}>Belum ada history.</td>
+                      <tr style={{ height: "58px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                        <td colSpan={6} style={{ textAlign: "center", fontSize: "12px", fontWeight: 700, color: "var(--color-muted-dark)" }}>Belum ada history.</td>
                       </tr>
                     ) : filteredHistoryItems.slice(0, 8).map((item, index) => {
                       const isFocusItem = item.item_type === "focus";
@@ -2699,10 +2690,10 @@ export default function DashboardPage() {
                         ? item.end_reason ? item.end_reason.replaceAll("_", " ") : "In Progress"
                         : item.task_status === "done" ? "Completed" : item.task_status === "in_progress" ? "In Progress" : "Not Started";
                       const statusTone = statusText === "Completed" || statusText === "completed"
-                        ? { bg: "#DDFBE5", color: COLOR.primary }
+                        ? { bg: "var(--color-primary-pale)", color: "var(--color-primary)" }
                         : statusText === "In Progress"
-                          ? { bg: "#E0EAFF", color: "#1D4ED8" }
-                          : { bg: "#E5E7EB", color: "#4B5563" };
+                          ? { bg: "var(--color-surface)", color: "#3b82f6" }
+                          : { bg: "var(--color-border)", color: "var(--color-muted)" };
                       const viewTask: ViewTask = {
                         id: item.task_id,
                         title: item.title,
@@ -2717,14 +2708,14 @@ export default function DashboardPage() {
                       };
 
                       return (
-                        <tr key={`${item.item_type}-${item.id}`} style={{ height: "58px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                          <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                        <tr key={`${item.item_type}-${item.id}`} style={{ height: "58px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                          <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>
                             {index + 1}
                           </td>
                           <td style={{ padding: "0 12px", verticalAlign: "middle" }}>
-                            <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
                             {isFocusItem && (
-                              <div style={{ marginTop: "3px", fontSize: "11px", fontWeight: 600, color: COLOR.mutedDark }}>
+                              <div style={{ marginTop: "3px", fontSize: "11px", fontWeight: 600, color: "var(--color-muted-dark)" }}>
                                 Focus session
                               </div>
                             )}
@@ -2735,13 +2726,13 @@ export default function DashboardPage() {
                               {statusText}
                             </span>
                           </td>
-                          <td style={{ padding: "0 12px", textAlign: "center", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle" }}>
+                          <td style={{ padding: "0 12px", textAlign: "center", fontSize: "12px", color: "var(--color-foreground)", fontWeight: 500, verticalAlign: "middle" }}>
                             {isFocusItem ? formatDateTimeShort(item.ended_at ?? item.started_at) : formatDateTimeShort(item.completed_at)}
                           </td>
                           <td style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}>
                             <button
                               onClick={() => void openTaskDetailModal(viewTask)}
-                              style={{ ...buttonReset, color: COLOR.mutedDark, display: "inline-flex", padding: "4px", borderRadius: "4px" }}
+                              style={{ ...buttonReset, color: "var(--color-muted-dark)", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
                               aria-label="Open history task detail"
                             >
                               <MoreDotsIcon />
@@ -2753,7 +2744,7 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
                 {(historyData?.total_items ?? 0) > filteredHistoryItems.length && (
-                  <div style={{ height: "48px", display: "flex", alignItems: "center", justifyContent: "center", borderTop: `1px solid ${COLOR.borderSoft}`, fontSize: "12px", fontWeight: 600, color: COLOR.mutedDark }}>
+                  <div style={{ height: "48px", display: "flex", alignItems: "center", justifyContent: "center", borderTop: `1px solid ${"var(--color-border-soft)"}`, fontSize: "12px", fontWeight: 600, color: "var(--color-muted-dark)" }}>
                     View More
                   </div>
                 )}
@@ -2761,24 +2752,24 @@ export default function DashboardPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1.1fr repeat(4, minmax(150px, 1fr))", gap: "18px", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.mutedDark, letterSpacing: "0.04em", marginBottom: "8px" }}>FOCUS SUMMARY</div>
-                  <p style={{ margin: 0, maxWidth: "240px", color: COLOR.mutedDark, fontSize: "12px", lineHeight: 1.5 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--color-muted)", letterSpacing: "0.04em", marginBottom: "8px" }}>FOCUS SUMMARY</div>
+                  <p style={{ margin: 0, maxWidth: "240px", color: "var(--color-muted)", fontSize: "12px", lineHeight: 1.5 }}>
                     Summary of your focus activity in the selected period.
                   </p>
                 </div>
                 {[
-                  { label: "Total Focus Time", value: historyData?.summary.total_focus_time_label ?? "0h 0m", icon: <ClockAlertIcon color={COLOR.primary} size={16} /> },
+                  { label: "Total Focus Time", value: historyData?.summary.total_focus_time_label ?? "0h 0m", icon: <ClockAlertIcon color={"var(--color-primary)"} size={16} /> },
                   { label: "Total Sessions", value: String(historyData?.summary.total_sessions ?? 0), icon: <CheckCircleSolidIcon /> },
                   { label: "Average Focus Score", value: `${historyData?.summary.average_focus_score ?? 0}%`, icon: <TrendUpIcon /> },
                   { label: "Longest Session", value: `${historyData?.summary.longest_session_minutes ?? 0} min`, icon: <BatteryIcon /> },
                 ].map((item) => (
                   <div key={item.label} style={{ ...CARD_STYLE, minHeight: "78px", padding: "16px", display: "flex", alignItems: "center", gap: "12px", boxShadow: "0 12px 28px rgba(17,24,39,0.06)" }}>
-                    <span style={{ width: "38px", height: "38px", borderRadius: "999px", backgroundColor: "#E8EEFF", color: COLOR.primary, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ width: "38px", height: "38px", borderRadius: "999px", backgroundColor: "var(--color-primary-pale)", color: "var(--color-primary)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {item.icon}
                     </span>
                     <span>
-                      <span style={{ display: "block", fontSize: "11px", color: COLOR.mutedDark, marginBottom: "2px" }}>{item.label}</span>
-                      <span style={{ display: "block", fontSize: "16px", color: COLOR.text, fontWeight: 800 }}>{item.value}</span>
+                      <span style={{ display: "block", fontSize: "11px", color: "var(--color-muted)", marginBottom: "2px" }}>{item.label}</span>
+                      <span style={{ display: "block", fontSize: "16px", color: "var(--color-foreground)", fontWeight: 800 }}>{item.value}</span>
                     </span>
                   </div>
                 ))}
@@ -2798,14 +2789,14 @@ export default function DashboardPage() {
                   <col style={{ width: "250px" }} />
                 </colgroup>
                 <thead>
-                  <tr style={{ height: "42px", backgroundColor: "#f9fafb", borderTop: `1px solid ${COLOR.border}`, borderBottom: `1px solid ${COLOR.border}` }}>
+                  <tr style={{ height: "42px", backgroundColor: "var(--color-surface)", borderTop: `1px solid ${"var(--color-border)"}`, borderBottom: `1px solid ${"var(--color-border)"}` }}>
                     {["NO", "TASK", "TASK LEVEL", "STATUS", "DUE DATE", "ACTIONS"].map((h, i) => (
                       <th
                         key={h}
                         style={{
                           fontSize: "11px",
                           fontWeight: 600,
-                          color: COLOR.mutedDark,
+                          color: "var(--color-muted-dark)",
                           textAlign: i === 1 ? "left" : "center",
                           padding: "0 12px",
                           letterSpacing: "0.04em",
@@ -2820,7 +2811,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {taskListItems.length === 0 ? (
-                    <tr style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
+                    <tr style={{ height: "56px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
                       <td
                         colSpan={6}
                         style={{
@@ -2829,7 +2820,7 @@ export default function DashboardPage() {
                           verticalAlign: "middle",
                           fontSize: "12px",
                           fontWeight: 600,
-                          color: COLOR.mutedDark,
+                          color: "var(--color-muted-dark)",
                         }}
                       >
                         {emptyTaskListMessage}
@@ -2840,12 +2831,12 @@ export default function DashboardPage() {
                     const isDoneTask = taskViewStatus === "Done";
 
                     return (
-                      <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                        <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>
+                      <tr key={task.id ?? task.title} style={{ height: "56px", borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                        <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center", fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>
                           {index + 1}
                         </td>
                         <td style={{ padding: "0 12px", verticalAlign: "middle" }}>
-                          <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: COLOR.text, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
+                          <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)", lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
                         </td>
                         <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                           <PriorityBadge level={task.level} />
@@ -2853,14 +2844,14 @@ export default function DashboardPage() {
                         <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                           <TaskStatusBadge status={taskViewStatus} />
                         </td>
-                        <td style={{ padding: "0 12px", fontSize: "12px", color: COLOR.text, fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
+                        <td style={{ padding: "0 12px", fontSize: "12px", color: "var(--color-foreground)", fontWeight: 500, verticalAlign: "middle", textAlign: "center" }}>
                           {task.date}
                         </td>
                         <td style={{ padding: "0 12px", verticalAlign: "middle", textAlign: "center" }}>
                           <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", position: "relative" }}>
                             <button
                               onClick={() => void openTaskDetailModal(task)}
-                              style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                              style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${"var(--color-border)"}`, backgroundColor: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                               aria-label="Detail task"
                             >
                               <EyeOutlineIcon />
@@ -2868,7 +2859,7 @@ export default function DashboardPage() {
                             {!isDoneTask && (
                               <button onClick={() => {
                                 setOpenTaskMenuId(openTaskMenuId === task.id ? null : (task.id ?? null));
-                              }} style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, color: COLOR.mutedDark, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                              }} style={{ width: "34px", height: "34px", borderRadius: "7px", border: `1px solid ${"var(--color-border)"}`, backgroundColor: "var(--color-surface)", color: "var(--color-muted-dark)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                               >
                                 <MoreDotsIcon />
                               </button>
@@ -2878,10 +2869,10 @@ export default function DashboardPage() {
                                 position: "absolute",
                                 top: "40px",
                                 right: 0,
-                                backgroundColor: "#ffffff",
+                                backgroundColor: "var(--color-surface)",
                                 borderRadius: "8px",
                                 boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                                border: `1px solid ${COLOR.borderSoft}`,
+                                border: `1px solid ${"var(--color-border-soft)"}`,
                                 zIndex: 300,
                                 width: "142px",
                                 display: "flex",
@@ -2891,18 +2882,18 @@ export default function DashboardPage() {
                                 <button onClick={() => {
                                   openTaskEditModal(task);
                                   setOpenTaskMenuId(null);
-                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "var(--color-foreground)", width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                                 >
-                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "var(--color-primary-pale)", color: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center" }}><PenIcon size={11} /></div>
                                   Edit Task
                                 </button>
                                 <button onClick={() => {
                                   void handleCompleteTask(task.id ?? "");
                                   setOpenTaskMenuId(null);
-                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: COLOR.text, width: "100%", transition: "background-color 0.1s" }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+                                }} style={{ ...buttonReset, display: "flex", alignItems: "center", gap: "10px", padding: "8px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, color: "var(--color-foreground)", width: "100%", transition: "background-color 0.1s" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                                 >
                                   <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckSquareIcon size={11} color="currentColor" /></div>
@@ -2916,7 +2907,7 @@ export default function DashboardPage() {
                                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                                 >
-                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "#fee2e2", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
+                                  <div style={{ width: "22px", height: "22px", borderRadius: "5px", backgroundColor: "var(--color-danger-soft)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}><TrashIcon size={11} /></div>
                                   Delete Task
                                 </button>
                               </div>
@@ -2931,17 +2922,17 @@ export default function DashboardPage() {
                                   padding: "0 14px",
                                   borderRadius: "20px",
                                   border: "1px solid #d1d5db",
-                                  backgroundColor: "#ffffff",
+                                  backgroundColor: "var(--color-surface)",
                                   fontSize: "11px",
                                   fontWeight: 700,
-                                  color: COLOR.text,
+                                  color: "var(--color-foreground)",
                                   cursor: "pointer",
                                   fontFamily: "inherit",
                                   whiteSpace: "nowrap",
                                   transition: "all 0.15s",
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--color-surface)"; }}
                               >
                                 Start Focus
                               </button>
@@ -2961,28 +2952,28 @@ export default function DashboardPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {templateFilter === "Manage" ? (
                 <div style={{
-                  border: `1px solid ${COLOR.border}`,
+                  border: `1px solid ${"var(--color-border)"}`,
                   borderRadius: "7px",
-                  backgroundColor: COLOR.surface,
+                  backgroundColor: "var(--color-surface)",
                   overflow: "hidden",
                 }}>
-                  <div style={{ padding: "22px 24px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+                  <div style={{ padding: "22px 24px", borderBottom: `1px solid ${"var(--color-border)"}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
                     <div>
-                      <h3 style={{ fontSize: "16px", fontWeight: 700, color: COLOR.text, margin: 0 }}>Manage Templates</h3>
-                      <p style={{ fontSize: "12px", color: COLOR.mutedDark, margin: "4px 0 0" }}>Edit atau hapus template yang kamu buat sendiri.</p>
+                      <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", margin: 0 }}>Manage Templates</h3>
+                      <p style={{ fontSize: "12px", color: "var(--color-muted-dark)", margin: "4px 0 0" }}>Edit atau hapus template yang kamu buat sendiri.</p>
                     </div>
-                    <span style={{ fontSize: "12px", fontWeight: 700, color: COLOR.primary }}>{visibleTemplateCards.length} template</span>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--color-primary)" }}>{visibleTemplateCards.length} template</span>
                   </div>
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#F5F5F5", borderBottom: `1px solid ${COLOR.border}` }}>
-                          <th style={{ width: "72px", padding: "14px 20px", textAlign: "center", fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark }}>NO</th>
-                          <th style={{ padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark }}>TEMPLATE NAME</th>
-                          <th style={{ width: "140px", padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark }}>VISIBILITY</th>
-                          <th style={{ width: "110px", padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark }}>TASK</th>
-                          <th style={{ width: "150px", padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark }}>UPDATED</th>
-                          <th style={{ width: "156px", padding: "14px 20px", textAlign: "center", fontSize: "11px", fontWeight: 700, color: COLOR.mutedDark }}>ACTIONS</th>
+                        <tr style={{ backgroundColor: "#F5F5F5", borderBottom: `1px solid ${"var(--color-border)"}` }}>
+                          <th style={{ width: "72px", padding: "14px 20px", textAlign: "center", fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)" }}>NO</th>
+                          <th style={{ padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)" }}>TEMPLATE NAME</th>
+                          <th style={{ width: "140px", padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)" }}>VISIBILITY</th>
+                          <th style={{ width: "110px", padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)" }}>TASK</th>
+                          <th style={{ width: "150px", padding: "14px 20px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)" }}>UPDATED</th>
+                          <th style={{ width: "156px", padding: "14px 20px", textAlign: "center", fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)" }}>ACTIONS</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2993,13 +2984,13 @@ export default function DashboardPage() {
                             : { bg: "#DCFCE7", color: "#008B1F" };
 
                           return (
-                            <tr key={`manage-template-${item.id}`} style={{ borderBottom: `1px solid ${COLOR.borderSoft}` }}>
-                              <td style={{ padding: "18px 20px", textAlign: "center", fontSize: "13px", fontWeight: 700, color: COLOR.text }}>{index + 1}</td>
+                            <tr key={`manage-template-${item.id}`} style={{ borderBottom: `1px solid ${"var(--color-border-soft)"}` }}>
+                              <td style={{ padding: "18px 20px", textAlign: "center", fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{index + 1}</td>
                               <td style={{ padding: "18px 20px", minWidth: 0 }}>
-                                <div style={{ fontSize: "13px", fontWeight: 700, color: COLOR.text, marginBottom: "5px", overflowWrap: "anywhere", wordBreak: "break-word" }}>{item.title}</div>
+                                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "5px", overflowWrap: "anywhere", wordBreak: "break-word" }}>{item.title}</div>
                                 <div style={{
                                   fontSize: "12px",
-                                  color: COLOR.mutedDark,
+                                  color: "var(--color-muted-dark)",
                                   lineHeight: 1.35,
                                   overflow: "hidden",
                                   display: "-webkit-box",
@@ -3012,8 +3003,8 @@ export default function DashboardPage() {
                                   {item.desc}
                                 </div>
                                 {item.createdBy && (
-                                  <div style={{ fontSize: "11px", color: COLOR.mutedDark, fontWeight: 600 }}>
-                                    Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
+                                  <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", fontWeight: 600 }}>
+                                    Dibuat oleh <span style={{ color: "var(--color-primary)", fontWeight: 800 }}>{item.createdBy}</span>
                                   </div>
                                 )}
                               </td>
@@ -3022,8 +3013,8 @@ export default function DashboardPage() {
                                   {visibilityLabel}
                                 </span>
                               </td>
-                              <td style={{ padding: "18px 20px", fontSize: "13px", fontWeight: 600, color: COLOR.text }}>{item.subtasks} Task</td>
-                              <td style={{ padding: "18px 20px", fontSize: "13px", fontWeight: 600, color: COLOR.text }}>{item.updatedAt ?? "-"}</td>
+                              <td style={{ padding: "18px 20px", fontSize: "13px", fontWeight: 600, color: "var(--color-foreground)" }}>{item.subtasks} Task</td>
+                              <td style={{ padding: "18px 20px", fontSize: "13px", fontWeight: 600, color: "var(--color-foreground)" }}>{item.updatedAt ?? "-"}</td>
                               <td style={{ padding: "18px 20px" }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
                                   <button
@@ -3032,7 +3023,7 @@ export default function DashboardPage() {
                                       setExpandedDetailTaskIndexes([]);
                                       setTemplateView("detail");
                                     }}
-                                    style={{ width: "36px", height: "36px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                                    style={{ width: "36px", height: "36px", borderRadius: "7px", border: `1px solid ${"var(--color-border)"}`, backgroundColor: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                                   >
                                     <EyeOutlineIcon />
                                   </button>
@@ -3042,13 +3033,13 @@ export default function DashboardPage() {
                                       setTemplateFormError(null);
                                       setTemplateView("edit");
                                     }}
-                                    style={{ width: "36px", height: "36px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLOR.mutedDark }}
+                                    style={{ width: "36px", height: "36px", borderRadius: "7px", border: `1px solid ${"var(--color-border)"}`, backgroundColor: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--color-muted-dark)" }}
                                   >
                                     <PenIcon />
                                   </button>
                                   <button
                                     onClick={() => setDeleteTemplateId(item.id)}
-                                    style={{ width: "36px", height: "36px", borderRadius: "7px", border: "1px solid #FECACA", backgroundColor: "#FFF5F6", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#DC2626" }}
+                                    style={{ width: "36px", height: "36px", borderRadius: "7px", border: "1px solid #FECACA", backgroundColor: "#FFF5F6", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--color-danger)" }}
                                   >
                                     <TrashIcon />
                                   </button>
@@ -3071,14 +3062,14 @@ export default function DashboardPage() {
                           ? { bg: "#DCFCE7", color: "#008B1F" }
                           : badgeLabel === "PRIVATE"
                             ? { bg: "#E5DEFF", color: "#4F46E5" }
-                            : { bg: "#F1F1F1", color: "#4B4B4B" };
+                            : { bg: "var(--color-panel)", color: "var(--color-muted)" };
                       return (
                         <div key={item.id} style={{
                           width: "100%",
                           height: "342px",
-                          backgroundColor: COLOR.surface,
+                          backgroundColor: "var(--color-surface)",
                           borderRadius: "7px",
-                          border: `1px solid ${COLOR.border}`,
+                          border: `1px solid ${"var(--color-border)"}`,
                           padding: "24px",
                           boxSizing: "border-box",
                           display: "flex",
@@ -3107,7 +3098,7 @@ export default function DashboardPage() {
                           <h3 style={{
                             fontSize: "16px",
                             fontWeight: 700,
-                            color: COLOR.text,
+                            color: "var(--color-foreground)",
                             margin: "0 0 10px",
                             lineHeight: 1.25,
                             minHeight: "40px",
@@ -3123,7 +3114,7 @@ export default function DashboardPage() {
                           </h3>
                           <p style={{
                             fontSize: "14px",
-                            color: "#4B4B4B",
+                            color: "var(--color-muted)",
                             lineHeight: 1.45,
                             minHeight: "60px",
                             maxHeight: "60px",
@@ -3138,22 +3129,22 @@ export default function DashboardPage() {
                             {item.desc}
                           </p>
                           {item.createdBy && (
-                            <p style={{ fontSize: "12px", color: COLOR.mutedDark, lineHeight: "18px", margin: "0 0 14px", fontWeight: 700, minHeight: "18px", maxHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              Dibuat oleh <span style={{ color: COLOR.primary, fontWeight: 800 }}>{item.createdBy}</span>
+                            <p style={{ fontSize: "12px", color: "var(--color-muted-dark)", lineHeight: "18px", margin: "0 0 14px", fontWeight: 700, minHeight: "18px", maxHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              Dibuat oleh <span style={{ color: "var(--color-primary)", fontWeight: 800 }}>{item.createdBy}</span>
                             </p>
                           )}
 
                           {/* Tags */}
                           <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px", flexWrap: "wrap", overflow: "hidden", minHeight: "32px", maxHeight: "32px", flexShrink: 0 }}>
                             <span style={{
-                              display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
-                              backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
+                              display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--color-foreground)",
+                              backgroundColor: "var(--color-panel)", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
                             }}>
                               <SubtaskIcon /> {item.subtasks} Task
                             </span>
                             <span style={{
-                              display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: COLOR.text,
-                              backgroundColor: "#F1F1F1", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
+                              display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--color-foreground)",
+                              backgroundColor: "var(--color-panel)", padding: "6px 10px", borderRadius: "5px", fontWeight: 500
                             }}>
                               <TemplateIcon /> {item.isOfficial ? "Official" : item.visibility === "private" ? "Private" : "Public"}
                             </span>
@@ -3166,12 +3157,12 @@ export default function DashboardPage() {
                                 void handleUseCard(item);
                               }}
                               style={{
-                                flex: 1, height: "40px", borderRadius: "7px", backgroundColor: COLOR.primary, color: "#ffffff",
+                                flex: 1, height: "40px", borderRadius: "7px", backgroundColor: "var(--color-primary)", color: "var(--color-background)",
                                 fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit",
                                 transition: "background-color 0.15s"
                               }}
-                              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = COLOR.primaryHover; }}
-                              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = COLOR.primary; }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary-hover)"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary)"; }}
                             >
                               Use Template
                             </button>
@@ -3182,7 +3173,7 @@ export default function DashboardPage() {
                                 setTemplateView("detail");
                               }}
                               style={{
-                                width: "40px", height: "40px", borderRadius: "7px", border: `1px solid ${COLOR.border}`, backgroundColor: COLOR.surface,
+                                width: "40px", height: "40px", borderRadius: "7px", border: `1px solid ${"var(--color-border)"}`, backgroundColor: "var(--color-surface)",
                                 display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "border-color 0.15s"
                               }}>
                               <EyeOutlineIcon />
@@ -3196,11 +3187,11 @@ export default function DashboardPage() {
 
               {visibleTemplateCards.length === 0 && (
                 <div style={{
-                  border: `1px dashed ${COLOR.border}`,
+                  border: `1px dashed ${"var(--color-border)"}`,
                   borderRadius: "8px",
                   padding: "28px",
                   textAlign: "center",
-                  color: COLOR.mutedDark,
+                  color: "var(--color-muted-dark)",
                   fontSize: "13px",
                   fontWeight: 600,
                 }}>
@@ -3216,8 +3207,8 @@ export default function DashboardPage() {
                   <button key={page} style={{
                     width: "28px", height: "28px", borderRadius: "4px",
                     border: page === 1 ? "1px solid #86efac" : "1px solid #e5e7eb",
-                    backgroundColor: "#ffffff",
-                    color: page === 1 ? "#16a34a" : "#6b7280",
+                    backgroundColor: "var(--color-surface)",
+                    color: page === 1 ? "#16a34a" : "var(--color-muted-dark)",
                     fontSize: "12px", fontWeight: 500, cursor: "pointer", fontFamily: "inherit"
                   }}>
                     {page}
@@ -3228,7 +3219,7 @@ export default function DashboardPage() {
               {/* Tips Banner */}
               <div style={{
                 display: "none",
-                backgroundColor: "#dcfce7", color: "#166534", padding: "16px 24px",
+                backgroundColor: "#dcfce7", color: "var(--color-primary)", padding: "16px 24px",
                 borderRadius: "8px", fontSize: "13px", fontWeight: 600,
                 textAlign: "center", marginTop: "16px"
               }}>
@@ -3242,9 +3233,9 @@ export default function DashboardPage() {
             const task = apiTasks.find(t => t.id === selectedTaskId);
             if (!task) return null;
             const energyLevel = mapEnergyToLevel(task.energy_weight);
-            const energyColor = task.energy_weight === "Berat" ? "#DC2626" : task.energy_weight === "Sedang" ? "#F59E0B" : COLOR.primary;
+            const energyColor = task.energy_weight === "Berat" ? "var(--color-danger)" : task.energy_weight === "Sedang" ? "#F59E0B" : "var(--color-primary)";
             const statusLabel = task.status === "done" ? "Selesai" : task.status === "in_progress" ? "In Progress" : "Pending";
-            const statusColor = task.status === "done" ? COLOR.primary : task.status === "in_progress" ? "#3B82F6" : "#F59E0B";
+            const statusColor = task.status === "done" ? "var(--color-primary)" : task.status === "in_progress" ? "var(--color-primary)" : "#F59E0B";
             const fmtDateTime = (v: string | null) => {
               if (!v) return "—";
               return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(v));
@@ -3254,11 +3245,11 @@ export default function DashboardPage() {
             const taskSubtasks = meta?.subtasks || [];
             const doneSubtaskCount = taskSubtasks.filter(s => s.done).length;
             return (
-              <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: "32px" }}>
+              <div style={{ backgroundColor: "var(--color-surface)", borderRadius: "12px", border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: "32px" }}>
                 {/* Header / Modal-like top bar */}
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: 0 }}>Task Detail</h2>
-                  <button onClick={() => setSelectedTaskId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
+                  <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", margin: 0 }}>Task Detail</h2>
+                  <button onClick={() => setSelectedTaskId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-dark)" }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
                 </div>
@@ -3270,22 +3261,22 @@ export default function DashboardPage() {
 
                     {/* Title */}
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "var(--color-muted)" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
                         Title
                       </div>
-                      <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "20px", fontWeight: 700, color: "#111827" }}>
+                      <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "20px", fontWeight: 700, color: "var(--color-foreground)" }}>
                         {task.title}
                       </div>
                     </div>
 
                     {/* Description */}
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontSize: "14px", fontWeight: 600, color: "var(--color-muted)" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                         Description
                       </div>
-                      <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", color: "#4b5563", minHeight: "100px", whiteSpace: "pre-wrap" }}>
+                      <div style={{ padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", color: "var(--color-muted)", minHeight: "100px", whiteSpace: "pre-wrap" }}>
                         {taskDescription || "No description provided."}
                       </div>
                     </div>
@@ -3293,11 +3284,11 @@ export default function DashboardPage() {
                     {/* Subtasks */}
                     <div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "#4b5563" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--color-muted)" }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
                           Subtasks
                         </div>
-                        <div style={{ backgroundColor: "#f3f4f6", padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, color: "#4b5563" }}>
+                        <div style={{ backgroundColor: "var(--color-panel)", padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, color: "var(--color-muted)" }}>
                           {doneSubtaskCount}/{taskSubtasks.length} Done
                         </div>
                       </div>
@@ -3305,14 +3296,14 @@ export default function DashboardPage() {
                       <div style={{ borderRadius: "8px", border: "1px solid #e5e7eb", padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
                         {taskSubtasks.map((st, idx) => (
                           <div key={idx} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <div style={{ width: "20px", height: "20px", borderRadius: "4px", backgroundColor: st.done ? "#6366f1" : "#ffffff", border: st.done ? "none" : "1px solid #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => {
+                            <div style={{ width: "20px", height: "20px", borderRadius: "4px", backgroundColor: st.done ? "#6366f1" : "var(--color-surface)", border: st.done ? "none" : "1px solid #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => {
                               const newSubs = [...taskSubtasks];
                               newSubs[idx] = { ...newSubs[idx], done: !newSubs[idx].done };
                               setLocalTaskMeta(prev => ({ ...prev, [task.id]: { description: taskDescription, subtasks: newSubs } }));
                             }}>
-                              {st.done && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                              {st.done && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-surface)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                             </div>
-                            <span style={{ fontSize: "14px", color: st.done ? "#9ca3af" : "#4b5563", textDecoration: st.done ? "line-through" : "none" }}>{st.text}</span>
+                            <span style={{ fontSize: "14px", color: st.done ? "var(--color-muted-dark)" : "var(--color-muted)", textDecoration: st.done ? "line-through" : "none" }}>{st.text}</span>
                           </div>
                         ))}
 
@@ -3329,8 +3320,8 @@ export default function DashboardPage() {
 
                     {/* Priority */}
                     <div>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>PRIORITY</div>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: energyLevel === "HIGH" ? "#16a34a" : energyLevel === "MEDIUM" ? "#f59e0b" : "#6b7280", color: "#ffffff", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600 }}>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)", letterSpacing: "0.05em", marginBottom: "12px" }}>PRIORITY</div>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: energyLevel === "HIGH" ? "#16a34a" : energyLevel === "MEDIUM" ? "#f59e0b" : "var(--color-muted-dark)", color: "var(--color-background)", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
                         {energyLevel === "HIGH" ? "High Priority" : energyLevel === "MEDIUM" ? "Medium Priority" : "Low Priority"}
                       </div>
@@ -3338,8 +3329,8 @@ export default function DashboardPage() {
 
                     {/* Due Date */}
                     <div>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>DUE DATE</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: task.deadline && new Date(task.deadline) < new Date() ? "#dc2626" : "#4b5563" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)", letterSpacing: "0.05em", marginBottom: "12px" }}>DUE DATE</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: task.deadline && new Date(task.deadline) < new Date() ? "var(--color-danger)" : "var(--color-muted)" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                         {task.deadline ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(task.deadline)) : "No due date"}
                         {task.deadline && new Date(task.deadline) < new Date() && " (Overdue)"}
@@ -3348,7 +3339,7 @@ export default function DashboardPage() {
 
                     {/* Task Level */}
                     <div>
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", letterSpacing: "0.05em", marginBottom: "12px" }}>TASK LEVEL</div>
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-muted-dark)", letterSpacing: "0.05em", marginBottom: "12px" }}>TASK LEVEL</div>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: 700, color: "#16a34a" }}>
                         {task.energy_weight}
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
@@ -3358,17 +3349,17 @@ export default function DashboardPage() {
                     <hr style={{ border: "none", borderTop: "1px solid #e5e7eb", margin: 0 }} />
 
                     {/* Created */}
-                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+                    <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-muted-dark)" }}>
                       Created {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(task.created_at))}
                     </div>
 
                     {/* Actions */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
-                      <button onClick={() => setNotice("Fitur edit task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: "13px", fontWeight: 600, padding: 0 }}>
+                      <button onClick={() => setNotice("Fitur edit task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "var(--color-muted)", fontSize: "13px", fontWeight: 600, padding: 0 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-3.25-1.95" /></svg>
                         Update Task
                       </button>
-                      <button onClick={() => setNotice("Fitur hapus task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: "13px", fontWeight: 600, padding: 0 }}>
+                      <button onClick={() => setNotice("Fitur hapus task perlu endpoint backend tambahan.")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", color: "var(--color-muted)", fontSize: "13px", fontWeight: 600, padding: 0 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                         Delete Task
                       </button>
@@ -3390,7 +3381,7 @@ export default function DashboardPage() {
               animation: "dashNotifPop 0.25s ease-out forwards",
             }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "16px",
+                backgroundColor: "var(--color-surface)", borderRadius: "16px",
                 width: "100%", maxWidth: "820px", padding: "32px 36px 36px",
                 position: "relative", maxHeight: "90vh", overflowY: "auto",
                 boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
@@ -3405,11 +3396,11 @@ export default function DashboardPage() {
                   style={{
                     position: "absolute", top: "24px", right: "24px",
                     background: "none", border: "none", cursor: "pointer",
-                    color: "#6b7280", padding: "4px", display: "flex",
+                    color: "var(--color-muted-dark)", padding: "4px", display: "flex",
                     transition: "color 0.15s",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "#111827"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-foreground)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-muted-dark)"; }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -3426,8 +3417,8 @@ export default function DashboardPage() {
                     <CompassIcon />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: "0 0 6px", overflowWrap: "anywhere", wordBreak: "break-word" }}>{selectedCard.title}</h2>
-                    <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.5, margin: 0, maxWidth: "500px", overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                    <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--color-foreground)", margin: "0 0 6px", overflowWrap: "anywhere", wordBreak: "break-word" }}>{selectedCard.title}</h2>
+                    <p style={{ fontSize: "13px", color: "var(--color-muted-dark)", lineHeight: 1.5, margin: 0, maxWidth: "500px", overflowWrap: "anywhere", wordBreak: "break-word" }}>
                       {selectedCard.desc}
                     </p>
                   </div>
@@ -3438,9 +3429,9 @@ export default function DashboardPage() {
                   {/* Left: Template Tasks */}
                   <div style={{
                     flex: 1, minWidth: "320px", border: "1px solid #f0f0f0", borderRadius: "12px",
-                    padding: "24px", backgroundColor: "#ffffff",
+                    padding: "24px", backgroundColor: "var(--color-surface)",
                   }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 24px" }}>Template Tasks</h3>
+                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", margin: "0 0 24px" }}>Template Tasks</h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                       {(selectedCardTasks.length ? selectedCardTasks : [{ title: "Belum ada task", description: "", energy_weight: "Ringan" as EnergyWeight }]).map((task, idx) => {
                         const isOpen = expandedDetailTaskIndexes.includes(idx);
@@ -3448,7 +3439,7 @@ export default function DashboardPage() {
 
                         return (
                           <div key={`${task.title}-${idx}`} style={{
-                            border: `1px solid ${isOpen ? "#008B1F" : "#E5E7EB"}`,
+                            border: `1px solid ${isOpen ? "#008B1F" : "var(--color-border)"}`,
                             borderRadius: "8px",
                             overflow: "hidden",
                             transition: "border-color 180ms ease, box-shadow 180ms ease",
@@ -3462,7 +3453,7 @@ export default function DashboardPage() {
                               style={{
                                 width: "100%",
                                 border: "none",
-                                background: "#ffffff",
+                                background: "var(--color-surface)",
                                 minHeight: "44px",
                                 padding: "10px 14px",
                                 display: "flex",
@@ -3473,20 +3464,20 @@ export default function DashboardPage() {
                               }}
                             >
                               <span style={{
-                                width: "24px", height: "24px", borderRadius: "50%", backgroundColor: "#166534",
-                                color: "#ffffff", fontSize: "11px", fontWeight: 800,
+                                width: "24px", height: "24px", borderRadius: "50%", backgroundColor: "var(--color-primary)",
+                                color: "var(--color-background)", fontSize: "11px", fontWeight: 800,
                                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                               }}>
                                 {idx + 1}
                               </span>
-                              <span style={{ flex: 1, minWidth: 0, textAlign: "left", fontSize: "13px", color: "#111827", fontWeight: 700, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                              <span style={{ flex: 1, minWidth: 0, textAlign: "left", fontSize: "13px", color: "var(--color-foreground)", fontWeight: 700, overflowWrap: "anywhere", wordBreak: "break-word" }}>
                                 {task.title}
                               </span>
                               <span style={{
                                 fontSize: "9px",
                                 fontWeight: 800,
-                                color: levelLabel === "HIGH" ? "#DC2626" : levelLabel === "MEDIUM" ? "#F97316" : "#008B1F",
-                                backgroundColor: levelLabel === "HIGH" ? "#FEE2E2" : levelLabel === "MEDIUM" ? "#FFEDD5" : "#DCFCE7",
+                                color: levelLabel === "HIGH" ? "var(--color-danger)" : levelLabel === "MEDIUM" ? "#F97316" : "#008B1F",
+                                backgroundColor: levelLabel === "HIGH" ? "var(--color-danger-soft)" : levelLabel === "MEDIUM" ? "#FFEDD5" : "#DCFCE7",
                                 borderRadius: "5px",
                                 padding: "3px 8px",
                               }}>
@@ -3500,7 +3491,7 @@ export default function DashboardPage() {
                               transition: "max-height 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease",
                             }}>
                               <div style={{ borderTop: "1px solid #E5E7EB", padding: "12px 14px 14px 50px" }}>
-                                <p style={{ margin: 0, color: "#6B7280", fontSize: "12px", lineHeight: 1.5, maxHeight: "110px", overflowY: "auto", overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                                <p style={{ margin: 0, color: "var(--color-muted-dark)", fontSize: "12px", lineHeight: 1.5, maxHeight: "110px", overflowY: "auto", overflowWrap: "anywhere", wordBreak: "break-word" }}>
                                   {task.description || "Belum ada deskripsi task."}
                                 </p>
                               </div>
@@ -3514,39 +3505,39 @@ export default function DashboardPage() {
                   {/* Right: Template Information */}
                   <div style={{
                     width: "300px", flexShrink: 0, border: "1px solid #f0f0f0", borderRadius: "12px",
-                    padding: "24px", backgroundColor: "#ffffff",
+                    padding: "24px", backgroundColor: "var(--color-surface)",
                     display: "flex", flexDirection: "column",
                   }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", margin: "0 0 28px" }}>Template Information</h3>
+                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)", margin: "0 0 28px" }}>Template Information</h3>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "24px", flex: 1 }}>
                       {/* Created by */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6b7280" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--color-muted-dark)" }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                             <circle cx="12" cy="7" r="4" />
                           </svg>
                           <span style={{ fontSize: "13px", fontWeight: 500 }}>Created by</span>
                         </div>
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{selectedCard.createdBy ?? "BenToDo Official"}</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{selectedCard.createdBy ?? "BenToDo Official"}</span>
                       </div>
 
                       {/* Used */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6b7280" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--color-muted-dark)" }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
                           </svg>
                           <span style={{ fontSize: "13px", fontWeight: 500 }}>Used</span>
                         </div>
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{selectedCard.usage ?? "0 times"}</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{selectedCard.usage ?? "0 times"}</span>
                       </div>
 
                       {/* Last updated */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6b7280" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--color-muted-dark)" }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                             <line x1="16" y1="2" x2="16" y2="6" />
@@ -3555,7 +3546,7 @@ export default function DashboardPage() {
                           </svg>
                           <span style={{ fontSize: "13px", fontWeight: 500 }}>Last updated</span>
                         </div>
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{selectedCard.updatedAt ?? "-"}</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{selectedCard.updatedAt ?? "-"}</span>
                       </div>
                     </div>
 
@@ -3566,13 +3557,13 @@ export default function DashboardPage() {
                           void handleUseCard(selectedCard);
                         }}
                         style={{
-                          width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "#166534",
-                          color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none",
+                          width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "var(--color-primary)",
+                          color: "var(--color-background)", fontSize: "14px", fontWeight: 600, border: "none",
                           cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
                           display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                         }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary-hover)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary)"; }}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -3587,13 +3578,13 @@ export default function DashboardPage() {
                           }}
                           disabled={isActionLoading}
                           style={{
-                            width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "#ffffff",
-                            color: "#111827", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb",
+                            width: "100%", height: "44px", borderRadius: "999px", backgroundColor: "var(--color-surface)",
+                            color: "var(--color-foreground)", fontSize: "14px", fontWeight: 600, border: "1px solid #e5e7eb",
                             cursor: isActionLoading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
                             display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                           }}
-                          onMouseEnter={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f9fafb"; }}
-                          onMouseLeave={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ffffff"; }}
+                          onMouseEnter={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-surface)"; }}
+                          onMouseLeave={(e) => { if (!isActionLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-surface)"; }}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -3654,7 +3645,7 @@ export default function DashboardPage() {
               animation: "dashNotifPop 0.25s ease-out forwards",
             }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "16px",
+                backgroundColor: "var(--color-surface)", borderRadius: "16px",
                 width: "100%", maxWidth: "420px", padding: "36px 32px 32px",
                 position: "relative", textAlign: "center",
                 boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
@@ -3665,11 +3656,11 @@ export default function DashboardPage() {
                   style={{
                     position: "absolute", top: "20px", right: "20px",
                     background: "none", border: "none", cursor: "pointer",
-                    color: "#6b7280", padding: "4px", display: "flex",
+                    color: "var(--color-muted-dark)", padding: "4px", display: "flex",
                     transition: "color 0.15s",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "#111827"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-foreground)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-muted-dark)"; }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -3680,32 +3671,32 @@ export default function DashboardPage() {
                 {/* Success Icon with sparkles */}
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px", position: "relative" }}>
                   <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
-                    <circle cx="45" cy="45" r="35" stroke="#166534" strokeWidth="5" fill="none" />
-                    <path d="M28 45l10 10 24-24" stroke="#166534" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    <circle cx="45" cy="45" r="35" stroke="var(--color-primary)" strokeWidth="5" fill="none" />
+                    <path d="M28 45l10 10 24-24" stroke="var(--color-primary)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                     {/* Sparkles */}
-                    <path d="M62 12l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#166534" opacity="0.7" />
-                    <circle cx="70" cy="8" r="1.5" fill="#166534" opacity="0.5" />
+                    <path d="M62 12l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="var(--color-primary)" opacity="0.7" />
+                    <circle cx="70" cy="8" r="1.5" fill="var(--color-primary)" opacity="0.5" />
                   </svg>
                 </div>
 
-                <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", margin: "0 0 6px" }}>Template added successfully!</h2>
-                <p style={{ fontSize: "13px", color: "#9ca3af", margin: "0 0 24px" }}>All tasks have been added to your task list.</p>
+                <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--color-foreground)", margin: "0 0 6px" }}>Template added successfully!</h2>
+                <p style={{ fontSize: "13px", color: "var(--color-muted-dark)", margin: "0 0 24px" }}>All tasks have been added to your task list.</p>
 
                 {/* Summary Card */}
                 <div style={{
                   border: "1px solid #e5e7eb", borderRadius: "10px", padding: "20px",
-                  textAlign: "left", backgroundColor: "#fafafa", marginBottom: "24px",
+                  textAlign: "left", backgroundColor: "var(--color-surface)", marginBottom: "24px",
                 }}>
                   {/* Title with check */}
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
                     <CheckCircleSolidIcon />
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>{createdTemplateSummary?.title || "Untitled"}</span>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-foreground)" }}>{createdTemplateSummary?.title || "Untitled"}</span>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                     {/* Deadline */}
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#6b7280", minWidth: "130px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-muted-dark)", minWidth: "130px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                           <line x1="16" y1="2" x2="16" y2="6" />
@@ -3714,34 +3705,34 @@ export default function DashboardPage() {
                         </svg>
                         <span style={{ fontSize: "13px" }}>Task</span>
                       </div>
-                      <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{createdTemplateSummary?.taskCount ?? 0} tasks</span>
+                      <span style={{ color: "var(--color-muted-dark)", marginRight: "8px" }}>:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{createdTemplateSummary?.taskCount ?? 0} tasks</span>
                     </div>
 
                     {/* Level Task */}
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#6b7280", minWidth: "130px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-muted-dark)", minWidth: "130px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                           <line x1="4" y1="22" x2="4" y2="15" />
                         </svg>
                         <span style={{ fontSize: "13px" }}>Type</span>
                       </div>
-                      <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>Custom Template</span>
+                      <span style={{ color: "var(--color-muted-dark)", marginRight: "8px" }}>:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>Custom Template</span>
                     </div>
 
                     {/* Label */}
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#6b7280", minWidth: "130px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-muted-dark)", minWidth: "130px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                           <polyline points="14 2 14 8 20 8" />
                         </svg>
                         <span style={{ fontSize: "13px" }}>Label</span>
                       </div>
-                      <span style={{ color: "#9ca3af", marginRight: "8px" }}>:</span>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{createdTemplateSummary?.label === "Private" ? "Private" : "Public"}</span>
+                      <span style={{ color: "var(--color-muted-dark)", marginRight: "8px" }}>:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-foreground)" }}>{createdTemplateSummary?.label === "Private" ? "Private" : "Public"}</span>
                     </div>
                   </div>
                 </div>
@@ -3753,12 +3744,12 @@ export default function DashboardPage() {
                     setTemplateView("list");
                   }}
                   style={{
-                    width: "100%", height: "44px", borderRadius: "8px", backgroundColor: "#166534",
-                    color: "#ffffff", fontSize: "14px", fontWeight: 600, border: "none",
+                    width: "100%", height: "44px", borderRadius: "8px", backgroundColor: "var(--color-primary)",
+                    color: "var(--color-background)", fontSize: "14px", fontWeight: 600, border: "none",
                     cursor: "pointer", fontFamily: "inherit", transition: "background-color 0.15s",
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#14532d"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#166534"; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary)"; }}
                 >
                   View Template
                 </button>
@@ -3775,7 +3766,7 @@ export default function DashboardPage() {
               zIndex: 100, padding: "20px"
             }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "8px",
+                backgroundColor: "var(--color-surface)", borderRadius: "8px",
                 width: "100%", maxWidth: "560px", padding: "32px",
                 position: "relative", maxHeight: "90vh", overflowY: "auto",
               }}>
@@ -3787,7 +3778,7 @@ export default function DashboardPage() {
                   style={{
                     position: "absolute", top: "24px", right: "24px",
                     background: "none", border: "none", cursor: "pointer",
-                    color: COLOR.text, padding: "4px"
+                    color: "var(--color-foreground)", padding: "4px"
                   }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -3796,15 +3787,15 @@ export default function DashboardPage() {
                   </svg>
                 </button>
 
-                <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 24px", color: COLOR.text }}>
+                <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 24px", color: "var(--color-foreground)" }}>
                   {isEditTaskModalOpen ? "Edit Task" : "Add Task"}
                 </h2>
 
-                <div style={{ borderTop: `1px solid ${COLOR.borderSoft}`, margin: "0 -32px 24px" }} />
+                <div style={{ borderTop: `1px solid ${"var(--color-border-soft)"}`, margin: "0 -32px 24px" }} />
 
                 {/* Task Name */}
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--color-foreground)", marginBottom: "8px" }}>
                     <span style={{ fontSize: "14px", fontWeight: "bold" }}>T</span> Task Name
                   </label>
                   <input
@@ -3814,19 +3805,19 @@ export default function DashboardPage() {
                     placeholder="Enter Name Task"
                     maxLength={TASK_TITLE_MAX}
                     style={{
-                      width: "100%", height: "48px", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
-                      padding: "0 16px", fontSize: "14px", color: COLOR.text, outline: "none",
+                      width: "100%", height: "48px", borderRadius: "8px", border: `1px solid ${"var(--color-border)"}`,
+                      padding: "0 16px", fontSize: "14px", color: "var(--color-foreground)", outline: "none",
                       boxSizing: "border-box"
                     }}
                   />
-                  <div style={{ marginTop: "6px", textAlign: "right", fontSize: "11px", fontWeight: 600, color: COLOR.primary }}>
+                  <div style={{ marginTop: "6px", textAlign: "right", fontSize: "11px", fontWeight: 600, color: "var(--color-primary)" }}>
                     {addTaskTitle.length}/{TASK_TITLE_MAX}
                   </div>
                 </div>
 
                 {/* Description */}
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--color-foreground)", marginBottom: "8px" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                     Description
                   </label>
@@ -3837,19 +3828,19 @@ export default function DashboardPage() {
                     maxLength={TASK_DESCRIPTION_MAX}
                     rows={3}
                     style={{
-                      width: "100%", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
-                      padding: "12px 16px", fontSize: "14px", color: COLOR.text, outline: "none",
+                      width: "100%", borderRadius: "8px", border: `1px solid ${"var(--color-border)"}`,
+                      padding: "12px 16px", fontSize: "14px", color: "var(--color-foreground)", outline: "none",
                       boxSizing: "border-box", fontFamily: "inherit", resize: "vertical", minHeight: "80px"
                     }}
                   />
-                  <div style={{ marginTop: "6px", textAlign: "right", fontSize: "11px", fontWeight: 600, color: COLOR.primary }}>
+                  <div style={{ marginTop: "6px", textAlign: "right", fontSize: "11px", fontWeight: 600, color: "var(--color-primary)" }}>
                     {addTaskDesc.length}/{TASK_DESCRIPTION_MAX}
                   </div>
                 </div>
 
                 {/* Due Date */}
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--color-foreground)", marginBottom: "8px" }}>
                     <CalendarSmIcon /> Due Date
                   </label>
                   <input
@@ -3857,8 +3848,8 @@ export default function DashboardPage() {
                     value={addTaskDeadline}
                     onChange={(e) => setAddTaskDeadline(e.target.value)}
                     style={{
-                      width: "100%", height: "48px", borderRadius: "8px", border: `1px solid ${COLOR.border}`,
-                      padding: "0 16px", fontSize: "14px", color: COLOR.text, outline: "none",
+                      width: "100%", height: "48px", borderRadius: "8px", border: `1px solid ${"var(--color-border)"}`,
+                      padding: "0 16px", fontSize: "14px", color: "var(--color-foreground)", outline: "none",
                       boxSizing: "border-box", fontFamily: "inherit"
                     }}
                   />
@@ -3866,7 +3857,7 @@ export default function DashboardPage() {
 
                 {/* Task Level */}
                 <div style={{ marginBottom: "32px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: COLOR.text, marginBottom: "8px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "var(--color-foreground)", marginBottom: "8px" }}>
                     <span style={{ fontSize: "14px", fontWeight: "bold" }}>!</span> Task Level
                   </label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
@@ -3879,18 +3870,18 @@ export default function DashboardPage() {
                         key={item.id}
                         onClick={() => setAddTaskEnergy(item.id as EnergyWeight)}
                         style={{
-                          border: `1.5px solid ${addTaskEnergy === item.id ? COLOR.primary : COLOR.border}`,
+                          border: `1.5px solid ${addTaskEnergy === item.id ? "var(--color-primary)" : "var(--color-border)"}`,
                           borderRadius: "8px", height: "48px", cursor: "pointer",
-                          backgroundColor: addTaskEnergy === item.id ? "#f0fdf4" : "#ffffff",
+                          backgroundColor: addTaskEnergy === item.id ? "#f0fdf4" : "var(--color-surface)",
                           display: "flex", alignItems: "center", justifyContent: "center",
                           transition: "all 0.2s", position: "relative"
                         }}
                       >
-                        <span style={{ fontSize: "13px", fontWeight: addTaskEnergy === item.id ? 700 : 500, color: addTaskEnergy === item.id ? COLOR.primary : COLOR.text }}>
+                        <span style={{ fontSize: "13px", fontWeight: addTaskEnergy === item.id ? 700 : 500, color: addTaskEnergy === item.id ? "var(--color-primary)" : "var(--color-foreground)" }}>
                           {item.label}
                         </span>
                         {addTaskEnergy === item.id && (
-                          <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "16px", height: "16px", borderRadius: "50%", backgroundColor: COLOR.primary, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                          <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "16px", height: "16px", borderRadius: "50%", backgroundColor: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                           </div>
                         )}
@@ -3899,7 +3890,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div style={{ borderTop: `1px solid ${COLOR.borderSoft}`, margin: "0 -32px 24px" }} />
+                <div style={{ borderTop: `1px solid ${"var(--color-border-soft)"}`, margin: "0 -32px 24px" }} />
 
                 {/* Submit */}
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
@@ -3910,8 +3901,8 @@ export default function DashboardPage() {
                     }}
                     style={{
                       height: "44px", padding: "0 24px", borderRadius: "8px",
-                      backgroundColor: "#ffffff", color: COLOR.text,
-                      fontSize: "14px", fontWeight: 600, border: `1px solid ${COLOR.border}`, cursor: "pointer"
+                      backgroundColor: "var(--color-surface)", color: "var(--color-foreground)",
+                      fontSize: "14px", fontWeight: 600, border: `1px solid ${"var(--color-border)"}`, cursor: "pointer"
                     }}
                   >
                     Cancel
@@ -3927,7 +3918,7 @@ export default function DashboardPage() {
                     disabled={isActionLoading}
                     style={{
                       height: "44px", padding: "0 32px", borderRadius: "8px",
-                      backgroundColor: COLOR.primary, color: "#ffffff",
+                      backgroundColor: "var(--color-primary)", color: "var(--color-background)",
                       fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer",
                       opacity: isActionLoading ? 0.7 : 1, transition: "opacity 0.2s"
                     }}
@@ -3949,20 +3940,20 @@ export default function DashboardPage() {
               zIndex: 100, padding: "20px"
             }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "8px",
+                backgroundColor: "var(--color-surface)", borderRadius: "8px",
                 width: "100%", maxWidth: "560px", padding: "32px",
                 position: "relative", maxHeight: "90vh", overflowY: "auto",
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: COLOR.text }}>Task Details</h2>
+                    <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--color-foreground)" }}>Task Details</h2>
                     {detailTaskData.status === "done" && (
-                      <span style={{ borderRadius: "999px", backgroundColor: "#DDFBE5", color: COLOR.primary, border: "1px solid #A7F3D0", padding: "4px 10px", fontSize: "12px", fontWeight: 700 }}>
+                      <span style={{ borderRadius: "999px", backgroundColor: "#DDFBE5", color: "var(--color-primary)", border: "1px solid #A7F3D0", padding: "4px 10px", fontSize: "12px", fontWeight: 700 }}>
                         Completed
                       </span>
                     )}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px", color: COLOR.text }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px", color: "var(--color-foreground)" }}>
                     {detailTaskData.status !== "done" && (
                       <>
                         <button onClick={() => {
@@ -3987,65 +3978,65 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <h3 style={{ fontSize: "18px", fontWeight: 600, color: COLOR.text, margin: "0 0 8px", lineHeight: 1.3 }}>{detailTaskData.title}</h3>
-                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 24px", lineHeight: 1.5, whiteSpace: "pre-line" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--color-foreground)", margin: "0 0 8px", lineHeight: 1.3 }}>{detailTaskData.title}</h3>
+                <p style={{ fontSize: "14px", color: "var(--color-muted-dark)", margin: "0 0 24px", lineHeight: 1.5, whiteSpace: "pre-line" }}>
                   {detailTaskData.description || "No description provided."}
                 </p>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px", marginBottom: "20px" }}>
-                  <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", minHeight: "68px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: COLOR.mutedDark, marginBottom: "8px" }}>
+                  <div style={{ border: `1px solid ${"var(--color-border-soft)"}`, borderRadius: "8px", padding: "16px", minHeight: "68px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: "var(--color-muted-dark)", marginBottom: "8px" }}>
                       <span style={{ fontSize: "14px", fontWeight: "bold" }}>!</span> Priority
                     </div>
                     <PriorityBadge level={detailTaskData.level} />
                   </div>
 
-                  <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", minHeight: "68px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: COLOR.mutedDark, marginBottom: "8px" }}>
+                  <div style={{ border: `1px solid ${"var(--color-border-soft)"}`, borderRadius: "8px", padding: "16px", minHeight: "68px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: "var(--color-muted-dark)", marginBottom: "8px" }}>
                       <CalendarSmIcon /> Due Date
                     </div>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: COLOR.text }}>{detailTaskData.date}</div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-foreground)" }}>{detailTaskData.date}</div>
                   </div>
                 </div>
 
                 {(detailTaskData.latestFocusSession || (detailTaskData.focusSummary?.total_sessions ?? 0) > 0) && (
-                  <div style={{ border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", padding: "16px", marginBottom: "24px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 700, color: COLOR.text, marginBottom: "14px" }}>
-                      <ClockAlertIcon color={COLOR.primary} size={16} /> Focus Timer
+                  <div style={{ border: `1px solid ${"var(--color-border-soft)"}`, borderRadius: "8px", padding: "16px", marginBottom: "24px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 700, color: "var(--color-foreground)", marginBottom: "14px" }}>
+                      <ClockAlertIcon color={"var(--color-primary)"} size={16} /> Focus Timer
                     </div>
                     {detailTaskData.latestFocusSession && (
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px", marginBottom: "12px" }}>
                         <div style={{ border: "1px solid #CFF7DA", borderRadius: "8px", backgroundColor: "#FBFFFC", padding: "12px" }}>
-                          <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "4px" }}>Start Time</div>
-                          <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.text }}>{formatDateTimeShort(detailTaskData.latestFocusSession.started_at)}</div>
+                          <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", marginBottom: "4px" }}>Start Time</div>
+                          <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--color-foreground)" }}>{formatDateTimeShort(detailTaskData.latestFocusSession.started_at)}</div>
                         </div>
                         <div style={{ border: "1px solid #CFF7DA", borderRadius: "8px", backgroundColor: "#FBFFFC", padding: "12px" }}>
-                          <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "4px" }}>End Time</div>
-                          <div style={{ fontSize: "13px", fontWeight: 800, color: COLOR.text }}>{formatDateTimeShort(detailTaskData.latestFocusSession.ended_at)}</div>
+                          <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", marginBottom: "4px" }}>End Time</div>
+                          <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--color-foreground)" }}>{formatDateTimeShort(detailTaskData.latestFocusSession.ended_at)}</div>
                         </div>
                       </div>
                     )}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", border: `1px solid ${COLOR.borderSoft}`, borderRadius: "8px", overflow: "hidden" }}>
-                      <div style={{ padding: "12px", borderRight: `1px solid ${COLOR.borderSoft}` }}>
-                        <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "4px" }}>Focus Duration</div>
-                        <div style={{ fontSize: "14px", fontWeight: 800, color: COLOR.text }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", border: `1px solid ${"var(--color-border-soft)"}`, borderRadius: "8px", overflow: "hidden" }}>
+                      <div style={{ padding: "12px", borderRight: `1px solid ${"var(--color-border-soft)"}` }}>
+                        <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", marginBottom: "4px" }}>Focus Duration</div>
+                        <div style={{ fontSize: "14px", fontWeight: 800, color: "var(--color-foreground)" }}>
                           {detailTaskData.focusSummary?.total_focus_time_label ?? `${detailTaskData.latestFocusSession?.duration_minutes ?? 0} min`}
                         </div>
                       </div>
                       <div style={{ padding: "12px" }}>
-                        <div style={{ fontSize: "11px", color: COLOR.mutedDark, marginBottom: "8px" }}>Focus Score</div>
+                        <div style={{ fontSize: "11px", color: "var(--color-muted-dark)", marginBottom: "8px" }}>Focus Score</div>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div style={{ flex: 1, height: "6px", borderRadius: "999px", backgroundColor: "#E5E7EB", overflow: "hidden" }}>
-                            <div style={{ width: `${detailTaskData.focusSummary?.average_focus_score ?? 0}%`, height: "100%", backgroundColor: COLOR.primary }} />
+                          <div style={{ flex: 1, height: "6px", borderRadius: "999px", backgroundColor: "var(--color-border)", overflow: "hidden" }}>
+                            <div style={{ width: `${detailTaskData.focusSummary?.average_focus_score ?? 0}%`, height: "100%", backgroundColor: "var(--color-primary)" }} />
                           </div>
-                          <span style={{ fontSize: "12px", fontWeight: 800, color: COLOR.primary }}>{detailTaskData.focusSummary?.average_focus_score ?? 0}%</span>
+                          <span style={{ fontSize: "12px", fontWeight: 800, color: "var(--color-primary)" }}>{detailTaskData.focusSummary?.average_focus_score ?? 0}%</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div style={{ borderTop: `1px solid ${COLOR.borderSoft}`, margin: "0 -32px 24px" }} />
+                <div style={{ borderTop: `1px solid ${"var(--color-border-soft)"}`, margin: "0 -32px 24px" }} />
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {detailTaskData.id && (
@@ -4053,7 +4044,7 @@ export default function DashboardPage() {
                       onClick={() => handleStartFocus(detailTaskData.id)}
                       style={{
                         height: "44px", width: "100%", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                        backgroundColor: COLOR.primary, color: "#ffffff",
+                        backgroundColor: "var(--color-primary)", color: "var(--color-background)",
                         fontSize: "14px", fontWeight: 700, border: "none", cursor: "pointer"
                       }}
                     >
@@ -4073,7 +4064,7 @@ export default function DashboardPage() {
                       }}
                       style={{
                         height: "44px", width: "100%", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                        backgroundColor: "#ffffff", color: COLOR.text,
+                        backgroundColor: "var(--color-surface)", color: "var(--color-foreground)",
                         fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer"
                       }}
                     >
@@ -4084,8 +4075,8 @@ export default function DashboardPage() {
                     onClick={() => setIsDetailTaskModalOpen(false)}
                     style={{
                       height: "44px", width: "100%", borderRadius: "8px",
-                      backgroundColor: "#ffffff", color: COLOR.mutedDark,
-                      fontSize: "14px", fontWeight: 600, border: `1px solid ${COLOR.border}`, cursor: "pointer"
+                      backgroundColor: "var(--color-surface)", color: "var(--color-muted-dark)",
+                      fontSize: "14px", fontWeight: 600, border: `1px solid ${"var(--color-border)"}`, cursor: "pointer"
                     }}
                   >
                     Close Details
@@ -4105,16 +4096,16 @@ export default function DashboardPage() {
               zIndex: 100, padding: "20px"
             }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "12px",
+                backgroundColor: "var(--color-surface)", borderRadius: "12px",
                 width: "100%", maxWidth: "400px", padding: "40px 32px 32px",
                 display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center"
               }}>
-                <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#b91c1c" }}>
+                <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "var(--color-danger-soft)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "var(--color-danger)" }}>
                   <AlertTriangleIcon size={32} color="currentColor" />
                 </div>
 
-                <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 12px", color: COLOR.text }}>Delete Task?</h2>
-                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 32px", lineHeight: 1.5 }}>
+                <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 12px", color: "var(--color-foreground)" }}>Delete Task?</h2>
+                <p style={{ fontSize: "14px", color: "var(--color-muted-dark)", margin: "0 0 32px", lineHeight: 1.5 }}>
                   Are you sure you want to delete this task? This action cannot be undone.
                 </p>
 
@@ -4123,7 +4114,7 @@ export default function DashboardPage() {
                     onClick={() => setIsDeleteTaskModalOpen(false)}
                     style={{
                       flex: 1, height: "44px", borderRadius: "8px",
-                      backgroundColor: "transparent", color: COLOR.mutedDark,
+                      backgroundColor: "transparent", color: "var(--color-muted-dark)",
                       fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer"
                     }}
                   >
@@ -4134,7 +4125,7 @@ export default function DashboardPage() {
                     disabled={isActionLoading}
                     style={{
                       flex: 1, height: "44px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                      backgroundColor: "#b91c1c", color: "#ffffff",
+                      backgroundColor: "var(--color-danger)", color: "var(--color-background)",
                       fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer",
                       opacity: isActionLoading ? 0.7 : 1, transition: "opacity 0.2s"
                     }}
@@ -4155,16 +4146,16 @@ export default function DashboardPage() {
               zIndex: 100, padding: "20px"
             }}>
               <div style={{
-                backgroundColor: "#ffffff", borderRadius: "12px",
+                backgroundColor: "var(--color-surface)", borderRadius: "12px",
                 width: "100%", maxWidth: "400px", padding: "40px 32px 32px",
                 display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center"
               }}>
-                <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "#b91c1c" }}>
+                <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "var(--color-danger-soft)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "24px", color: "var(--color-danger)" }}>
                   <AlertTriangleIcon size={32} color="currentColor" />
                 </div>
 
-                <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 12px", color: COLOR.text }}>Delete Template?</h2>
-                <p style={{ fontSize: "14px", color: COLOR.mutedDark, margin: "0 0 32px", lineHeight: 1.5 }}>
+                <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 12px", color: "var(--color-foreground)" }}>Delete Template?</h2>
+                <p style={{ fontSize: "14px", color: "var(--color-muted-dark)", margin: "0 0 32px", lineHeight: 1.5 }}>
                   Are you sure you want to delete template &quot;{deleteTemplateTarget.title}&quot;? This action cannot be undone.
                 </p>
 
@@ -4173,7 +4164,7 @@ export default function DashboardPage() {
                     onClick={() => setDeleteTemplateId(null)}
                     style={{
                       flex: 1, height: "44px", borderRadius: "8px",
-                      backgroundColor: "transparent", color: COLOR.mutedDark,
+                      backgroundColor: "transparent", color: "var(--color-muted-dark)",
                       fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer"
                     }}
                   >
@@ -4184,7 +4175,7 @@ export default function DashboardPage() {
                     disabled={isActionLoading}
                     style={{
                       flex: 1, height: "44px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                      backgroundColor: "#b91c1c", color: "#ffffff",
+                      backgroundColor: "var(--color-danger)", color: "var(--color-background)",
                       fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer",
                       opacity: isActionLoading ? 0.7 : 1, transition: "opacity 0.2s"
                     }}

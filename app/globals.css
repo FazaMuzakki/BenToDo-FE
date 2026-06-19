@@ -1,38 +1,111 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: var(--token-background);
+  --color-foreground: var(--token-foreground);
+  --color-primary: var(--token-primary);
+  --color-primary-hover: var(--token-primary-hover);
+  --color-primary-soft: var(--token-primary-soft);
+  --color-primary-pale: var(--token-primary-pale);
+  --color-surface: var(--token-surface);
+  --color-panel: var(--token-panel);
+  --color-border: var(--token-border);
+  --color-border-soft: var(--token-border-soft);
+  --color-danger: var(--token-danger);
+  --color-danger-soft: var(--token-danger-soft);
+  --color-muted: var(--token-muted);
+  --color-muted-dark: var(--token-muted-dark);
+}
+
 /* Apply Poppins to everything via the CSS variable from Next.js font */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
+}
+
+:root {
+  --token-background: #FFFFFF;
+  --token-foreground: #171717;
+  --token-primary: #008B1F;
+  --token-primary-hover: #007A1B;
+  --token-primary-soft: #9CFFAD;
+  --token-primary-pale: #ECFFF0;
+  --token-border: #D9D9D9;
+  --token-border-soft: #ECECEC;
+  --token-surface: #FFFFFF;
+  --token-panel: #F5F5F5;
+  --token-muted: #8A8A8A;
+  --token-muted-dark: #666666;
+  --token-danger: #FF6B76;
+  --token-danger-soft: #FFCDD2;
+}
+
+.dark {
+  --token-background: #09090b; /* zinc-950 */
+  --token-foreground: #fafafa; /* zinc-50 */
+  --token-primary: #10b981; /* emerald-500 */
+  --token-primary-hover: #059669; /* emerald-600 */
+  --token-primary-soft: rgba(16, 185, 129, 0.15);
+  --token-primary-pale: rgba(16, 185, 129, 0.05);
+  --token-border: #3f3f46; /* zinc-700 */
+  --token-border-soft: #27272a; /* zinc-800 */
+  --token-surface: #18181b; /* zinc-900 */
+  --token-panel: #18181b; /* zinc-900 */
+  --token-muted: #a1a1aa; /* zinc-400 */
+  --token-muted-dark: #71717a; /* zinc-500 */
+  --token-danger: #ef4444; /* red-500 */
+  --token-danger-soft: rgba(239, 68, 68, 0.15);
+}
+
+/* Subtle elevation for cards in dark mode */
+.dark [style*="var(--color-panel)"],
+.dark [style*="var(--color-surface)"],
+.dark .bg-panel,
+.dark .bg-surface {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
 body {
   font-family: var(--font-poppins), "Poppins", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #111827;
-  background: #ffffff;
+  @apply bg-background text-foreground;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Ensure all inputs/buttons inherit Poppins */
-input, button, select, textarea, label {
+input,
+button,
+select,
+textarea,
+label {
   font-family: inherit;
 }
 
 /* Remove blue outline on inputs — we handle focus ourselves */
-input:focus, button:focus {
+input:focus,
+button:focus {
   outline: none;
 }
 
 
 
 @keyframes fadeSlideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

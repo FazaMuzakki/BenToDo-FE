@@ -16,6 +16,8 @@ const outfit = Outfit({
   display: "swap",
 });
 
+import { ThemeProvider } from "./components/ThemeProvider";
+
 export const metadata: Metadata = {
   title: "Bento-Do",
   description:
@@ -38,7 +40,9 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-poppins), sans-serif" }}
         suppressHydrationWarning
       >
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
