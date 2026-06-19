@@ -331,10 +331,22 @@ function FocusTimerPage() {
   useEffect(() => {
     const syncFullscreen = () => setIsFullscreen(!!document.fullscreenElement);
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === "Esc") {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+
     document.addEventListener("fullscreenchange", syncFullscreen);
+    window.addEventListener("keydown", handleKeyDown);
     syncFullscreen();
 
-    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const handleBackRequest = () => {
